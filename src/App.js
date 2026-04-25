@@ -27,7 +27,6 @@ const db = {
 };
 
 const gs = (n) => "Gs " + Math.round(n).toLocaleString("es-PY");
-const fmtDate = (d) => d.toFullYear ? d.toISOString().slice(0, 10) : d;
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
@@ -119,7 +118,6 @@ export default function App() {
   const fmtD = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 
   const clienteById = (id) => clientes.find(c => c.id === id);
-  const mensualidadByCliente = (id) => mensualidades.filter(m => m.cliente_id === id);
 
   const openModal = (name, data = {}) => { setForm(data); setModal(name); };
   const closeModal = () => { setModal(null); setForm({}); };
