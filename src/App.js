@@ -25,11 +25,11 @@ const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-const C = BRAND; // alias para compatibilidad con código existente
-const inp = { padding:"8px 12px", border:`1px solid rgba(26,47,107,0.15)`, borderRadius:8, fontSize:13, width:"100%", background:"var(--color-background-primary)", color:"var(--color-text-primary)", fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
-const card = { background:"var(--color-background-primary)", border:`1px solid rgba(26,47,107,0.1)`, borderRadius:14, padding:"16px 18px", boxShadow:"0 2px 12px rgba(8,16,31,0.06)" };
-const metric = { background:`linear-gradient(135deg, ${BRAND.dark}08, ${BRAND.blueM}12)`, borderRadius:12, padding:"14px 16px", border:`1px solid rgba(26,47,107,0.1)` };
-const lbl = { fontSize:12, color:"var(--color-text-secondary)", fontWeight:500, marginBottom:5, display:"block" };
+const C = BRAND;
+const inp = { padding:"8px 12px", border:"1px solid #2A3F6B", borderRadius:8, fontSize:13, width:"100%", background:"#0F1C3F", color:"#E8EEFF", fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
+const card = { background:"#111E40", border:"1px solid #1E3070", borderRadius:14, padding:"16px 18px", boxShadow:"0 2px 12px rgba(0,0,0,0.3)" };
+const metric = { background:"#0D1830", borderRadius:12, padding:"14px 16px", border:"1px solid #1A2B5A" };
+const lbl = { fontSize:12, color:"#8899CC", fontWeight:500, marginBottom:5, display:"block" };
 
 // ── AUTH ──
 const auth = {
@@ -129,11 +129,11 @@ const tipoBadge = t => { if(t==="abono") return <Badge type="purple">Abono</Badg
 
 const Modal = ({show,onClose,title,children,width=420}) => {
   if(!show) return null;
-  return <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.5)",padding:"24px 16px",overflowY:"auto"}}>
-    <div style={{width:"100%",maxWidth:width,backgroundColor:"#ffffff",borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,0.25)",border:"1px solid #e5e5e5",flexShrink:0}}>
-      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid #e5e5e5",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontSize:16,fontWeight:500,color:"#111"}}>{title}</span>
-        <button onClick={onClose} style={{border:"none",background:"#f0f0f0",cursor:"pointer",fontSize:16,color:"#666",padding:"5px 9px",borderRadius:6}}>×</button>
+  return <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.7)",padding:"24px 16px",overflowY:"auto"}}>
+    <div style={{width:"100%",maxWidth:width,backgroundColor:"#111E40",borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid #1E3070",flexShrink:0}}>
+      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid #1E3070",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:16,fontWeight:500,color:"#E8EEFF"}}>{title}</span>
+        <button onClick={onClose} style={{border:"none",background:"#1A2B5A",cursor:"pointer",fontSize:16,color:"#8899CC",padding:"5px 9px",borderRadius:6}}>×</button>
       </div>
       <div style={{padding:20}}>{children}</div>
     </div>
@@ -142,10 +142,10 @@ const Modal = ({show,onClose,title,children,width=420}) => {
 
 const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="danger"}) => {
   if(!show) return null;
-  return <div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.55)"}}>
-    <div style={{backgroundColor:"#ffffff",borderRadius:14,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.25)",border:"1px solid #e5e5e5"}}>
-      <div style={{fontSize:15,fontWeight:500,marginBottom:8,color:"#111"}}>{title}</div>
-      <div style={{fontSize:13,color:"#666",marginBottom:20}}>{msg}</div>
+  return <div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.75)"}}>
+    <div style={{backgroundColor:"#111E40",borderRadius:14,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.5)",border:"1px solid #1E3070"}}>
+      <div style={{fontSize:15,fontWeight:500,marginBottom:8,color:"#E8EEFF"}}>{title}</div>
+      <div style={{fontSize:13,color:"#8899CC",marginBottom:20}}>{msg}</div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
         <Btn onClick={onCancel}>Cancelar</Btn>
         <Btn v={okV} onClick={onOk}>{okLabel}</Btn>
@@ -198,7 +198,7 @@ const PortalCliente = () => {
   const [clientes,setClientes]=useState([]);
   const [loading,setLoading]=useState(true);
   const [fecha,setFecha]=useState(hoy());
-  const [slotSel,setSlotSel]=useState(null);
+  const [slotsSel, setSlotsSel] = useState([]);
   const [paso,setPaso]=useState("lista");
   const [form,setForm]=useState({nombre:"",telefono:""});
   const [saving,setSaving]=useState(false);
@@ -236,22 +236,40 @@ const PortalCliente = () => {
     return {match:"nuevo",cliente:null};
   };
 
+  const toggleSlot = h => {
+    if (slotsSel.includes(h)) setSlotsSel(slotsSel.filter(s=>s!==h));
+    else {
+      // Solo permitir horas consecutivas
+      if (slotsSel.length===0) { setSlotsSel([h]); return; }
+      const min=Math.min(...slotsSel); const max=Math.max(...slotsSel);
+      if (h===min-1||h===max+1) setSlotsSel([...slotsSel,h].sort((a,b)=>a-b));
+      else setSlotsSel([h]); // si no es consecutiva, resetea
+    }
+  };
+
   const reservar = async () => {
     if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
+    if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
     setSaving(true); setMsg("");
     try {
       const {match,cliente}=buscarCliente(); let clienteId=cliente?.id; let nota="Reservado desde portal";
       if(match==="nuevo"){const [c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"});clienteId=c.id;}
       else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero teléfono diferente (registrado: ${cliente.telefono})`;clienteId=cliente.id;}
       else if(match==="parcial_tel"){nota=`⚠️ Teléfono coincide pero nombre diferente (registrado: ${cliente.nombre})`;clienteId=cliente.id;}
-      await db.post("turnos",{fecha,hora:Number(slotSel),tipo:"ocasional",estado:"reservado",cliente_id:clienteId,precio:precioTurno(Number(slotSel)),sena:0,saldo:precioTurno(Number(slotSel)),notas:nota});
+      // Reservar cada slot seleccionado
+      for (const h of slotsSel) {
+        const precio=precioTurno(h);
+        await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"reservado",cliente_id:clienteId,precio,sena:0,saldo:precio,notas:nota});
+      }
       setPaso("confirmado");
     } catch(e){setMsg("Error al reservar. Intentá de nuevo.");}
     setSaving(false);
   };
 
   const abrirWsp = () => {
-    const msg = encodeURIComponent(`Hola! Reservé una cancha en *${cfg.nombre_club}* para el *${fecha}* a las *${slotSel}:00hs*.\n\nNombre: ${form.nombre}\nTeléfono: ${form.telefono}\n\nQuedo esperando confirmación. ¡Gracias!`);
+    const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
+    const total = slotsSel.reduce((a,h)=>a+precioTurno(h),0);
+    const msg = encodeURIComponent(`Hola! Reservé en *${cfg.nombre_club}* para el *${fecha}*.\n\nHorarios: *${horasStr}hs*\nTotal: *${gs(total)}*\n\nNombre: ${form.nombre}\nTeléfono: ${form.telefono}\n\nQuedo esperando confirmación. ¡Gracias!`);
     window.open(`https://wa.me/${ADMIN_TEL}?text=${msg}`, "_blank");
   };
 
@@ -279,7 +297,7 @@ const PortalCliente = () => {
         {/* Selector fecha */}
         <div style={{background:"#fff",borderRadius:14,border:`1px solid rgba(26,47,107,0.1)`,padding:"16px 18px",marginBottom:12,boxShadow:"0 2px 12px rgba(8,16,31,0.06)"}}>
           <label style={{fontSize:12,color:"#666",fontWeight:600,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>¿Qué día querés jugar?</label>
-          <input type="date" value={fecha} min={hoy()} onChange={e=>{setFecha(e.target.value);setSlotSel(null);}} style={{width:"100%",padding:"11px 14px",border:`1px solid rgba(26,47,107,0.15)`,borderRadius:10,fontSize:16,color:BRAND.blue,fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",fontWeight:500}}/>
+          <input type="date" value={fecha} min={hoy()} onChange={e=>{setFecha(e.target.value);setSlotsSel([]);}} style={{width:"100%",padding:"11px 14px",border:"1px solid #1E3A7A",borderRadius:10,fontSize:16,color:"#fff",background:"#0D1830",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",fontWeight:500}}/>
         </div>
 
         {/* Clima */}
@@ -299,24 +317,24 @@ const PortalCliente = () => {
             <div style={{fontSize:14,fontWeight:600,color:BRAND.blue}}>Horarios disponibles</div>
             <div style={{fontSize:12,color:"#888",marginTop:2}}>{horasDisp.length} de {horasArr.length} turnos libres</div>
           </div>
-          {horasDisp.length===0&&<div style={{padding:"28px",textAlign:"center",color:"#999",fontSize:13}}>No hay horarios disponibles para este día.</div>}
+          {horasDisp.length===0&&<div style={{padding:"28px",textAlign:"center",color:"#8899CC",fontSize:13}}>No hay horarios disponibles para este día.</div>}
           {horasDisp.map(h=>{
             const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
-            const selec=slotSel===h;
-            return <div key={h} onClick={()=>setSlotSel(selec?null:h)}
-              style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:`1px solid rgba(26,47,107,0.06)`,cursor:"pointer",background:selec?BRAND.blueL:"#fff",transition:"background .1s"}}>
+            const selec=slotsSel.includes(h);
+            return <div key={h} onClick={()=>toggleSlot(h)}
+              style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:"1px solid #1A2B5A",cursor:"pointer",background:selec?"#1A3570":"#111E40",transition:"background .1s"}}>
               <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:44,height:44,borderRadius:12,background:selec?BRAND.blueM:isPico?`${BRAND.coral}18`:`rgba(26,47,107,0.06)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:selec?"#fff":isPico?BRAND.coral:BRAND.blue}}>
+                <div style={{width:44,height:44,borderRadius:12,background:selec?BRAND.blueM:isPico?`${BRAND.coral}30`:"#1A2B5A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BRAND.coral:"#8899CC"}}>
                   {h}
                 </div>
                 <div>
-                  <div style={{fontSize:14,fontWeight:500,color:BRAND.blue}}>{h}:00 — {h+1}:00 hs</div>
-                  <div style={{fontSize:12,color:"#888",marginTop:1}}>{isPico?"Horario pico 🔥":"Tarifa normal"}</div>
+                  <div style={{fontSize:14,fontWeight:500,color:"#E8EEFF"}}>{h}:00 — {h+1}:00 hs</div>
+                  <div style={{fontSize:12,color:"#8899CC",marginTop:1}}>{isPico?"Horario pico 🔥":"Tarifa normal"}</div>
                 </div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:15,fontWeight:700,color:selec?BRAND.blueM:isPico?BRAND.coral:BRAND.blue}}>{gs(precioTurno(h))}</div>
-                {selec&&<div style={{fontSize:11,color:BRAND.blueM,marginTop:2,fontWeight:500}}>Seleccionado ✓</div>}
+                <div style={{fontSize:15,fontWeight:700,color:selec?"#7EAAFF":isPico?BRAND.coral:"#E8EEFF"}}>{gs(precioTurno(h))}</div>
+                {selec&&<div style={{fontSize:11,color:"#7EAAFF",marginTop:2,fontWeight:500}}>✓ Seleccionado</div>}
               </div>
             </div>;
           })}
@@ -333,9 +351,17 @@ const PortalCliente = () => {
           </div>)}
         </div>}
 
-        {slotSel!==null&&<button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg, ${BRAND.coral}, ${BRAND.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:`0 6px 24px rgba(216,90,48,0.35)`}}>
-          Reservar las {slotSel}:00 hs →
-        </button>}
+        {slotsSel.length>0&&<>
+          <div style={{background:"#111E40",borderRadius:12,padding:"12px 16px",marginBottom:12,border:"1px solid #1E3070"}}>
+            <div style={{fontSize:12,color:"#8899CC",marginBottom:6}}>Turnos seleccionados · {slotsSel.length}hs</div>
+            <div style={{fontSize:14,fontWeight:600,color:"#E8EEFF"}}>{slotsSel.map(h=>`${h}:00`).join(" · ")} hs</div>
+            <div style={{fontSize:13,color:BRAND.coral,marginTop:4,fontWeight:500}}>Total: {gs(slotsSel.reduce((a,h)=>a+precioTurno(h),0))}</div>
+            <div style={{fontSize:11,color:"#8899CC",marginTop:4}}>Seleccioná horas consecutivas para extender tu turno</div>
+          </div>
+          <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg, ${BRAND.coral}, ${BRAND.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:`0 6px 24px rgba(216,90,48,0.35)`}}>
+            Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
+          </button>
+        </>}
       </>}
 
       {paso==="datos"&&<>
@@ -677,19 +703,19 @@ export default function App() {
 
   const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"0.5px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?C.coral:"var(--color-border-secondary)",background:sel.includes(i)?C.coralL:"var(--color-background-primary)",color:sel.includes(i)?C.coral:"var(--color-text-secondary)"}}>{nm.slice(0,3)}</button>)}</div>;};
 
-  return <div style={{fontFamily:"var(--font-sans)",maxWidth:940,margin:"0 auto",padding:"0 2px"}}>
+  return <div style={{fontFamily:"var(--font-sans)",maxWidth:940,margin:"0 auto",padding:"0 2px",background:"#081020",minHeight:"100vh"}}>
     <div style={{background:`linear-gradient(160deg, ${BRAND.dark} 0%, ${BRAND.blue} 70%, ${BRAND.blueM} 100%)`,boxShadow:"0 2px 16px rgba(0,0,0,0.35)"}}>
       <div style={{display:"flex",alignItems:"center",padding:"0 8px"}}>
         <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain",marginRight:8,flexShrink:0,padding:"8px 0"}}/>
         <div style={{display:"flex",flex:1,overflowX:"auto"}}>
-          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?"#fff":"rgba(255,255,255,0.45)",borderBottom:tab===t.id?`2px solid ${BRAND.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)",transition:"color .15s"}}>{t.l}</button>)}
+          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?"#fff":"rgba(255,255,255,0.45)",borderBottom:tab===t.id?`2px solid ${BRAND.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)"}}>{t.l}</button>)}
         </div>
         <button onClick={doLogout} style={{padding:"6px 12px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:"rgba(216,90,48,0.15)",color:BRAND.coral,border:"1px solid rgba(216,90,48,0.3)",whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
       </div>
     </div>
 
-    <div style={{padding:"18px 0"}}>
-      {loading?<div style={{textAlign:"center",padding:80,color:"var(--color-text-secondary)",fontSize:13}}>Cargando...</div>:(
+    <div style={{padding:"18px 12px"}}>
+      {loading?<div style={{textAlign:"center",padding:80,color:"#8899CC",fontSize:13}}>Cargando...</div>:(
         <>{tab==="hoy"&&<Hoy/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="config"&&<Config/>}</>
       )}
     </div>
