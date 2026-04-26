@@ -39,7 +39,20 @@ const db = {
 const gs = n => "Gs " + Math.round(n||0).toLocaleString("es-PY");
 const hoy = () => new Date().toISOString().slice(0,10);
 const fmtD = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const WHAPI_TOKEN = "7Eja40HxMWFj1GiPVFoUs4lMPzgRh9Bd";
+  const ADMIN_TEL = "595994199173";
+
+  const enviarWhatsapp = async (telefono, mensaje) => {
+    try {
+      const tel = telefono.replace(/\D/g,"");
+      const numero = tel.startsWith("0") ? "595"+tel.slice(1) : tel.startsWith("595") ? tel : "595"+tel;
+      await fetch("https://gate.whapi.cloud/messages/text", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${WHAPI_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ to: numero+"@s.whatsapp.net", body: mensaje }),
+      });
+    } catch(e) { console.error("WhatsApp error:", e); }
+  };
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const C = { coral:"#D85A30", coralL:"#FAECE7", ok:"#3B6D11", okL:"#EAF3DE", warn:"#854F0B", warnL:"#FAEEDA", danger:"#A32D2D", dangerL:"#FCEBEB", info:"#185FA5", infoL:"#E6F1FB", purple:"#3C3489", purpleL:"#EEEDFE" };
@@ -211,6 +224,21 @@ const PortalCliente = () => {
     return {match:"nuevo",cliente:null};
   };
 
+  const WHAPI_TOKEN = "7Eja40HxMWFj1GiPVFoUs4lMPzgRh9Bd";
+  const ADMIN_TEL = "595994199173";
+
+  const enviarWsp = async (telefono, mensaje) => {
+    try {
+      const tel = telefono.replace(/\D/g,"");
+      const numero = tel.startsWith("595") ? tel : tel.startsWith("0") ? "595"+tel.slice(1) : "595"+tel;
+      await fetch("https://gate.whapi.cloud/messages/text", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${WHAPI_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ to: numero+"@s.whatsapp.net", body: mensaje }),
+      });
+    } catch(e) { console.error("Whapi error:", e); }
+  };
+
   const reservar = async () => {
     if (!form.nombre.trim()||!form.telefono.trim()) { setMsg("Completá tu nombre y teléfono."); return; }
     setSaving(true); setMsg("");
@@ -229,6 +257,15 @@ const PortalCliente = () => {
         clienteId = cliente.id;
       }
       await db.post("turnos",{fecha,hora:Number(slotSel),tipo:"ocasional",estado:"reservado",cliente_id:clienteId,precio:precioTurno(Number(slotSel)),sena:0,saldo:precioTurno(Number(slotSel)),notas:nota});
+
+      // WhatsApp al cliente
+      const msgCliente = `¡Hola ${form.nombre.trim()}! 🎾\n\nTu reserva en *${cfg.nombre_club}* está confirmada:\n\n📅 *${fecha}* a las *${slotSel}:00hs*\n💰 *${gs(precioTurno(Number(slotSel)))}* — se abona al llegar\n📍 Tavapy, Alto Paraná\n\n¡Te esperamos!`;
+      await enviarWhatsapp(form.telefono, msgCliente);
+
+      // WhatsApp al admin
+      const msgAdmin = `🎾 *Nueva reserva DEXON*\n\n👤 ${form.nombre.trim()} · ${form.telefono.trim()}\n📅 ${fecha} · ${slotSel}:00hs\n💰 ${gs(precioTurno(Number(slotSel)))}\n📝 ${nota}`;
+      await enviarWhatsapp(ADMIN_TEL, msgAdmin);
+
       setPaso("confirmado");
     } catch(e) { setMsg("Error al reservar. Intentá de nuevo."); }
     setSaving(false);
