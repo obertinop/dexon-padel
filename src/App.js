@@ -216,12 +216,22 @@ export default function App() {
   if (!session) return <Login onLogin={(token,user)=>setSession({token,user})}/>;
 
   // eslint-disable-next-line no-unused-vars
-  const handleLogout = async () => {
-    await auth.logout(session.token);
+  const handleLogout = useCallback(async () => {
+    await auth.logout(session?.token);
     localStorage.removeItem("dexon_token");
     localStorage.removeItem("dexon_user");
     setSession(null);
-  };
+  }, [session]);
+
+  // Temporizador de inactividad — 15 minutos
+  useEffect(() => {
+    if (!session) return;
+    let timer = setTimeout(handleLogout, 15 * 60 * 1000);
+    const reset = () => { clearTimeout(timer); timer = setTimeout(handleLogout, 15 * 60 * 1000); };
+    const eventos = ["mousedown","mousemove","keydown","touchstart","scroll"];
+    eventos.forEach(e => window.addEventListener(e, reset));
+    return () => { clearTimeout(timer); eventos.forEach(e => window.removeEventListener(e, reset)); };
+  }, [session, handleLogout]);
 
   const {turnos,clientes,abonos,planes,instructores,caja,stock,espera,cfg,abono_turnos=[]} = data;
   const horas = Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
@@ -944,7 +954,28 @@ export default function App() {
         </>}
       </Drawer>
 
-      {/* DRAWER: CLIENTE */}
+      {/* DRAWER: EDITAR CLIENTE */}
+      <Drawer show={drawer==="editarCliente"} onClose={closeD} title="Editar cliente">
+        <div style={{background:"#f5f5f5",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#666",marginBottom:16}}>Modificá los datos del cliente y guardá.</div>
+        <Inp label="Nombre completo" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
+        <Inp label="Teléfono" type="text" value={form.telefono||""} onChange={sf("telefono")}/>
+        <Sel label="Nivel" value={form.nivel||"intermedio"} onChange={sf("nivel")}>
+          <option value="principiante">Principiante</option>
+          <option value="intermedio">Intermedio</option>
+          <option value="avanzado">Avanzado</option>
+        </Sel>
+        <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
+        <Div/>
+        <div style={{display:"flex",gap:8,justifyContent:"space-between"}}>
+          <Btn v="danger" onClick={()=>setDlg({type:"eliminarCliente",id:form.id,nombre:form.nombre})}>Eliminar</Btn>
+          <div style={{display:"flex",gap:8}}>
+            <Btn onClick={closeD}>Cancelar</Btn>
+            <Btn v="primary" onClick={guardarCliente} disabled={saving}>{saving?"Guardando...":"Guardar cambios"}</Btn>
+          </div>
+        </div>
+      </Drawer>
+
+      {/* DRAWER: CLIENTE NUEVO */}
       <Drawer show={drawer==="cliente"} onClose={closeD} title={form.id?"Editar cliente":"Nuevo cliente"}>
         <Inp label="Nombre completo" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
         <Inp label="Teléfono" type="text" value={form.telefono||""} onChange={sf("telefono")}/>
