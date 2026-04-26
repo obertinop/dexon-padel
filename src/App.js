@@ -347,13 +347,7 @@ export default function App() {
     window.open(`https://wa.me/595${tel.startsWith("0")?tel.slice(1):tel}?text=${encodeURIComponent(m)}`,"_blank");
   };
 
-  const DiasSel = ({value,onChange}) => {
-    const sel=(value||"").split(",").filter(Boolean).map(Number);
-    const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};
-    return <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
-      {DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"0.5px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?C.coral:"var(--color-border-secondary)",background:sel.includes(i)?C.coralL:"var(--color-background-primary)",color:sel.includes(i)?C.coral:"var(--color-text-secondary)"}}>{nm.slice(0,3)}</button>)}
-    </div>;
-  };
+
 
   const TABS=[{id:"hoy",l:"Hoy"},{id:"agenda",l:"Agenda"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"config",l:"Config"}];
 
