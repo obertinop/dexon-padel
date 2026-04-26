@@ -91,11 +91,10 @@ const Drawer = ({show,onClose,title,children}) => {
 // Dialog confirmación
 const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="danger"}) => {
   if (!show) return null;
-  return <div style={{position:"fixed",inset:0,zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}>
-    <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.2)"}} onClick={onCancel}/>
-    <div style={{position:"relative",background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:14,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.15)"}}>
-      <div style={{fontSize:15,fontWeight:500,marginBottom:8}}>{title}</div>
-      <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20}}>{msg}</div>
+  return <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.55)"}}>
+    <div style={{backgroundColor:"#ffffff",borderRadius:14,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.25)",border:"1px solid #e0e0e0"}}>
+      <div style={{fontSize:15,fontWeight:500,marginBottom:8,color:"#111"}}>{title}</div>
+      <div style={{fontSize:13,color:"#666",marginBottom:20}}>{msg}</div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
         <Btn onClick={onCancel}>Cancelar</Btn>
         <Btn v={okV} onClick={onOk}>{okLabel}</Btn>
@@ -234,8 +233,27 @@ export default function App() {
     if (!form.nombre?.trim()) return;
     setSaving(true);
     try {
-      await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono||"",nivel:form.nivel||"intermedio",notas:form.notas||""});
+      if (form.id) await db.patch("clientes",form.id,{nombre:form.nombre.trim(),telefono:form.telefono||"",nivel:form.nivel||"intermedio",notas:form.notas||""});
+      else await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono||"",nivel:form.nivel||"intermedio",notas:form.notas||""});
       await load();closeD();
+    } catch(e){alert(e.message);}
+    setSaving(false);
+  };
+
+  const eliminarCliente = async (id) => {
+    setSaving(true);
+    try {
+      await db.del("clientes",id);
+      await load();setDlg(null);closeD();
+    } catch(e){alert(e.message);}
+    setSaving(false);
+  };
+
+  const cancelarAbono = async (id) => {
+    setSaving(true);
+    try {
+      await db.patch("abonos",id,{estado:"cancelado"});
+      await load();setDlg(null);
     } catch(e){alert(e.message);}
     setSaving(false);
   };
@@ -543,7 +561,10 @@ export default function App() {
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
                 {v?badge("danger",`Vencido ${ab.fecha_vencimiento?.slice(5)}`):badge("ok",`Hasta ${ab.fecha_vencimiento?.slice(5)}`)}
-                {v&&<Btn v="primary" sm onClick={()=>openD("abono",{cliente_id:ab.cliente_id,plan_id:ab.plan_id,precio_acordado:ab.precio_acordado,fecha_inicio:hoy(),turno_dias:TURNO_DIAS.map((k,i)=>ab[k]?i:null).filter(x=>x!==null).join(","),turno_hora:ab.turno_hora})}>Renovar</Btn>}
+                <div style={{display:"flex",gap:6}}>
+                  {v&&<Btn v="primary" sm onClick={()=>openD("abono",{cliente_id:ab.cliente_id,plan_id:ab.plan_id,precio_acordado:ab.precio_acordado,fecha_inicio:hoy(),slots:abono_turnos.filter(at=>at.abono_id===ab.id).map(at=>({dia:at.dia,hora:at.hora}))})}>Renovar</Btn>}
+                  <Btn v="danger" sm onClick={()=>setDlg({type:"cancelarAbono",id:ab.id,nombre:cById(ab.cliente_id)?.nombre})}>Cancelar</Btn>
+                </div>
               </div>
             </div>
           </div>;
@@ -794,9 +815,9 @@ export default function App() {
           </div>
           <Div/>
           {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-            <Btn v="success" onClick={()=>setDlg({type:"confirmar",t:form})}>✓ Confirmar y cobrar {gs(form.precio-(form.sena||0))}</Btn>
-            <Btn v="ghost" onClick={()=>setDlg({type:"noshow",t:form})}>Marcar como no show</Btn>
-            <Btn v="danger" onClick={()=>setDlg({type:"cancelar",t:form})}>Cancelar turno</Btn>
+            <Btn v="success" onClick={()=>{closeD();setDlg({type:"confirmar",t:form});}}>✓ Cobrar {gs(form.precio-(form.sena||0))}</Btn>
+            <Btn v="ghost" onClick={()=>{closeD();setDlg({type:"noshow",t:form});}}>Marcar como no show</Btn>
+            <Btn v="danger" onClick={()=>{closeD();setDlg({type:"cancelar",t:form});}}>Cancelar turno</Btn>
           </div>}
           {form.estado==="confirmado"&&<Btn v="success" onClick={()=>{if(form.cliente)whatsapp(form.cliente,form);}}>Enviar confirmación WhatsApp</Btn>}
           {form.estado==="cancelado"&&<div style={{fontSize:13,color:"var(--color-text-secondary)",textAlign:"center"}}>Turno cancelado{form.sena>0?" — seña devuelta en caja":""}</div>}
@@ -944,6 +965,8 @@ export default function App() {
       <Dialog show={dlg?.type==="confirmar"} title="Confirmar cobro" msg={`¿Cobrar ${gs((dlg?.t?.precio||0)-(dlg?.t?.sena||0))} a ${cById(dlg?.t?.cliente_id)?.nombre||"?"}? Se registra en caja.`} onOk={()=>confirmarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="✓ Confirmar cobro" okV="success"/>
       <Dialog show={dlg?.type==="cancelar"} title="Cancelar turno" msg={`¿Cancelar el turno de ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?${dlg?.t?.sena>0?" La seña se devuelve como egreso en caja.":""}`} onOk={()=>cancelarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Cancelar turno" okV="danger"/>
       <Dialog show={dlg?.type==="noshow"} title="Marcar como no show" msg={`${cById(dlg?.t?.cliente_id)?.nombre||"?"} no se presentó. ¿Confirmás?`} onOk={()=>noShow(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Marcar no show" okV="danger"/>
+      <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}? Se borran todos sus turnos y datos.`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
+      <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}? Sus turnos fijos dejarán de aparecer en la agenda.`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
     </div>
   );
 
