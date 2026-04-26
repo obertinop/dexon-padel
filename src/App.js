@@ -203,11 +203,14 @@ const PortalCliente = () => {
       else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero teléfono diferente (registrado: ${cliente.telefono})`;clienteId=cliente.id;}
       else if(match==="parcial_tel"){nota=`⚠️ Teléfono coincide pero nombre diferente (registrado: ${cliente.nombre})`;clienteId=cliente.id;}
       await db.post("turnos",{fecha,hora:Number(slotSel),tipo:"ocasional",estado:"reservado",cliente_id:clienteId,precio:precioTurno(Number(slotSel)),sena:0,saldo:precioTurno(Number(slotSel)),notas:nota});
-      await enviarWsp(form.telefono,`¡Hola ${form.nombre.trim()}! 🎾\n\nTu reserva en *${cfg.nombre_club}* está confirmada:\n\n📅 *${fecha}* a las *${slotSel}:00hs*\n💰 *${gs(precioTurno(Number(slotSel)))}* — se abona al llegar\n📍 Tavapy, Alto Paraná\n\n¡Te esperamos!`);
-      await enviarWsp(ADMIN_TEL,`🎾 *Nueva reserva DEXON*\n\n👤 ${form.nombre.trim()} · ${form.telefono.trim()}\n📅 ${fecha} · ${slotSel}:00hs\n💰 ${gs(precioTurno(Number(slotSel)))}\n📝 ${nota}`);
       setPaso("confirmado");
     } catch(e){setMsg("Error al reservar. Intentá de nuevo.");}
     setSaving(false);
+  };
+
+  const abrirWsp = () => {
+    const msg = encodeURIComponent(`Hola! Reservé una cancha en *${cfg.nombre_club}* para el *${fecha}* a las *${slotSel}:00hs*.\n\nNombre: ${form.nombre}\nTeléfono: ${form.telefono}\n\nQuedo esperando confirmación. ¡Gracias!`);
+    window.open(`https://wa.me/${ADMIN_TEL}?text=${msg}`, "_blank");
   };
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-sans)",fontSize:14,color:"#888"}}>Cargando...</div>;
@@ -269,14 +272,20 @@ const PortalCliente = () => {
 
       {paso==="confirmado"&&<div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",padding:"32px 24px",textAlign:"center"}}>
         <div style={{fontSize:48,marginBottom:16}}>✅</div>
-        <div style={{fontSize:20,fontWeight:500,marginBottom:8}}>¡Reserva confirmada!</div>
+        <div style={{fontSize:20,fontWeight:500,marginBottom:8}}>¡Reserva registrada!</div>
         <div style={{fontSize:14,color:"#666",marginBottom:20,lineHeight:1.6}}>Tu turno fue registrado para el <strong>{fecha}</strong> a las <strong>{slotSel}:00hs</strong>.</div>
-        <div style={{background:"#f8f7f5",borderRadius:10,padding:"16px",fontSize:13,color:"#666",marginBottom:24,textAlign:"left",lineHeight:2}}>
+        <div style={{background:"#f8f7f5",borderRadius:10,padding:"16px",fontSize:13,color:"#666",marginBottom:20,textAlign:"left",lineHeight:2}}>
           <div>📍 {cfg.nombre_club} — Tavapy, Alto Paraná</div>
           <div>💰 {gs(precioTurno(Number(slotSel)))} — se abona al llegar</div>
-          <div>📱 Ante cualquier consulta escribinos por WhatsApp</div>
         </div>
-        <button onClick={()=>{setPaso("lista");setSlotSel(null);setForm({nombre:"",telefono:""});}} style={{padding:"12px 28px",background:"#D85A30",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Hacer otra reserva</button>
+        <div style={{background:"#EAF3DE",borderRadius:10,padding:"14px 16px",marginBottom:20,textAlign:"left"}}>
+          <div style={{fontSize:13,fontWeight:500,color:"#3B6D11",marginBottom:6}}>⚠️ Importante — Confirmá tu reserva</div>
+          <div style={{fontSize:13,color:"#3B6D11",lineHeight:1.6}}>Para asegurar tu turno, confirmá por WhatsApp tocando el botón de abajo. Tu reserva queda pendiente hasta recibir confirmación.</div>
+        </div>
+        <button onClick={abrirWsp} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <span style={{fontSize:20}}>📱</span> Confirmar por WhatsApp
+        </button>
+        <button onClick={()=>{setPaso("lista");setSlotSel(null);setForm({nombre:"",telefono:""});}} style={{width:"100%",padding:"11px",background:"transparent",color:"#888",border:"0.5px solid #ddd",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Hacer otra reserva</button>
       </div>}
     </div>
   </div>;
