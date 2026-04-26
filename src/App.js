@@ -145,6 +145,10 @@ const Dialog = ({ show, title, msg, onOk, onCancel, okLabel="Confirmar", okV="da
   );
 };
 
+const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
 // ── PORTAL CLIENTE ──
 const PortalCliente = () => {
   const [cfg, setCfg] = useState({ nombre_club:"DEXON PADEL", hora_inicio:10, hora_fin:24, tarifa_base:80000, tarifa_pico:100000, hora_pico_inicio:19, hora_pico_fin:22 });
