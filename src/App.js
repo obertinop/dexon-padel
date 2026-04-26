@@ -9,17 +9,17 @@ const BRAND = {
   coral: "#D85A30",
   coralL: "#FAECE7",
   coralD: "#993C1D",
-  blue: "#1A2F6B",
-  blueM: "#2D4ED8",
+  blue: "#0F1C3F",
+  blueM: "#1A2F6B",
   blueL: "#E6EEFF",
-  purple: "#4B1FA8",
-  purpleL: "#EDE9FB",
-  dark: "#0D1B4B",
+  purple: "#1E0A4A",
+  dark: "#08101F",
   ok: "#3B6D11", okL: "#EAF3DE",
   warn: "#854F0B", warnL: "#FAEEDA",
   danger: "#A32D2D", dangerL: "#FCEBEB",
   info: "#185FA5", infoL: "#E6F1FB",
 };
+const LOGO = "/logo.png";
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -152,22 +152,22 @@ const Login = ({onLogin}) => {
     setLoading(false);
   };
   return (
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(135deg, ${BRAND.dark} 0%, ${BRAND.blue} 50%, ${BRAND.purple} 100%)`}}>
-      <div style={{width:380,padding:"40px 36px",background:"rgba(255,255,255,0.05)",backdropFilter:"blur(20px)",borderRadius:20,border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 24px 80px rgba(0,0,0,0.4)"}}>
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg, ${BRAND.dark} 0%, ${BRAND.blue} 60%, ${BRAND.blueM} 100%)`}}>
+      <div style={{width:380,padding:"44px 36px",background:"rgba(255,255,255,0.04)",backdropFilter:"blur(20px)",borderRadius:20,border:"1px solid rgba(255,255,255,0.08)",boxShadow:"0 32px 80px rgba(0,0,0,0.5)"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
-          <img src="/logo.png" alt="DEXON" style={{height:80,marginBottom:16,objectFit:"contain"}}/>
-          <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",letterSpacing:2,textTransform:"uppercase"}}>Sistema de gestión</div>
+          <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:72,marginBottom:12,objectFit:"contain"}}/>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",letterSpacing:3,textTransform:"uppercase"}}>Sistema de gestión</div>
         </div>
-        {err&&<div style={{background:"rgba(216,90,48,0.2)",color:"#F5A882",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:16,border:"1px solid rgba(216,90,48,0.3)"}}>{err}</div>}
+        {err&&<div style={{background:"rgba(216,90,48,0.15)",color:"#F5A882",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:16,border:"1px solid rgba(216,90,48,0.25)"}}>{err}</div>}
         <div style={{marginBottom:14}}>
-          <label style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontWeight:500,display:"block",marginBottom:6}}>Email</label>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="tu@email.com"/>
+          <label style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:500,display:"block",marginBottom:6}}>Email</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="tu@email.com"/>
         </div>
         <div style={{marginBottom:28}}>
-          <label style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontWeight:500,display:"block",marginBottom:6}}>Contraseña</label>
-          <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="••••••••"/>
+          <label style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:500,display:"block",marginBottom:6}}>Contraseña</label>
+          <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="••••••••"/>
         </div>
-        <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"13px",background:`linear-gradient(135deg, ${BRAND.coral}, ${BRAND.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 4px 20px rgba(216,90,48,0.4)"}}>
+        <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"13px",background:`linear-gradient(135deg, ${BRAND.coral}, ${BRAND.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 4px 20px rgba(216,90,48,0.35)"}}>
           {loading?"Ingresando...":"Ingresar"}
         </button>
       </div>
@@ -243,18 +243,18 @@ const PortalCliente = () => {
 
   return <div style={{minHeight:"100vh",background:"#F4F6FB",fontFamily:"var(--font-sans)"}}>
     {/* HEADER PORTAL */}
-    <div style={{background:`linear-gradient(135deg, ${BRAND.dark} 0%, ${BRAND.blue} 60%, ${BRAND.purple} 100%)`,padding:"20px",boxShadow:"0 4px 20px rgba(13,27,75,0.3)"}}>
-      <div style={{maxWidth:480,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <img src="/logo.png" alt="DEXON" style={{height:44,objectFit:"contain"}}/>
+    <div style={{background:`linear-gradient(160deg, ${BRAND.dark} 0%, ${BRAND.blue} 70%, ${BRAND.blueM} 100%)`,boxShadow:"0 2px 20px rgba(0,0,0,0.4)"}}>
+      <div style={{maxWidth:480,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:40,objectFit:"contain"}}/>
           <div>
-            <div style={{fontSize:18,fontWeight:700,color:"#fff",letterSpacing:-0.5}}>{cfg.nombre_club}</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:1,letterSpacing:1,textTransform:"uppercase"}}>Tavapy · Alto Paraná</div>
+            <div style={{fontSize:17,fontWeight:700,color:"#fff"}}>{cfg.nombre_club}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.45)",letterSpacing:1.5,textTransform:"uppercase",marginTop:1}}>Tavapy · Alto Paraná</div>
           </div>
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{gs(cfg.tarifa_base)}/hora</div>
-          <div style={{fontSize:11,color:BRAND.coral,fontWeight:500}}>Pico: {gs(cfg.tarifa_pico)}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{gs(cfg.tarifa_base)}/hora</div>
+          <div style={{fontSize:11,color:BRAND.coral,fontWeight:500,marginTop:2}}>Pico: {gs(cfg.tarifa_pico)}</div>
         </div>
       </div>
     </div>
@@ -631,14 +631,13 @@ export default function App() {
   const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"0.5px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?C.coral:"var(--color-border-secondary)",background:sel.includes(i)?C.coralL:"var(--color-background-primary)",color:sel.includes(i)?C.coral:"var(--color-text-secondary)"}}>{nm.slice(0,3)}</button>)}</div>;};
 
   return <div style={{fontFamily:"var(--font-sans)",maxWidth:940,margin:"0 auto",padding:"0 2px"}}>
-    {/* NAV ADMIN */}
-    <div style={{background:`linear-gradient(135deg, ${BRAND.dark}, ${BRAND.blue})`,marginBottom:0}}>
+    <div style={{background:`linear-gradient(160deg, ${BRAND.dark} 0%, ${BRAND.blue} 70%, ${BRAND.blueM} 100%)`,boxShadow:"0 2px 16px rgba(0,0,0,0.35)"}}>
       <div style={{display:"flex",alignItems:"center",padding:"0 8px"}}>
-        <img src="/logo.png" alt="DEXON" style={{height:36,objectFit:"contain",marginRight:8,flexShrink:0}}/>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain",marginRight:8,flexShrink:0,padding:"8px 0"}}/>
         <div style={{display:"flex",flex:1,overflowX:"auto"}}>
-          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?"#fff":"rgba(255,255,255,0.5)",borderBottom:tab===t.id?`2px solid ${BRAND.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)"}}>{t.l}</button>)}
+          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?"#fff":"rgba(255,255,255,0.45)",borderBottom:tab===t.id?`2px solid ${BRAND.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)",transition:"color .15s"}}>{t.l}</button>)}
         </div>
-        <button onClick={doLogout} style={{padding:"6px 14px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:"rgba(216,90,48,0.2)",color:BRAND.coral,border:`1px solid rgba(216,90,48,0.4)`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
+        <button onClick={doLogout} style={{padding:"6px 12px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:"rgba(216,90,48,0.15)",color:BRAND.coral,border:"1px solid rgba(216,90,48,0.3)",whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
       </div>
     </div>
 
