@@ -2,8 +2,24 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 const SUPA_URL = "https://wirsrkuxzltedqdkrdak.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpcnNya3V4emx0ZWRxZGtyZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjEzMjMsImV4cCI6MjA5MjYzNzMyM30.BjxD2R5bgBUHyalpwFhRzsGEzOnCx4PH9Sb65d609VI";
-const WHAPI_TOKEN = "7Eja40HxMWFj1GiPVFoUs4lMPzgRh9Bd";
 const ADMIN_TEL = "595994199173";
+
+// Paleta de colores DEXON
+const BRAND = {
+  coral: "#D85A30",
+  coralL: "#FAECE7",
+  coralD: "#993C1D",
+  blue: "#1A2F6B",
+  blueM: "#2D4ED8",
+  blueL: "#E6EEFF",
+  purple: "#4B1FA8",
+  purpleL: "#EDE9FB",
+  dark: "#0D1B4B",
+  ok: "#3B6D11", okL: "#EAF3DE",
+  warn: "#854F0B", warnL: "#FAEEDA",
+  danger: "#A32D2D", dangerL: "#FCEBEB",
+  info: "#185FA5", infoL: "#E6F1FB",
+};
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -135,18 +151,28 @@ const Login = ({onLogin}) => {
     catch(e) { setErr(e.message); }
     setLoading(false);
   };
-  return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f7f6f4"}}>
-    <div style={{width:360,background:"#fff",borderRadius:16,padding:"40px 32px",boxShadow:"0 8px 40px rgba(0,0,0,0.1)",border:"1px solid #eee"}}>
-      <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{fontSize:32,fontWeight:700,color:C.coral,letterSpacing:-1}}>DEXON</div>
-        <div style={{fontSize:13,color:"#999",marginTop:4}}>Sistema de gestión de padel</div>
+  return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(135deg, ${BRAND.dark} 0%, ${BRAND.blue} 50%, ${BRAND.purple} 100%)`}}>
+      <div style={{width:380,padding:"40px 36px",background:"rgba(255,255,255,0.05)",backdropFilter:"blur(20px)",borderRadius:20,border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 24px 80px rgba(0,0,0,0.4)"}}>
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <img src="/logo.png" alt="DEXON" style={{height:80,marginBottom:16,objectFit:"contain"}}/>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",letterSpacing:2,textTransform:"uppercase"}}>Sistema de gestión</div>
+        </div>
+        {err&&<div style={{background:"rgba(216,90,48,0.2)",color:"#F5A882",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:16,border:"1px solid rgba(216,90,48,0.3)"}}>{err}</div>}
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontWeight:500,display:"block",marginBottom:6}}>Email</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="tu@email.com"/>
+        </div>
+        <div style={{marginBottom:28}}>
+          <label style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontWeight:500,display:"block",marginBottom:6}}>Contraseña</label>
+          <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="••••••••"/>
+        </div>
+        <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"13px",background:`linear-gradient(135deg, ${BRAND.coral}, ${BRAND.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 4px 20px rgba(216,90,48,0.4)"}}>
+          {loading?"Ingresando...":"Ingresar"}
+        </button>
       </div>
-      {err&&<div style={{background:C.dangerL,color:C.danger,borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16}}>{err}</div>}
-      <div style={{marginBottom:14}}><label style={{fontSize:12,color:"#666",fontWeight:500,display:"block",marginBottom:5}}>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{...inp,fontSize:14}} placeholder="tu@email.com"/></div>
-      <div style={{marginBottom:24}}><label style={{fontSize:12,color:"#666",fontWeight:500,display:"block",marginBottom:5}}>Contraseña</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{...inp,fontSize:14}} placeholder="••••••••"/></div>
-      <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"12px",background:C.coral,color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)"}}>{loading?"Ingresando...":"Ingresar"}</button>
     </div>
-  </div>;
+  );
 };
 
 // ── PORTAL CLIENTE ──
@@ -213,13 +239,23 @@ const PortalCliente = () => {
     window.open(`https://wa.me/${ADMIN_TEL}?text=${msg}`, "_blank");
   };
 
-  if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-sans)",fontSize:14,color:"#888"}}>Cargando...</div>;
+  if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(135deg, ${BRAND.dark}, ${BRAND.blue})`,fontFamily:"var(--font-sans)",fontSize:14,color:"rgba(255,255,255,0.6)"}}>Cargando...</div>;
 
-  return <div style={{minHeight:"100vh",background:"#f7f6f4",fontFamily:"var(--font-sans)"}}>
-    <div style={{background:"#fff",borderBottom:"0.5px solid #e5e5e5",padding:"16px 20px"}}>
+  return <div style={{minHeight:"100vh",background:"#F4F6FB",fontFamily:"var(--font-sans)"}}>
+    {/* HEADER PORTAL */}
+    <div style={{background:`linear-gradient(135deg, ${BRAND.dark} 0%, ${BRAND.blue} 60%, ${BRAND.purple} 100%)`,padding:"20px",boxShadow:"0 4px 20px rgba(13,27,75,0.3)"}}>
       <div style={{maxWidth:480,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div><div style={{fontSize:20,fontWeight:500,color:"#D85A30"}}>{cfg.nombre_club}</div><div style={{fontSize:12,color:"#888",marginTop:2}}>Tavapy, Alto Paraná</div></div>
-        <div style={{textAlign:"right",fontSize:12,color:"#888"}}><div>{gs(cfg.tarifa_base)}/hora</div><div style={{color:"#D85A30"}}>Pico: {gs(cfg.tarifa_pico)}</div></div>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <img src="/logo.png" alt="DEXON" style={{height:44,objectFit:"contain"}}/>
+          <div>
+            <div style={{fontSize:18,fontWeight:700,color:"#fff",letterSpacing:-0.5}}>{cfg.nombre_club}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:1,letterSpacing:1,textTransform:"uppercase"}}>Tavapy · Alto Paraná</div>
+          </div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{gs(cfg.tarifa_base)}/hora</div>
+          <div style={{fontSize:11,color:BRAND.coral,fontWeight:500}}>Pico: {gs(cfg.tarifa_pico)}</div>
+        </div>
       </div>
     </div>
     <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px"}}>
@@ -595,11 +631,15 @@ export default function App() {
   const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"0.5px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?C.coral:"var(--color-border-secondary)",background:sel.includes(i)?C.coralL:"var(--color-background-primary)",color:sel.includes(i)?C.coral:"var(--color-text-secondary)"}}>{nm.slice(0,3)}</button>)}</div>;};
 
   return <div style={{fontFamily:"var(--font-sans)",maxWidth:940,margin:"0 auto",padding:"0 2px"}}>
-    <div style={{display:"flex",alignItems:"center",borderBottom:"0.5px solid var(--color-border-tertiary)"}}>
-      <div style={{display:"flex",flex:1,overflowX:"auto"}}>
-        {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"10px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?"var(--color-text-primary)":"var(--color-text-secondary)",borderBottom:tab===t.id?`2px solid ${C.coral}`:"2px solid transparent",fontWeight:tab===t.id?500:400,fontFamily:"var(--font-sans)"}}>{t.l}</button>)}
+    {/* NAV ADMIN */}
+    <div style={{background:`linear-gradient(135deg, ${BRAND.dark}, ${BRAND.blue})`,marginBottom:0}}>
+      <div style={{display:"flex",alignItems:"center",padding:"0 8px"}}>
+        <img src="/logo.png" alt="DEXON" style={{height:36,objectFit:"contain",marginRight:8,flexShrink:0}}/>
+        <div style={{display:"flex",flex:1,overflowX:"auto"}}>
+          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?"#fff":"rgba(255,255,255,0.5)",borderBottom:tab===t.id?`2px solid ${BRAND.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)"}}>{t.l}</button>)}
+        </div>
+        <button onClick={doLogout} style={{padding:"6px 14px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:"rgba(216,90,48,0.2)",color:BRAND.coral,border:`1px solid rgba(216,90,48,0.4)`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
       </div>
-      <button onClick={doLogout} style={{padding:"6px 14px",margin:"0 8px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:C.dangerL,color:C.danger,border:`0.5px solid #F09595`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
     </div>
 
     <div style={{padding:"18px 0"}}>
