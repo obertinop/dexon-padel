@@ -77,13 +77,13 @@ const Avatar = ({nombre,size=36}) => <div style={{width:size,height:size,borderR
 // Drawer lateral
 const Drawer = ({show,onClose,title,children}) => {
   if (!show) return null;
-  return <div style={{position:"absolute",inset:0,zIndex:200,display:"flex",alignItems:"flex-start",justifyContent:"center",background:"rgba(0,0,0,0.45)",padding:"16px 12px",overflowY:"auto"}}>
-    <div style={{width:"100%",maxWidth:480,background:"var(--color-background-primary)",borderRadius:14,boxShadow:"0 12px 48px rgba(0,0,0,0.25)",border:"0.5px solid var(--color-border-tertiary)"}}>
-      <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid var(--color-border-tertiary)",display:"flex",justifyContent:"space-between",alignItems:"center",borderRadius:"14px 14px 0 0"}}>
-        <span style={{fontSize:16,fontWeight:500}}>{title}</span>
-        <button onClick={onClose} style={{border:"none",background:"var(--color-background-secondary)",cursor:"pointer",fontSize:16,color:"var(--color-text-secondary)",padding:"5px 9px",borderRadius:6}}>×</button>
+  return <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.55)",overflowY:"auto",padding:"24px 16px"}}>
+    <div style={{width:"100%",maxWidth:500,backgroundColor:"#ffffff",borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,0.3)",border:"1px solid #e0e0e0",flexShrink:0}}>
+      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid #e0e0e0",display:"flex",justifyContent:"space-between",alignItems:"center",backgroundColor:"#ffffff",borderRadius:"14px 14px 0 0"}}>
+        <span style={{fontSize:16,fontWeight:500,color:"#111"}}>{title}</span>
+        <button onClick={onClose} style={{border:"none",background:"#f0f0f0",cursor:"pointer",fontSize:16,color:"#666",padding:"5px 9px",borderRadius:6}}>×</button>
       </div>
-      <div style={{padding:20}}>{children}</div>
+      <div style={{padding:20,backgroundColor:"#ffffff",borderRadius:"0 0 14px 14px"}}>{children}</div>
     </div>
   </div>;
 };
@@ -129,7 +129,8 @@ export default function App() {
         db.get("espera","order=fecha.asc,hora.asc"),
         db.get("config","limit=1"),
       ]);
-      setData({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],cfg:cf?.[0]||data.cfg});
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],cfg:cf?.[0]||prev.cfg}));
     } catch(e){console.error(e);}
     setLoading(false);
   },[]);
