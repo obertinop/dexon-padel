@@ -132,7 +132,218 @@ const Dialog = ({ show, title, msg, onOk, onCancel, okLabel="Confirmar", okV="da
   );
 };
 
-// ── LOGIN ──
+// ── PORTAL CLIENTE ──
+const PortalCliente = () => {
+  const [cfg, setCfg] = useState({ nombre_club:"DEXON PADEL", hora_inicio:10, hora_fin:24, tarifa_base:80000, tarifa_pico:100000, hora_pico_inicio:19, hora_pico_fin:22 });
+  const [turnos, setTurnos] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [semOff, setSemOff] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ nombre:"", telefono:"", fecha:"", hora:"" });
+  const [paso, setPaso] = useState("calendario"); // calendario | datos | confirmado | error
+  const [slotSel, setSlotSel] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    const loadPortal = async () => {
+      try {
+        const [cf, tu, cl] = await Promise.all([
+          db.get("config","limit=1"),
+          db.get("turnos","order=fecha.asc,hora.asc"),
+          db.get("clientes","order=nombre.asc"),
+        ]);
+        if (cf?.[0]) setCfg(cf[0]);
+        setTurnos(tu||[]);
+        setClientes(cl||[]);
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+    loadPortal();
+  }, []);
+
+  const horas = Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
+  const hoy = () => new Date().toISOString().slice(0,10);
+
+  const getSemana = () => {
+    const h = new Date(); const l = new Date(h);
+    l.setDate(h.getDate()-((h.getDay()+6)%7)+semOff*7);
+    return Array.from({length:7},(_,i)=>{ const d=new Date(l); d.setDate(l.getDate()+i); return d; });
+  };
+
+  const estaOcupado = (fecha, hora) => turnos.find(t=>t.fecha===fecha&&t.hora===hora&&t.estado!=="cancelado");
+  const precioTurno = h => h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin ? cfg.tarifa_pico : cfg.tarifa_base;
+
+  const seleccionarSlot = (fecha, hora) => {
+    if (estaOcupado(fecha, hora)) return;
+    if (fecha < hoy()) return;
+    setSlotSel({fecha, hora});
+    setForm(f=>({...f, fecha, hora}));
+    setPaso("datos");
+  };
+
+  const buscarCliente = () => {
+    const nombre = form.nombre.trim().toLowerCase();
+    const tel = form.telefono.trim().replace(/\D/g,"");
+    const porNombre = clientes.filter(c=>c.nombre.toLowerCase()===nombre);
+    const porTel = tel ? clientes.filter(c=>c.telefono.replace(/\D/g,"")===tel) : [];
+    if (porNombre.length>0&&porTel.length>0&&porNombre[0].id===porTel[0].id) return {match:"total",cliente:porNombre[0]};
+    if (porNombre.length>0) return {match:"parcial_nombre",cliente:porNombre[0]};
+    if (porTel.length>0) return {match:"parcial_tel",cliente:porTel[0]};
+    return {match:"nuevo",cliente:null};
+  };
+
+  const reservar = async () => {
+    if (!form.nombre.trim()||!form.telefono.trim()) { setMsg("Completá tu nombre y teléfono."); return; }
+    setSaving(true);
+    try {
+      const { match, cliente } = buscarCliente();
+      let clienteId = cliente?.id;
+      let inconsistencia = null;
+
+      if (match==="nuevo") {
+        const [c] = await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"});
+        clienteId = c.id;
+      } else if (match==="parcial_nombre") {
+        inconsistencia = `Nombre coincide pero teléfono diferente (registrado: ${cliente.telefono})`;
+        clienteId = cliente.id;
+      } else if (match==="parcial_tel") {
+        inconsistencia = `Teléfono coincide pero nombre diferente (registrado: ${cliente.nombre})`;
+        clienteId = cliente.id;
+      }
+
+      await db.post("turnos",{
+        fecha:form.fecha, hora:Number(form.hora), tipo:"ocasional", estado:"reservado",
+        cliente_id:clienteId, precio:precioTurno(Number(form.hora)), sena:0, saldo:precioTurno(Number(form.hora)),
+        notas:inconsistencia ? `⚠️ INCONSISTENCIA: ${inconsistencia}` : "Reservado desde portal",
+      });
+
+      setPaso("confirmado");
+    } catch(e) { setMsg("Error al reservar. Intentá de nuevo."); }
+    setSaving(false);
+  };
+
+  const dias = getSemana();
+  const gs = n => "Gs " + Math.round(n||0).toLocaleString("es-PY");
+
+  if (loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-sans)",color:"var(--color-text-secondary)"}}>Cargando...</div>;
+
+  return (
+    <div style={{minHeight:"100vh",background:"#f7f6f4",fontFamily:"var(--font-sans)"}}>
+      {/* HEADER */}
+      <div style={{background:"#fff",borderBottom:"0.5px solid #e5e5e5",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontSize:20,fontWeight:500,color:"#D85A30"}}>{cfg.nombre_club}</div>
+          <div style={{fontSize:12,color:"#888",marginTop:2}}>Reservá tu turno online</div>
+        </div>
+        <div style={{fontSize:12,color:"#888",textAlign:"right"}}>
+          <div>Tarifa: {gs(cfg.tarifa_base)}/hora</div>
+          <div style={{color:"#D85A30"}}>Pico {cfg.hora_pico_inicio}–{cfg.hora_pico_fin}hs: {gs(cfg.tarifa_pico)}</div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:700,margin:"0 auto",padding:"20px 16px"}}>
+
+        {/* PASO 1 — CALENDARIO */}
+        {paso==="calendario"&&<>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:16,fontWeight:500}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setSemOff(o=>Math.max(0,o-1))} style={{padding:"6px 14px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",cursor:"pointer",fontSize:13}}>← Ant.</button>
+              <button onClick={()=>setSemOff(o=>o+1)} style={{padding:"6px 14px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",cursor:"pointer",fontSize:13}}>Sig. →</button>
+            </div>
+          </div>
+
+          <div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",overflow:"hidden",marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:`60px repeat(7,1fr)`,gap:0}}>
+              <div style={{background:"#f8f7f5",padding:"12px 4px",borderBottom:"0.5px solid #e5e5e5"}}/>
+              {dias.map((d,i)=>{
+                const isH = fmtD(d)===hoy();
+                const isPast = fmtD(d)<hoy();
+                return <div key={i} style={{background:isH?"#FAECE7":"#f8f7f5",padding:"12px 4px",textAlign:"center",borderBottom:"0.5px solid #e5e5e5",borderLeft:"0.5px solid #e5e5e5",opacity:isPast?0.4:1}}>
+                  <div style={{fontSize:11,fontWeight:500,color:isH?"#D85A30":"#888"}}>{DIAS[d.getDay()]}</div>
+                  <div style={{fontSize:16,fontWeight:500,color:isH?"#D85A30":"#111",margin:"2px 0"}}>{d.getDate()}</div>
+                </div>;
+              })}
+              {horas.map(h=><>
+                <div key={`t${h}`} style={{background:"#f8f7f5",padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:11,color:"#999",minHeight:44,borderBottom:"0.5px solid #f0f0f0"}}>{h}:00</div>
+                {dias.map((d,di)=>{
+                  const fs = fmtD(d);
+                  const ocupado = estaOcupado(fs,h);
+                  const pasado = fs<hoy()||(fs===hoy()&&h<=new Date().getHours());
+                  const isPico = h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
+                  const selec = slotSel?.fecha===fs&&slotSel?.hora===h;
+                  let bg = "#fff";
+                  if (ocupado||pasado) bg = "#f8f7f5";
+                  else if (selec) bg = "#FAECE7";
+                  else if (isPico) bg = "rgba(216,90,48,0.04)";
+                  return <div key={`${h}-${di}`}
+                    onClick={()=>(!ocupado&&!pasado)&&seleccionarSlot(fs,h)}
+                    style={{background:bg,display:"flex",alignItems:"center",justifyContent:"center",minHeight:44,cursor:ocupado||pasado?"default":"pointer",borderLeft:"0.5px solid #f0f0f0",borderBottom:"0.5px solid #f0f0f0",transition:"background .1s"}}>
+                    {ocupado&&<div style={{width:8,height:8,borderRadius:"50%",background:"#ddd"}}/>}
+                    {!ocupado&&!pasado&&<div style={{fontSize:11,color:isPico?"#D85A30":"#ccc"}}>{isPico?"🔥":""}</div>}
+                  </div>;
+                })}
+              </>)}
+            </div>
+          </div>
+
+          <div style={{display:"flex",gap:12,fontSize:12,color:"#888",marginBottom:20}}>
+            <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:"50%",background:"#ddd",display:"inline-block"}}/> Ocupado</span>
+            <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:2,background:"rgba(216,90,48,0.15)",display:"inline-block"}}/> Horario pico</span>
+            <span>Hacé click en un horario libre para reservar</span>
+          </div>
+        </>}
+
+        {/* PASO 2 — DATOS */}
+        {paso==="datos"&&<>
+          <div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",padding:"24px",marginBottom:16}}>
+            <div style={{fontSize:16,fontWeight:500,marginBottom:4}}>Tu reserva</div>
+            <div style={{background:"#FAECE7",borderRadius:8,padding:"12px 14px",marginBottom:20}}>
+              <div style={{fontSize:14,fontWeight:500,color:"#D85A30"}}>{slotSel?.fecha} · {slotSel?.hora}:00 hs</div>
+              <div style={{fontSize:13,color:"#993C1D",marginTop:2}}>{gs(precioTurno(Number(slotSel?.hora)))} · {Number(slotSel?.hora)>=cfg.hora_pico_inicio&&Number(slotSel?.hora)<cfg.hora_pico_fin?"Horario pico":"Tarifa normal"}</div>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{fontSize:12,color:"#666",fontWeight:500,display:"block",marginBottom:5}}>Nombre completo</label>
+              <input type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={{...inp,fontSize:14}} placeholder="Tu nombre y apellido"/>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{fontSize:12,color:"#666",fontWeight:500,display:"block",marginBottom:5}}>Teléfono</label>
+              <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={{...inp,fontSize:14}} placeholder="0981-123456"/>
+            </div>
+
+            {msg&&<div style={{background:"#FCEBEB",color:"#A32D2D",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
+
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setPaso("calendario");setSlotSel(null);setMsg("");}} style={{flex:1,padding:"11px",borderRadius:10,border:"0.5px solid #ddd",background:"#fff",fontSize:14,cursor:"pointer",fontFamily:"var(--font-sans)"}}>← Volver</button>
+              <button onClick={reservar} disabled={saving} style={{flex:2,padding:"11px",background:"#D85A30",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+                {saving?"Reservando...":"Confirmar reserva"}
+              </button>
+            </div>
+          </div>
+          <div style={{fontSize:12,color:"#999",textAlign:"center"}}>El pago se realiza al llegar a la cancha.</div>
+        </>}
+
+        {/* PASO 3 — CONFIRMADO */}
+        {paso==="confirmado"&&<div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",padding:"32px 24px",textAlign:"center"}}>
+          <div style={{fontSize:40,marginBottom:16}}>✅</div>
+          <div style={{fontSize:20,fontWeight:500,marginBottom:8}}>¡Reserva confirmada!</div>
+          <div style={{fontSize:14,color:"#666",marginBottom:20}}>Tu turno fue registrado para el <strong>{slotSel?.fecha}</strong> a las <strong>{slotSel?.hora}:00hs</strong>.</div>
+          <div style={{background:"#f8f7f5",borderRadius:10,padding:"14px",fontSize:13,color:"#666",marginBottom:24,textAlign:"left"}}>
+            <div>📍 {cfg.nombre_club} — Tavapy, Alto Paraná</div>
+            <div style={{marginTop:6}}>💰 Precio: {gs(precioTurno(Number(slotSel?.hora)))} — se abona al llegar</div>
+            <div style={{marginTop:6}}>📱 Ante cualquier consulta escribinos por WhatsApp</div>
+          </div>
+          <button onClick={()=>{setPaso("calendario");setSlotSel(null);setForm({nombre:"",telefono:"",fecha:"",hora:""});}} style={{padding:"11px 24px",background:"#D85A30",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Hacer otra reserva</button>
+        </div>}
+
+      </div>
+    </div>
+  );
+};
+
+
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -177,6 +388,10 @@ const Login = ({ onLogin }) => {
 
 // ── APP PRINCIPAL ──
 export default function App() {
+  // Detectar si es portal del cliente
+  const esPortal = window.location.pathname.startsWith("/reservar");
+  if (esPortal) return <PortalCliente />;
+
   const [tab, setTab] = useState("hoy");
   const [session, setSession] = useState(() => {
     const tk = localStorage.getItem("dx_token");
