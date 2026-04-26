@@ -827,7 +827,7 @@ export default function App() {
       </Drawer>
 
       {/* DRAWER: CLIENTE */}
-      <Drawer show={drawer==="cliente"} onClose={closeD} title="Nuevo cliente">
+      <Drawer show={drawer==="cliente"} onClose={closeD} title={form.id?"Editar cliente":"Nuevo cliente"}>
         <Inp label="Nombre completo" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
         <Inp label="Teléfono" type="text" value={form.telefono||""} onChange={sf("telefono")}/>
         <R2>
@@ -837,8 +837,15 @@ export default function App() {
             <option value="avanzado">Avanzado</option>
           </Sel>
         </R2>
-        <Inp label="Notas (opcional)" type="text" value={form.notas||""} onChange={sf("notas")}/>
-        <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeD}>Cancelar</Btn><Btn v="primary" onClick={guardarCliente} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
+        <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
+        <Div/>
+        <div style={{display:"flex",gap:8,justifyContent:"space-between"}}>
+          {form.id&&<Btn v="danger" onClick={()=>setDlg({type:"eliminarCliente",id:form.id,nombre:form.nombre})}>Eliminar cliente</Btn>}
+          <div style={{display:"flex",gap:8,marginLeft:"auto"}}>
+            <Btn onClick={closeD}>Cancelar</Btn>
+            <Btn v="primary" onClick={guardarCliente} disabled={saving}>{saving?"Guardando...":form.id?"Guardar cambios":"Agregar cliente"}</Btn>
+          </div>
+        </div>
       </Drawer>
 
       {/* DRAWER: ABONO */}
