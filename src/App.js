@@ -178,9 +178,21 @@ export default function App() {
     setSaving(true);
     try {
       const saldo = t.precio-(t.sena||0);
-      await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo});
-      await db.post("caja",{descripcion:`${t.tipo==="clase"?"Clase":"Reserva"} - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id});
+      await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0});
+      if (saldo>0) {
+        await db.post("caja",{descripcion:`${t.tipo==="clase"?"Clase":"Reserva"} - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id});
+      }
       await load();setDlg(null);
+    } catch(e){alert(e.message);}
+    setSaving(false);
+  };
+
+  const registrarPago = async (t, monto) => {
+    setSaving(true);
+    try {
+      await db.patch("turnos",t.id,{sena:(t.sena||0)+monto,cobrado:true});
+      await db.post("caja",{descripcion:`Pago parcial - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto,fecha:hoy(),turno_id:t.id});
+      await load();setDlg(null);closeD();
     } catch(e){alert(e.message);}
     setSaving(false);
   };
@@ -815,12 +827,25 @@ export default function App() {
           </div>
           <Div/>
           {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-            <Btn v="success" onClick={()=>{closeD();setDlg({type:"confirmar",t:form});}}>✓ Cobrar {gs(form.precio-(form.sena||0))}</Btn>
+            <div style={{background:"var(--color-background-secondary)",borderRadius:8,padding:"10px 12px",fontSize:12,color:"var(--color-text-secondary)",marginBottom:4}}>
+              Precio: <strong style={{color:"var(--color-text-primary)"}}>{gs(form.precio)}</strong>
+              {form.sena>0&&<> · Seña cobrada: <strong style={{color:"#3B6D11"}}>{gs(form.sena)}</strong> · Saldo: <strong>{gs(form.precio-(form.sena||0))}</strong></>}
+            </div>
+            <Btn v="success" onClick={()=>{closeD();setDlg({type:"confirmar",t:form});}}>
+              ✓ Cobrar y confirmar {gs(form.precio-(form.sena||0))}
+            </Btn>
+            <Btn v="ghost" onClick={()=>{closeD();setDlg({type:"pagoParc",t:form});}}>
+              Registrar pago parcial / seña
+            </Btn>
             <Btn v="ghost" onClick={()=>{closeD();setDlg({type:"noshow",t:form});}}>Marcar como no show</Btn>
             <Btn v="danger" onClick={()=>{closeD();setDlg({type:"cancelar",t:form});}}>Cancelar turno</Btn>
           </div>}
-          {form.estado==="confirmado"&&<Btn v="success" onClick={()=>{if(form.cliente)whatsapp(form.cliente,form);}}>Enviar confirmación WhatsApp</Btn>}
+          {form.estado==="confirmado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{background:"#EAF3DE",borderRadius:8,padding:"10px 12px",fontSize:13,color:"#3B6D11",textAlign:"center"}}>✓ Turno cobrado y confirmado</div>
+            <Btn v="success" onClick={()=>{if(form.cliente)whatsapp(form.cliente,form);}}>Enviar confirmación WhatsApp</Btn>
+          </div>}
           {form.estado==="cancelado"&&<div style={{fontSize:13,color:"var(--color-text-secondary)",textAlign:"center"}}>Turno cancelado{form.sena>0?" — seña devuelta en caja":""}</div>}
+          {form.estado==="no_show"&&<div style={{background:"#FAEEDA",borderRadius:8,padding:"10px 12px",fontSize:13,color:"#854F0B",textAlign:"center"}}>No show registrado</div>}
           <Div/>
           <Btn v="ghost" onClick={()=>openD("espera",{fecha_esp:form.fecha,hora_esp:form.hora})} style={{width:"100%",textAlign:"center"}}>+ Agregar a lista de espera</Btn>
         </>}
@@ -974,6 +999,20 @@ export default function App() {
       <Dialog show={dlg?.type==="noshow"} title="Marcar como no show" msg={`${cById(dlg?.t?.cliente_id)?.nombre||"?"} no se presentó. ¿Confirmás?`} onOk={()=>noShow(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Marcar no show" okV="danger"/>
       <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}? Se borran todos sus turnos y datos.`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
       <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}? Sus turnos fijos dejarán de aparecer en la agenda.`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
+
+      {/* Dialog pago parcial con input */}
+      {dlg?.type==="pagoParc"&&<div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.55)"}}>
+        <div style={{backgroundColor:"#ffffff",borderRadius:14,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
+          <div style={{fontSize:15,fontWeight:500,marginBottom:4}}>Registrar pago parcial</div>
+          <div style={{fontSize:13,color:"#666",marginBottom:16}}>Total: {gs(dlg.t.precio)} · Ya cobrado: {gs(dlg.t.sena||0)}</div>
+          <label style={{fontSize:12,color:"#666",fontWeight:500,display:"block",marginBottom:6}}>Monto a cobrar ahora (Gs)</label>
+          <input type="number" style={{...inp,marginBottom:16}} defaultValue={dlg.t.precio-(dlg.t.sena||0)} id="monto-parcial"/>
+          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+            <Btn onClick={()=>setDlg(null)}>Cancelar</Btn>
+            <Btn v="primary" onClick={()=>{const m=Number(document.getElementById("monto-parcial").value)||0;if(m>0)registrarPago(dlg.t,m);}}>Registrar</Btn>
+          </div>
+        </div>
+      </div>}
     </div>
   );
 
