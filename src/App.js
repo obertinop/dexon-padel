@@ -177,7 +177,7 @@ export default function App() {
     const user = localStorage.getItem("dexon_user");
     return token ? { token, user: user ? JSON.parse(user) : null } : null;
   });
-  const [perfil, setPerfil] = useState(null);
+  const [perfil, setPerfil] = useState(null); // eslint-disable-line no-unused-vars
   const [data, setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],espera:[],cfg:{nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -215,6 +215,7 @@ export default function App() {
 
   if (!session) return <Login onLogin={(token,user)=>setSession({token,user})}/>;
 
+  // eslint-disable-next-line no-unused-vars
   const handleLogout = async () => {
     await auth.logout(session.token);
     localStorage.removeItem("dexon_token");
