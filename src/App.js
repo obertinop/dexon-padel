@@ -24,7 +24,7 @@ const fmtD = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const TURNO_DIAS = ["turno_domingo","turno_lunes","turno_martes","turno_miercoles","turno_jueves","turno_viernes","turno_sabado"];
+
 
 const C = { coral:"#D85A30", coralL:"#FAECE7", ok:"#3B6D11", okL:"#EAF3DE", warn:"#854F0B", warnL:"#FAEEDA", danger:"#A32D2D", dangerL:"#FCEBEB", info:"#185FA5", infoL:"#E6F1FB", purple:"#3C3489", purpleL:"#EEEDFE" };
 
