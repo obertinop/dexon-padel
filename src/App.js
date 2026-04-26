@@ -24,7 +24,7 @@ const LOGO = "/logo.png";
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const C = { coral:"#D85A30", coralL:"#FAECE7", ok:"#3B6D11", okL:"#EAF3DE", warn:"#854F0B", warnL:"#FAEEDA", danger:"#A32D2D", dangerL:"#FCEBEB", info:"#185FA5", infoL:"#E6F1FB", purple:"#3C3489", purpleL:"#EEEDFE" };
+
 const C = BRAND; // alias para compatibilidad con código existente
 const inp = { padding:"8px 12px", border:`1px solid rgba(26,47,107,0.15)`, borderRadius:8, fontSize:13, width:"100%", background:"var(--color-background-primary)", color:"var(--color-text-primary)", fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
 const card = { background:"var(--color-background-primary)", border:`1px solid rgba(26,47,107,0.1)`, borderRadius:14, padding:"16px 18px", boxShadow:"0 2px 12px rgba(8,16,31,0.06)" };
