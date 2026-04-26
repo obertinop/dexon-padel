@@ -25,9 +25,10 @@ const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const C = { coral:"#D85A30", coralL:"#FAECE7", ok:"#3B6D11", okL:"#EAF3DE", warn:"#854F0B", warnL:"#FAEEDA", danger:"#A32D2D", dangerL:"#FCEBEB", info:"#185FA5", infoL:"#E6F1FB", purple:"#3C3489", purpleL:"#EEEDFE" };
-const inp = { padding:"8px 12px", border:"0.5px solid var(--color-border-secondary)", borderRadius:8, fontSize:13, width:"100%", background:"var(--color-background-primary)", color:"var(--color-text-primary)", fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
-const card = { background:"var(--color-background-primary)", border:"0.5px solid var(--color-border-tertiary)", borderRadius:12, padding:"16px 18px" };
-const metric = { background:"var(--color-background-secondary)", borderRadius:10, padding:"14px 16px" };
+const C = BRAND; // alias para compatibilidad con código existente
+const inp = { padding:"8px 12px", border:`1px solid rgba(26,47,107,0.15)`, borderRadius:8, fontSize:13, width:"100%", background:"var(--color-background-primary)", color:"var(--color-text-primary)", fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
+const card = { background:"var(--color-background-primary)", border:`1px solid rgba(26,47,107,0.1)`, borderRadius:14, padding:"16px 18px", boxShadow:"0 2px 12px rgba(8,16,31,0.06)" };
+const metric = { background:`linear-gradient(135deg, ${BRAND.dark}08, ${BRAND.blueM}12)`, borderRadius:12, padding:"14px 16px", border:`1px solid rgba(26,47,107,0.1)` };
 const lbl = { fontSize:12, color:"var(--color-text-secondary)", fontWeight:500, marginBottom:5, display:"block" };
 
 // ── AUTH ──
@@ -87,13 +88,28 @@ const avatarFg = n => { const c=["#185FA5","#3B6D11","#993C1D","#854F0B","#3C348
 const Avatar = ({nombre,size=36}) => <div style={{width:size,height:size,borderRadius:"50%",background:avatarBg(nombre),display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.33,fontWeight:500,color:avatarFg(nombre),flexShrink:0}}>{initials(nombre)}</div>;
 
 const Badge = ({type,children}) => {
-  const m={ok:[C.okL,C.ok],warn:[C.warnL,C.warn],danger:[C.dangerL,C.danger],info:[C.infoL,C.info],coral:[C.coralL,C.coral],purple:[C.purpleL,C.purple],gray:["var(--color-background-secondary)","var(--color-text-secondary)"]};
+  const m={
+    ok:[BRAND.okL,BRAND.ok],
+    warn:[BRAND.warnL,BRAND.warn],
+    danger:[BRAND.dangerL,BRAND.danger],
+    info:[BRAND.infoL,BRAND.info],
+    coral:[BRAND.coralL,BRAND.coral],
+    purple:[BRAND.blueL,BRAND.blueM],
+    gray:["var(--color-background-secondary)","var(--color-text-secondary)"]
+  };
   const [bg,color]=m[type]||m.gray;
   return <span style={{background:bg,color,fontSize:11,padding:"3px 9px",borderRadius:100,fontWeight:500,display:"inline-block",whiteSpace:"nowrap"}}>{children}</span>;
 };
 
 const Btn = ({v="default",sm,children,...p}) => {
-  const s={primary:{background:C.coral,color:"#fff",border:"none"},ghost:{background:"var(--color-background-secondary)",color:"var(--color-text-primary)",border:"0.5px solid var(--color-border-tertiary)"},danger:{background:C.dangerL,color:C.danger,border:"0.5px solid #F09595"},success:{background:C.okL,color:C.ok,border:"0.5px solid #97C459"},default:{background:"var(--color-background-primary)",color:"var(--color-text-primary)",border:"0.5px solid var(--color-border-secondary)"}};
+  const s={
+    primary:{background:`linear-gradient(135deg, ${BRAND.coral}, ${BRAND.coralD})`,color:"#fff",border:"none",boxShadow:"0 2px 8px rgba(216,90,48,0.25)"},
+    ghost:{background:"var(--color-background-secondary)",color:"var(--color-text-primary)",border:`1px solid rgba(26,47,107,0.12)`},
+    danger:{background:BRAND.dangerL,color:BRAND.danger,border:"1px solid #F09595"},
+    success:{background:BRAND.okL,color:BRAND.ok,border:"1px solid #97C459"},
+    blue:{background:`linear-gradient(135deg, ${BRAND.blue}, ${BRAND.blueM})`,color:"#fff",border:"none",boxShadow:"0 2px 8px rgba(26,47,107,0.25)"},
+    default:{background:"var(--color-background-primary)",color:"var(--color-text-primary)",border:`1px solid rgba(26,47,107,0.15)`},
+  };
   return <button {...p} style={{padding:sm?"5px 12px":"8px 16px",borderRadius:8,fontSize:sm?12:13,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:400,...(s[v]||s.default),...p.style}}>{children}</button>;
 };
 
@@ -260,35 +276,66 @@ const PortalCliente = () => {
     </div>
     <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px"}}>
       {paso==="lista"&&<>
-        <div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",padding:"16px 18px",marginBottom:12}}>
-          <label style={{fontSize:12,color:"#888",fontWeight:500,display:"block",marginBottom:8}}>¿Qué día querés jugar?</label>
-          <input type="date" value={fecha} min={hoy()} onChange={e=>{setFecha(e.target.value);setSlotSel(null);}} style={{width:"100%",padding:"10px 12px",border:"0.5px solid #ddd",borderRadius:8,fontSize:16,color:"#111",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}}/>
+        {/* Selector fecha */}
+        <div style={{background:"#fff",borderRadius:14,border:`1px solid rgba(26,47,107,0.1)`,padding:"16px 18px",marginBottom:12,boxShadow:"0 2px 12px rgba(8,16,31,0.06)"}}>
+          <label style={{fontSize:12,color:"#666",fontWeight:600,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>¿Qué día querés jugar?</label>
+          <input type="date" value={fecha} min={hoy()} onChange={e=>{setFecha(e.target.value);setSlotSel(null);}} style={{width:"100%",padding:"11px 14px",border:`1px solid rgba(26,47,107,0.15)`,borderRadius:10,fontSize:16,color:BRAND.blue,fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",fontWeight:500}}/>
         </div>
-        {climaHoy&&<div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:16}}>
-          <div style={{fontSize:36}}>{climaIcon(climaHoy.code)}</div>
-          <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:"#111"}}>Pronóstico para ese día</div><div style={{fontSize:13,color:"#666",marginTop:2}}>{climaHoy.max}° máx · {climaHoy.min}° mín · {climaHoy.lluvia}% lluvia</div></div>
-          {climaHoy.lluvia>=60&&<Badge type="info">Posible lluvia</Badge>}
-          {climaHoy.lluvia<30&&<Badge type="ok">Buen día</Badge>}
+
+        {/* Clima */}
+        {climaHoy&&<div style={{background:"#fff",borderRadius:14,border:`1px solid rgba(26,47,107,0.1)`,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:16,boxShadow:"0 2px 12px rgba(8,16,31,0.06)"}}>
+          <div style={{fontSize:38}}>{climaIcon(climaHoy.code)}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:600,color:BRAND.blue}}>Pronóstico — Tavapy</div>
+            <div style={{fontSize:13,color:"#666",marginTop:3}}>{climaHoy.max}° máx · {climaHoy.min}° mín · {climaHoy.lluvia}% lluvia</div>
+          </div>
+          {climaHoy.lluvia>=60&&<Badge type="info">🌧 Posible lluvia</Badge>}
+          {climaHoy.lluvia<30&&<Badge type="ok">☀️ Buen día</Badge>}
         </div>}
-        <div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",overflow:"hidden",marginBottom:12}}>
-          <div style={{padding:"14px 18px",borderBottom:"0.5px solid #f0f0f0"}}><div style={{fontSize:14,fontWeight:500}}>Horarios disponibles</div><div style={{fontSize:12,color:"#888",marginTop:2}}>{horasDisp.length} de {horasArr.length} turnos libres</div></div>
-          {horasDisp.length===0&&<div style={{padding:"24px",textAlign:"center",color:"#999",fontSize:13}}>No hay horarios disponibles para este día.</div>}
-          {horasDisp.map(h=>{const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin; const selec=slotSel===h; return <div key={h} onClick={()=>setSlotSel(selec?null:h)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:"0.5px solid #f5f5f5",cursor:"pointer",background:selec?"#FAECE7":"#fff"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:40,height:40,borderRadius:10,background:selec?"#F5C4B3":isPico?"#FFF3F0":"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:500,color:selec||isPico?"#D85A30":"#444"}}>{h}:00</div>
-              <div><div style={{fontSize:14,fontWeight:500,color:"#111"}}>{h}:00 — {h+1}:00 hs</div><div style={{fontSize:12,color:"#888",marginTop:1}}>{isPico?"Horario pico 🔥":"Tarifa normal"}</div></div>
-            </div>
-            <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:500,color:isPico?"#D85A30":"#111"}}>{gs(precioTurno(h))}</div>{selec&&<div style={{fontSize:11,color:"#D85A30",marginTop:2}}>Seleccionado ✓</div>}</div>
-          </div>;})}
+
+        {/* Horarios disponibles */}
+        <div style={{background:"#fff",borderRadius:14,border:`1px solid rgba(26,47,107,0.1)`,overflow:"hidden",marginBottom:12,boxShadow:"0 2px 12px rgba(8,16,31,0.06)"}}>
+          <div style={{padding:"14px 18px",borderBottom:`1px solid rgba(26,47,107,0.07)`,background:`linear-gradient(135deg, ${BRAND.dark}06, ${BRAND.blueM}08)`}}>
+            <div style={{fontSize:14,fontWeight:600,color:BRAND.blue}}>Horarios disponibles</div>
+            <div style={{fontSize:12,color:"#888",marginTop:2}}>{horasDisp.length} de {horasArr.length} turnos libres</div>
+          </div>
+          {horasDisp.length===0&&<div style={{padding:"28px",textAlign:"center",color:"#999",fontSize:13}}>No hay horarios disponibles para este día.</div>}
+          {horasDisp.map(h=>{
+            const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
+            const selec=slotSel===h;
+            return <div key={h} onClick={()=>setSlotSel(selec?null:h)}
+              style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:`1px solid rgba(26,47,107,0.06)`,cursor:"pointer",background:selec?BRAND.blueL:"#fff",transition:"background .1s"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:44,height:44,borderRadius:12,background:selec?BRAND.blueM:isPico?`${BRAND.coral}18`:`rgba(26,47,107,0.06)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:selec?"#fff":isPico?BRAND.coral:BRAND.blue}}>
+                  {h}
+                </div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:500,color:BRAND.blue}}>{h}:00 — {h+1}:00 hs</div>
+                  <div style={{fontSize:12,color:"#888",marginTop:1}}>{isPico?"Horario pico 🔥":"Tarifa normal"}</div>
+                </div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:15,fontWeight:700,color:selec?BRAND.blueM:isPico?BRAND.coral:BRAND.blue}}>{gs(precioTurno(h))}</div>
+                {selec&&<div style={{fontSize:11,color:BRAND.blueM,marginTop:2,fontWeight:500}}>Seleccionado ✓</div>}
+              </div>
+            </div>;
+          })}
         </div>
-        {horasOcup.length>0&&<div style={{background:"#fff",borderRadius:12,border:"0.5px solid #e5e5e5",overflow:"hidden",marginBottom:16}}>
-          <div style={{padding:"12px 18px",borderBottom:"0.5px solid #f0f0f0"}}><div style={{fontSize:13,fontWeight:500,color:"#999"}}>Horarios ocupados</div></div>
-          {horasOcup.map(h=><div key={h} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",borderBottom:"0.5px solid #f5f5f5",opacity:0.5}}>
+
+        {/* Horarios ocupados */}
+        {horasOcup.length>0&&<div style={{background:"#fff",borderRadius:14,border:`1px solid rgba(26,47,107,0.08)`,overflow:"hidden",marginBottom:16,boxShadow:"0 2px 12px rgba(8,16,31,0.04)"}}>
+          <div style={{padding:"12px 18px",borderBottom:`1px solid rgba(26,47,107,0.06)`}}>
+            <div style={{fontSize:13,fontWeight:500,color:"#aaa"}}>No disponibles</div>
+          </div>
+          {horasOcup.map(h=><div key={h} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 18px",borderBottom:`1px solid rgba(26,47,107,0.05)`,opacity:0.5}}>
             <div style={{fontSize:13,color:"#999"}}>{h}:00 — {h+1}:00 hs</div>
-            <div style={{fontSize:12,color:"#bbb",background:"#f5f5f5",padding:"3px 10px",borderRadius:100}}>No disponible</div>
+            <div style={{fontSize:12,color:"#bbb",background:"#f5f5f5",padding:"3px 10px",borderRadius:100}}>Ocupado</div>
           </div>)}
         </div>}
-        {slotSel!==null&&<button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"14px",background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Reservar las {slotSel}:00 hs →</button>}
+
+        {slotSel!==null&&<button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg, ${BRAND.coral}, ${BRAND.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:`0 6px 24px rgba(216,90,48,0.35)`}}>
+          Reservar las {slotSel}:00 hs →
+        </button>}
       </>}
 
       {paso==="datos"&&<>
