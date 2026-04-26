@@ -118,7 +118,7 @@ export default function App() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,es,cf] = await Promise.all([
+      const [tu,cl,ab,pl,ins,ca,st,es,cf,at] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc"),
         db.get("clientes","order=nombre.asc"),
         db.get("abonos","order=fecha_vencimiento.asc"),
@@ -128,16 +128,17 @@ export default function App() {
         db.get("stock","order=nombre.asc"),
         db.get("espera","order=fecha.asc,hora.asc"),
         db.get("config","limit=1"),
+        db.get("abono_turnos","order=abono_id.asc"),
       ]);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],cfg:cf?.[0]||prev.cfg}));
+      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],cfg:cf?.[0]||prev.cfg,abono_turnos:at||[]}));
     } catch(e){console.error(e);}
     setLoading(false);
   },[]);
 
   useEffect(()=>{load();},[load]);
 
-  const {turnos,clientes,abonos,planes,instructores,caja,stock,espera,cfg} = data;
+  const {turnos,clientes,abonos,planes,instructores,caja,stock,espera,cfg,abono_turnos=[]} = data;
   const horas = Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
   const cById = id => clientes.find(c=>c.id===id);
   const pById = id => planes.find(p=>p.id===id);
@@ -153,13 +154,15 @@ export default function App() {
     const dias=getSemana();
     const generados=[];
     abonos.filter(a=>a.estado==="activo").forEach(ab=>{
+      const slots=abono_turnos.filter(at=>at.abono_id===ab.id);
       dias.forEach(d=>{
-        const diaProp=TURNO_DIAS[d.getDay()];
-        if (ab[diaProp]&&ab.turno_hora!==null) {
-          const fs=fmtD(d);
-          const existe=turnos.find(t=>t.fecha===fs&&t.hora===ab.turno_hora);
-          if (!existe) generados.push({fecha:fs,hora:ab.turno_hora,tipo:"abono",estado:"reservado",cliente_id:ab.cliente_id,abono_id:ab.id,_generado:true});
-        }
+        slots.forEach(slot=>{
+          if (slot.dia===d.getDay()) {
+            const fs=fmtD(d);
+            const existe=turnos.find(t=>t.fecha===fs&&t.hora===slot.hora&&t.estado!=="cancelado");
+            if (!existe) generados.push({fecha:fs,hora:slot.hora,tipo:"abono",estado:"reservado",cliente_id:ab.cliente_id,abono_id:ab.id,_generado:true});
+          }
+        });
       });
     });
     return generados;
@@ -239,15 +242,18 @@ export default function App() {
 
   const guardarAbono = async () => {
     if (!form.cliente_id||!form.plan_id||!form.fecha_inicio) return;
+    if (!form.slots||form.slots.length===0){alert("Agregá al menos un turno fijo.");return;}
     setSaving(true);
     try {
       const plan=pById(Number(form.plan_id));
       const ini=new Date(form.fecha_inicio);
       const venc=new Date(ini);venc.setMonth(venc.getMonth()+1);
       const precio=Number(form.precio_acordado||plan?.precio||0);
-      const diasObj={};
-      TURNO_DIAS.forEach((k,i)=>{diasObj[k]=(form.turno_dias||"").split(",").map(Number).includes(i);});
-      const [ab]=await db.post("abonos",{cliente_id:Number(form.cliente_id),plan_id:Number(form.plan_id),precio_acordado:precio,fecha_inicio:fmtD(ini),fecha_vencimiento:fmtD(venc),estado:"activo",turno_hora:form.turno_hora!==undefined&&form.turno_hora!==""?Number(form.turno_hora):null,...diasObj});
+      const [ab]=await db.post("abonos",{cliente_id:Number(form.cliente_id),plan_id:Number(form.plan_id),precio_acordado:precio,fecha_inicio:fmtD(ini),fecha_vencimiento:fmtD(venc),estado:"activo",turno_hora:null});
+      // Guardar slots
+      for (const slot of form.slots) {
+        await db.post("abono_turnos",{abono_id:ab.id,dia:Number(slot.dia),hora:Number(slot.hora)});
+      }
       await db.post("caja",{descripcion:`Abono ${plan?.nombre||""} - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"abono",monto:precio,fecha:fmtD(ini),abono_id:ab.id});
       await load();closeD();
     } catch(e){alert(e.message);}
@@ -514,7 +520,11 @@ export default function App() {
     const h=hoy();
     const venc=abonos.filter(a=>a.fecha_vencimiento<h&&a.estado==="activo");
     const vig=abonos.filter(a=>a.fecha_vencimiento>=h&&a.estado==="activo");
-    const diasAbono=ab=>{const dias=[];TURNO_DIAS.forEach((k,i)=>{if(ab[k])dias.push(DIAS_FULL[i]);});return dias.join(", ")||"Sin turno fijo";};
+    const diasAbono=ab=>{
+      const slots=abono_turnos.filter(at=>at.abono_id===ab.id);
+      if (slots.length===0) return "Sin turno fijo";
+      return slots.map(s=>`${DIAS_FULL[s.dia]} ${s.hora}:00`).join(" · ");
+    };
     return <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <span style={{fontSize:16,fontWeight:500}}>Abonados</span>
@@ -829,9 +839,25 @@ export default function App() {
         <Inp label="Precio acordado (Gs)" type="number" value={form.precio_acordado||""} onChange={sf("precio_acordado")}/>
         <Inp label="Fecha de inicio" type="date" value={form.fecha_inicio||""} onChange={sf("fecha_inicio")}/>
         <Div/>
-        <div style={{marginBottom:6}}><label style={lbl}>Días de turno fijo</label><DiasSel value={form.turno_dias||""} onChange={v=>setForm(f=>({...f,turno_dias:v}))}/></div>
-        <FG label="Hora del turno fijo"><select style={inp} value={form.turno_hora??""} onChange={sf("turno_hora")}><option value="">Sin hora fija</option>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG>
-        <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:16}}>El vencimiento se calcula a 30 días. El turno fijo aparece automáticamente en la agenda.</div>
+        <div style={{marginBottom:10}}>
+          <label style={lbl}>Turnos fijos semanales</label>
+          <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:10}}>
+            {form.plan_id?`Este plan incluye ${pById(Number(form.plan_id))?.horas_semana||0} hs/semana`:"Seleccioná un plan primero"}
+          </div>
+          {(form.slots||[]).map((slot,i)=>(
+            <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+              <select style={{...inp,flex:1}} value={slot.dia} onChange={e=>setForm(f=>({...f,slots:f.slots.map((s,j)=>j===i?{...s,dia:e.target.value}:s)}))}>
+                {DIAS_FULL.map((d,j)=><option key={j} value={j}>{d}</option>)}
+              </select>
+              <select style={{...inp,flex:1}} value={slot.hora} onChange={e=>setForm(f=>({...f,slots:f.slots.map((s,j)=>j===i?{...s,hora:e.target.value}:s)}))}>
+                {horas.map(h=><option key={h} value={h}>{h}:00</option>)}
+              </select>
+              <button type="button" onClick={()=>setForm(f=>({...f,slots:f.slots.filter((_,j)=>j!==i)}))} style={{border:"none",background:C.dangerL,color:C.danger,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"var(--font-sans)",fontSize:13}}>×</button>
+            </div>
+          ))}
+          <button type="button" onClick={()=>setForm(f=>({...f,slots:[...(f.slots||[]),{dia:1,hora:cfg.hora_inicio}]}))} style={{...{border:`0.5px dashed ${C.coral}`,background:"transparent",color:C.coral,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontFamily:"var(--font-sans)",fontSize:13,width:"100%",marginTop:4}}}>+ Agregar turno</button>
+        </div>
+        <div style={{fontSize:12,color:"var(--color-text-tertiary)",marginBottom:16}}>El vencimiento se calcula a 30 días. Los turnos aparecen automáticamente en la agenda.</div>
         <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeD}>Cancelar</Btn><Btn v="primary" onClick={guardarAbono} disabled={saving}>{saving?"Guardando...":"Registrar abono"}</Btn></div>
       </Drawer>
 
