@@ -236,7 +236,14 @@ export default function App() {
       if (sena>0) {
         await db.post("caja",{descripcion:`Seña - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:t.id});
       }
-      await load();closeD();
+      await load();
+      closeD();
+      // Ofrecer WhatsApp automáticamente
+      const c=cById(Number(form.cliente_id));
+      if (c?.telefono) {
+        const msg=`Hola ${c.nombre}, tu turno en ${cfg.nombre_club} está confirmado para el ${form.fecha} a las ${Number(form.hora)}:00hs. ¡Te esperamos!`;
+        setDlg({type:"wsp",cliente:c,turno:t,msg});
+      }
     } catch(e){alert(e.message);}
     setSaving(false);
   };
@@ -999,6 +1006,19 @@ export default function App() {
       <Dialog show={dlg?.type==="noshow"} title="Marcar como no show" msg={`${cById(dlg?.t?.cliente_id)?.nombre||"?"} no se presentó. ¿Confirmás?`} onOk={()=>noShow(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Marcar no show" okV="danger"/>
       <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}? Se borran todos sus turnos y datos.`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
       <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}? Sus turnos fijos dejarán de aparecer en la agenda.`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
+
+      {/* Dialog WhatsApp post-reserva */}
+      {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.55)"}}>
+        <div style={{backgroundColor:"#ffffff",borderRadius:14,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
+          <div style={{fontSize:15,fontWeight:500,marginBottom:8}}>✅ Reserva guardada</div>
+          <div style={{fontSize:13,color:"#666",marginBottom:12}}>¿Enviás la confirmación por WhatsApp a {dlg.cliente.nombre}?</div>
+          <div style={{background:"#f5f5f5",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#444",marginBottom:16,lineHeight:1.6}}>{dlg.msg}</div>
+          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+            <Btn onClick={()=>setDlg(null)}>Omitir</Btn>
+            <Btn v="success" onClick={()=>{whatsapp(dlg.cliente,dlg.turno,dlg.msg);setDlg(null);}}>Enviar WhatsApp</Btn>
+          </div>
+        </div>
+      </div>}
 
       {/* Dialog pago parcial con input */}
       {dlg?.type==="pagoParc"&&<div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.55)"}}>
