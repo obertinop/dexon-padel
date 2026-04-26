@@ -3,19 +3,45 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const URL = "https://wirsrkuxzltedqdkrdak.supabase.co";
 const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpcnNya3V4emx0ZWRxZGtyZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjEzMjMsImV4cCI6MjA5MjYzNzMyM30.BjxD2R5bgBUHyalpwFhRzsGEzOnCx4PH9Sb65d609VI";
 
-const q = async (path, opts = {}) => {
+// Auth helpers
+const auth = {
+  login: async (email, password) => {
+    const r = await fetch(`${URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || "Error al iniciar sesión");
+    return d;
+  },
+  logout: async (token) => {
+    await fetch(`${URL}/auth/v1/logout`, {
+      method: "POST",
+      headers: { apikey: KEY, Authorization: `Bearer ${token}` },
+    });
+  },
+  getUser: async (token) => {
+    const r = await fetch(`${URL}/auth/v1/user`, {
+      headers: { apikey: KEY, Authorization: `Bearer ${token}` },
+    });
+    return r.ok ? await r.json() : null;
+  },
+};
+
+const q = async (path, opts = {}, token = null) => {
   const r = await fetch(`${URL}/rest/v1/${path}`, {
-    headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json", ...(opts.prefer ? { Prefer: opts.prefer } : {}), ...opts.headers },
+    headers: { apikey: KEY, Authorization: `Bearer ${token || KEY}`, "Content-Type": "application/json", ...(opts.prefer ? { Prefer: opts.prefer } : {}), ...opts.headers },
     ...opts,
   });
   if (!r.ok) throw new Error(await r.text());
   const t = await r.text(); return t ? JSON.parse(t) : null;
 };
 const db = {
-  get: (t, p = "") => q(`${t}?${p}`),
-  post: (t, b) => q(t, { method: "POST", body: JSON.stringify(b), prefer: "return=representation" }),
-  patch: (t, id, b) => q(`${t}?id=eq.${id}`, { method: "PATCH", body: JSON.stringify(b), prefer: "return=representation" }),
-  del: (t, id) => q(`${t}?id=eq.${id}`, { method: "DELETE" }),
+  get: (t, p = "", token) => q(`${t}?${p}`, {}, token),
+  post: (t, b, token) => q(t, { method: "POST", body: JSON.stringify(b), prefer: "return=representation" }, token),
+  patch: (t, id, b, token) => q(`${t}?id=eq.${id}`, { method: "PATCH", body: JSON.stringify(b), prefer: "return=representation" }, token),
+  del: (t, id, token) => q(`${t}?id=eq.${id}`, { method: "DELETE" }, token),
 };
 
 const gs = n => "Gs " + Math.round(n || 0).toLocaleString("es-PY");
@@ -103,8 +129,55 @@ const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="danger"})
   </div>;
 };
 
+// ── PANTALLA LOGIN ──
+const Login = ({onLogin}) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async () => {
+    if (!email||!password) return;
+    setLoading(true); setError("");
+    try {
+      const d = await auth.login(email, password);
+      localStorage.setItem("dexon_token", d.access_token);
+      localStorage.setItem("dexon_user", JSON.stringify(d.user));
+      onLogin(d.access_token, d.user);
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f8f7f5"}}>
+    <div style={{width:360,background:"#fff",borderRadius:16,padding:"36px 32px",boxShadow:"0 8px 40px rgba(0,0,0,0.1)",border:"1px solid #eee"}}>
+      <div style={{textAlign:"center",marginBottom:28}}>
+        <div style={{fontSize:28,fontWeight:700,color:C.coral,letterSpacing:-1}}>DEXON</div>
+        <div style={{fontSize:13,color:"#888",marginTop:4}}>Sistema de gestión</div>
+      </div>
+      {error&&<div style={{background:C.dangerL,color:C.danger,borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16}}>{error}</div>}
+      <div style={{marginBottom:14}}>
+        <label style={{fontSize:12,color:"#666",fontWeight:500,display:"block",marginBottom:5}}>Email</label>
+        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={{...inp,fontSize:14}} placeholder="tu@email.com"/>
+      </div>
+      <div style={{marginBottom:20}}>
+        <label style={{fontSize:12,color:"#666",fontWeight:500,display:"block",marginBottom:5}}>Contraseña</label>
+        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={{...inp,fontSize:14}} placeholder="••••••••"/>
+      </div>
+      <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"11px",background:C.coral,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        {loading?"Iniciando sesión...":"Iniciar sesión"}
+      </button>
+    </div>
+  </div>;
+};
+
 export default function App() {
   const [tab, setTab] = useState("hoy");
+  const [session, setSession] = useState(() => {
+    const token = localStorage.getItem("dexon_token");
+    const user = localStorage.getItem("dexon_user");
+    return token ? { token, user: user ? JSON.parse(user) : null } : null;
+  });
+  const [perfil, setPerfil] = useState(null);
   const [data, setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],espera:[],cfg:{nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -115,27 +188,39 @@ export default function App() {
   const [busq, setBusq] = useState("");
 
   const load = useCallback(async () => {
+    if (!session?.token) return;
     setLoading(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,es,cf,at] = await Promise.all([
-        db.get("turnos","order=fecha.asc,hora.asc"),
-        db.get("clientes","order=nombre.asc"),
-        db.get("abonos","order=fecha_vencimiento.asc"),
-        db.get("planes","order=precio.asc"),
-        db.get("instructores","order=nombre.asc"),
-        db.get("caja","order=fecha.desc,id.desc"),
-        db.get("stock","order=nombre.asc"),
-        db.get("espera","order=fecha.asc,hora.asc"),
-        db.get("config","limit=1"),
-        db.get("abono_turnos","order=abono_id.asc"),
+      const [tu,cl,ab,pl,ins,ca,st,es,cf,at,pf] = await Promise.all([
+        db.get("turnos","order=fecha.asc,hora.asc",session.token),
+        db.get("clientes","order=nombre.asc",session.token),
+        db.get("abonos","order=fecha_vencimiento.asc",session.token),
+        db.get("planes","order=precio.asc",session.token),
+        db.get("instructores","order=nombre.asc",session.token),
+        db.get("caja","order=fecha.desc,id.desc",session.token),
+        db.get("stock","order=nombre.asc",session.token),
+        db.get("espera","order=fecha.asc,hora.asc",session.token),
+        db.get("config","limit=1",session.token),
+        db.get("abono_turnos","order=abono_id.asc",session.token),
+        db.get("perfiles",`id=eq.${session.user?.id}`,session.token),
       ]);
       // eslint-disable-next-line react-hooks/exhaustive-deps
       setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],cfg:cf?.[0]||prev.cfg,abono_turnos:at||[]}));
+      if (pf?.[0]) setPerfil(pf[0]);
     } catch(e){console.error(e);}
     setLoading(false);
-  },[]);
+  },[session]);
 
-  useEffect(()=>{load();},[load]);
+  useEffect(()=>{if(session) load();},[load,session]);
+
+  if (!session) return <Login onLogin={(token,user)=>setSession({token,user})}/>;
+
+  const handleLogout = async () => {
+    await auth.logout(session.token);
+    localStorage.removeItem("dexon_token");
+    localStorage.removeItem("dexon_user");
+    setSession(null);
+  };
 
   const {turnos,clientes,abonos,planes,instructores,caja,stock,espera,cfg,abono_turnos=[]} = data;
   const horas = Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
