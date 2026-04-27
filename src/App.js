@@ -277,7 +277,7 @@ const PortalCliente = () => {
 
   const inpPortal = {width:"100%",padding:"12px 14px",border:"1px solid #1E3A7A",borderRadius:10,fontSize:15,color:"#fff",background:"#0D1830",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"};
 
-  return <div style={{minHeight:"100vh",background:"#081020",fontFamily:"var(--font-sans)"}}>
+  return <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)"}}>
     {/* HEADER */}
     <div style={{background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 4px 24px rgba(0,0,0,0.4)"}}>
       <div style={{maxWidth:480,margin:"0 auto",padding:"18px 20px"}}>
