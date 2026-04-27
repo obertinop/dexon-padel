@@ -406,27 +406,7 @@ const PortalCliente = () => {
     window.open(`https://wa.me/${ADMIN_TEL}?text=${msg}`,"_blank");
   };
 
-  const enviarPago = async () => {
-    if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
-    if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
-    setSaving(true);setMsg("");
-    try {
-      const {match,cliente}=buscarCliente();
-      let clienteId=cliente?.id;
-      let nota="Comprobante enviado vía WhatsApp - Pendiente confirmación";
-      // Si es cliente nuevo, crear primero
-      if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
-      else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
-      else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
-      
-      // Guardar turnos con estado pendiente_pago
-      for(const h of slotsSel){
-        await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota},SUPA_KEY);
-      }
-      setPaso("confirmado");
-    } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
-    setSaving(false);
-  };
+  // enviarPago ya no se usa - la lógica está en el botón de WhatsApp
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,color:"rgba(255,255,255,0.5)",fontFamily:"var(--font-sans)"}}>Cargando...</div>;
 
@@ -577,34 +557,52 @@ const PortalCliente = () => {
 
           {/* Instrucciones */}
           <div style={{background:"#0D2E1A",borderRadius:12,padding:"14px 16px",marginBottom:20,border:"1px solid #1A5A30"}}>
-            <div style={{fontSize:12,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>ℹ️ Pasos siguientes</div>
+            <div style={{fontSize:12,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>ℹ️ Cómo funciona</div>
             <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>
-              1. Realizá la transferencia<br/>
-              2. Enviá comprobante por WhatsApp<br/>
-              3. Recibirás confirmación
+              1. Realizá la transferencia al alias <strong>80168039-5</strong><br/>
+              2. Clickea el botón verde de WhatsApp<br/>
+              3. Enviá la foto del comprobante<br/>
+              4. Recibirás confirmación
             </div>
           </div>
 
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
           
-          <button onClick={()=>{
-            const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
-            const msgWsp = encodeURIComponent(
-              `🏀 *COMPROBANTE DE PAGO*\n\n` +
-              `Nombre: *${form.nombre}*\n` +
-              `Teléfono: *${form.telefono}*\n\n` +
-              `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
-              `⏰ Horarios: *${horasStr}hs*\n` +
-              `💰 Total: *${gs(totalSel)}*\n\n` +
-              `Adjunto: Foto de la transferencia al alias 80168039-5`
-            );
-            window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
-          }} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",marginBottom:10}}>
-            📱 Enviar comprobante por WhatsApp
-          </button>
-
-          <button onClick={enviarPago} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-            {saving?"Confirmando...":"✓ Ya envié comprobante, continuar →"}
+          <button onClick={async ()=>{
+            if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
+            if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
+            setSaving(true);setMsg("");
+            try {
+              const {match,cliente}=buscarCliente();
+              let clienteId=cliente?.id;
+              let nota="Comprobante enviado vía WhatsApp - Pendiente confirmación";
+              // Si es cliente nuevo, crear primero
+              if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
+              else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
+              else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
+              
+              // Guardar turnos con estado pendiente_pago
+              for(const h of slotsSel){
+                await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota},SUPA_KEY);
+              }
+              
+              // Abrir WhatsApp después de guardar
+              const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
+              const msgWsp = encodeURIComponent(
+                `🏀 *COMPROBANTE DE PAGO*\n\n` +
+                `Nombre: *${form.nombre}*\n` +
+                `Teléfono: *${form.telefono}*\n\n` +
+                `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
+                `⏰ Horarios: *${horasStr}hs*\n` +
+                `💰 Total: *${gs(totalSel)}*\n\n` +
+                `Adjunto: Foto de la transferencia al alias 80168039-5`
+              );
+              window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
+              setPaso("confirmado");
+            } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
+            setSaving(false);
+          }} disabled={saving} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",marginBottom:10}}>
+            {saving?"Guardando y abriendo WhatsApp...":"📱 Enviar comprobante por WhatsApp"}
           </button>
         </div>
       </>}
