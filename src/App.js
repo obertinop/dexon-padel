@@ -655,6 +655,8 @@ export default function App() {
   const [dlg,setDlg] = useState(null);
   const [form,setForm] = useState({});
   const [msg,setMsg] = useState("");
+  const [reprogramFecha,setReprogramFecha] = useState("");
+  const [reprogramHora,setReprogramHora] = useState("");
   const [clima,setClima] = useState(null);
   const tk = session?.token;
 
@@ -1181,24 +1183,26 @@ export default function App() {
         <div style={{fontSize:12,color:"#7ADDA8",fontWeight:600,marginBottom:12,textTransform:"uppercase"}}>🔄 Reprogramar turno</div>
         <R2 isMobile={isMobile}>
           <FG label="Nueva fecha">
-            <input type="date" value={form.fecha||""} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))} style={inp}/>
+            <input type="date" value={reprogramFecha||form.fecha||""} onChange={e=>setReprogramFecha(e.target.value)} style={inp}/>
           </FG>
           <FG label="Nueva hora">
-            <select style={inp} value={form.hora??""} onChange={e=>setForm(f=>({...f,hora:Number(e.target.value)}))}>
+            <select style={inp} value={reprogramHora||form.hora??""} onChange={e=>setReprogramHora(Number(e.target.value))}>
               {horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}
             </select>
           </FG>
         </R2>
         <Btn v="primary" onClick={async()=>{
-          if(!form.id||!form.fecha||form.hora===undefined){setMsg("Completá todos los datos");return;}
-          const existe = turnos.find(t=>t.id!==form.id&&t.fecha===form.fecha&&t.hora===Number(form.hora)&&t.estado!=="cancelado");
+          const nuevaFecha = reprogramFecha||form.fecha;
+          const nuevaHora = reprogramHora||form.hora;
+          if(!form.id||!nuevaFecha||nuevaHora===undefined||nuevaHora===""){setMsg("Completá todos los datos");return;}
+          const existe = turnos.find(t=>t.id!==form.id&&t.fecha===nuevaFecha&&t.hora===Number(nuevaHora)&&t.estado!=="cancelado");
           if(existe){setMsg("❌ Ese horario ya está ocupado");return;}
           setSaving(true);
           try {
-            await db.put("turnos",form.id,{fecha:form.fecha,hora:Number(form.hora)},tk);
+            await db.put("turnos",form.id,{fecha:nuevaFecha,hora:Number(nuevaHora)},tk);
             await load();
             setMsg("✓ Turno reprogramado");
-            setTimeout(()=>{closeM();setMsg("");},800);
+            setTimeout(()=>{closeM();setMsg("");setReprogramFecha("");setReprogramHora("");},800);
           } catch(e){console.error(e);setMsg("Error al reprogramar");}
           setSaving(false);
         }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"✓ Reprogramar"}</Btn>
