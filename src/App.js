@@ -775,10 +775,21 @@ export default function App() {
     return ()=>clearInterval(interval);
   },[tk,load]);
 
-  // Solicitar permiso para Web Notifications
+  // Solicitar permiso para Web Notifications al cargar
   useEffect(()=>{
-    if("Notification" in window && Notification.permission==="default"){
-      Notification.requestPermission();
+    if("Notification" in window){
+      if(Notification.permission==="default"){
+        Notification.requestPermission().then(permission=>{
+          if(permission==="granted"){
+            // Notificación de confirmación
+            new Notification("DEXON - Notificaciones Activadas",{
+              body:"Recibirás notificaciones cuando haya nuevas reservas",
+              icon:"/logo192.png",
+              tag:"dexon-perms"
+            });
+          }
+        });
+      }
     }
   },[]);
 
