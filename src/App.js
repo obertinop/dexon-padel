@@ -1178,7 +1178,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Reagendar */}
+      {/* Reprogramar */}
       {form.estado!=="cancelado"&&<div style={{...card,background:"#0D2A1A",border:"1px solid #1A5A30",marginBottom:14}}>
         <div style={{fontSize:12,color:"#7ADDA8",fontWeight:600,marginBottom:12,textTransform:"uppercase"}}>🔄 Reprogramar turno</div>
         <R2 isMobile={isMobile}>
@@ -1186,15 +1186,15 @@ export default function App() {
             <input type="date" value={reprogramFecha||form.fecha||""} onChange={e=>setReprogramFecha(e.target.value)} style={inp}/>
           </FG>
           <FG label="Nueva hora">
-            <select style={inp} value={reprogramHora!===""?reprogramHora:form.hora||""} onChange={e=>setReprogramHora(Number(e.target.value))}>
-              {horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}
+            <select style={inp} value={String(reprogramHora||form.hora||"")} onChange={e=>setReprogramHora(e.target.value)}>
+              {horas.map(h=><option key={h} value={String(h)}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}
             </select>
           </FG>
         </R2>
         <Btn v="primary" onClick={async()=>{
           const nuevaFecha = reprogramFecha||form.fecha;
           const nuevaHora = reprogramHora||form.hora;
-          if(!form.id||!nuevaFecha||nuevaHora===undefined||nuevaHora===""){setMsg("Completá todos los datos");return;}
+          if(!form.id||!nuevaFecha||!nuevaHora){setMsg("Completá todos los datos");return;}
           const existe = turnos.find(t=>t.id!==form.id&&t.fecha===nuevaFecha&&t.hora===Number(nuevaHora)&&t.estado!=="cancelado");
           if(existe){setMsg("❌ Ese horario ya está ocupado");return;}
           setSaving(true);
