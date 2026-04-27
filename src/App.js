@@ -389,11 +389,11 @@ const PortalCliente = () => {
       const {match,cliente}=buscarCliente();
       let clienteId=cliente?.id;
       let nota="Pago realizado desde portal";
-      if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"});clienteId=c.id;}
+      if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
       else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - Pago realizado`;clienteId=cliente.id;}
       else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - Pago realizado`;clienteId=cliente.id;}
       for(const h of slotsSel){
-        await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"reservado",cliente_id:clienteId,precio:precioH(h),sena:precioH(h),saldo:0,notas:nota});
+        await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"reservado",cliente_id:clienteId,precio:precioH(h),sena:precioH(h),saldo:0,notas:nota},SUPA_KEY);
       }
       setPaso("confirmado");
     } catch(e){setMsg("Error al confirmar. Intentá de nuevo.");}
