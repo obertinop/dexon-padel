@@ -181,7 +181,6 @@ const Login = ({onLogin}) => {
   const [pw,setPw]=useState("");
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState("");
-  const [showNotifPrompt,setShowNotifPrompt]=useState(false);
   
   const doLogin = async () => {
     if(!email||!pw) return;
@@ -190,32 +189,9 @@ const Login = ({onLogin}) => {
       const d = await auth.login(email,pw);
       localStorage.setItem("dx_token",d.access_token);
       localStorage.setItem("dx_user",JSON.stringify({id:d.user.id,email:d.user.email}));
-      
-      // Mostrar popup de notificaciones después de login exitoso
-      setShowNotifPrompt(true);
-      
-      // Luego de 1 segundo, hacer login
-      setTimeout(()=>{
-        onLogin(d.access_token,d.user);
-      },500);
+      onLogin(d.access_token,d.user);
     } catch(e) { setErr(e.message); }
     setLoading(false);
-  };
-  
-  const requestNotifications = async () => {
-    if("Notification" in window){
-      try {
-        const permission = await Notification.requestPermission();
-        if(permission==="granted"){
-          // Mostrar notificación de prueba
-          new Notification("🔔 Notificaciones activadas",{
-            body:"Recibirás alertas cuando haya nuevas reservas",
-            icon:"/logo192.png"
-          });
-        }
-      } catch(e){console.error(e);}
-    }
-    setShowNotifPrompt(false);
   };
   
   return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`}}>
@@ -237,18 +213,6 @@ const Login = ({onLogin}) => {
         {loading?"Ingresando...":"Ingresar"}
       </button>
     </div>
-    
-    {/* Popup de notificaciones */}
-    {showNotifPrompt&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
-      <div style={{backgroundColor:"#111E40",borderRadius:14,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid #1E3070"}}>
-        <div style={{fontSize:18,fontWeight:600,marginBottom:12,color:"#fff"}}>🔔 Activa notificaciones</div>
-        <div style={{fontSize:14,color:"#9AAAD4",marginBottom:20,lineHeight:1.6}}>Recibirás alertas instantáneas cuando haya nuevas reservas para que confirmes el pago.</div>
-        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-          <button onClick={()=>setShowNotifPrompt(false)} style={{padding:"10px 16px",background:"transparent",color:"#6677AA",border:"1px solid #1E3070",borderRadius:8,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Después</button>
-          <button onClick={requestNotifications} style={{padding:"10px 16px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Activar</button>
-        </div>
-      </div>
-    </div>}
   </div>;
 };
 
@@ -678,8 +642,6 @@ export default function App() {
   const [cajaFechaFin,setCajaFechaFin] = useState("");
   const [cajaTipo,setCajaTipo] = useState("");
   const [isRefreshing,setIsRefreshing] = useState(false);
-  const [lastTurnoCount,setLastTurnoCount] = useState(0);
-  const [notification,setNotification] = useState(null);
   const [session,setSession] = useState(()=>{
     const tk=localStorage.getItem("dx_token");
     const u=localStorage.getItem("dx_user");
@@ -694,35 +656,6 @@ export default function App() {
   const [form,setForm] = useState({});
   const [clima,setClima] = useState(null);
   const tk = session?.token;
-
-  const playNotificationSound = () => {
-    try {
-      // Crear sonido de notificación con Web Audio API (dos beeps)
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      const playBeep = (frequency, duration, delay) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = frequency;
-        oscillator.type = 'sine';
-        
-        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + delay);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + duration);
-        
-        oscillator.start(audioContext.currentTime + delay);
-        oscillator.stop(audioContext.currentTime + delay + duration);
-      };
-      
-      // Beep 1: 800Hz por 0.2s
-      playBeep(800, 0.2, 0);
-      // Beep 2: 1000Hz por 0.2s (después de un pequeño gap)
-      playBeep(1000, 0.2, 0.25);
-    } catch(e){console.log("Sonido no disponible");}
-  };
 
   const load = useCallback(async()=>{
     if(!tk) return;
@@ -742,45 +675,6 @@ export default function App() {
       ]);
       
       const nuevosTurnos = tu||[];
-      
-      // Detectar nuevos turnos con estado pendiente_pago
-      if(lastTurnoCount>0 && nuevosTurnos.length>lastTurnoCount){
-        const nuevosTurnosRecientes = nuevosTurnos.filter(t=>t.estado==="pendiente_pago").slice(-5);
-        if(nuevosTurnosRecientes.length>0){
-          const c = (cl||[]).find(cliente=>cliente.id===nuevosTurnosRecientes[0].cliente_id);
-          const hora = nuevosTurnosRecientes[0].hora;
-          const fecha = nuevosTurnosRecientes[0].fecha;
-          
-          // Reproducir sonido
-          playNotificationSound();
-          
-          // Mostrar notificación
-          const msg = `🔔 Nueva reserva\n${c?.nombre||"Cliente"} - ${hora}:00hs`;
-          setNotification(msg);
-          setTimeout(()=>setNotification(null),5000);
-          
-          // Web Notification API - notificación del sistema operativo CON SONIDO
-          if("Notification" in window && Notification.permission==="granted"){
-            // Reproducir sonido ANTES de mostrar la notificación
-            playNotificationSound();
-            
-            const notif = new Notification("🔔 NUEVA RESERVA - DEXON",{
-              body:`${c?.nombre||"Cliente"}\n📅 ${fecha} a las ${hora}:00hs\n💰 ${gs(nuevosTurnosRecientes[0].precio)}`,
-              icon:"/logo192.png",
-              badge:"/logo192.png",
-              tag:"dexon-reserva",
-              requireInteraction:true // Mantiene la notificación hasta que el usuario la cierre
-            });
-            
-            // Click en la notificación abre la ventana
-            notif.onclick = () => {
-              window.focus();
-              setTab("pendientes");
-            };
-          }
-        }
-      }
-      
       setLastTurnoCount(nuevosTurnos.length);
       setData(prev=>({turnos:nuevosTurnos,clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],cfg:cf?.[0]||prev.cfg}));
     } catch(e){console.error(e);}
@@ -813,23 +707,6 @@ export default function App() {
     return ()=>clearInterval(interval);
   },[tk,load]);
 
-  // Solicitar permiso para Web Notifications al cargar
-  useEffect(()=>{
-    if("Notification" in window){
-      if(Notification.permission==="default"){
-        Notification.requestPermission().then(permission=>{
-          if(permission==="granted"){
-            // Notificación de confirmación
-            new Notification("DEXON - Notificaciones Activadas",{
-              body:"Recibirás notificaciones cuando haya nuevas reservas",
-              icon:"/logo192.png",
-              tag:"dexon-perms"
-            });
-          }
-        });
-      }
-    }
-  },[]);
 
   const doLogout = async()=>{
     if(session?.token) await auth.logout(session.token);
@@ -1257,17 +1134,6 @@ export default function App() {
       )}
     </div>
 
-    {/* Notificación visual */}
-    {notification&&<div style={{position:"fixed",top:80,right:12,background:"linear-gradient(135deg,#0D2A1A,#1A5A30)",borderRadius:12,border:"1px solid #7ADDA8",padding:"16px 18px",boxShadow:"0 8px 24px rgba(0,0,0,0.4)",zIndex:9998,maxWidth:320,animation:"slideIn 0.3s ease-out",fontFamily:"var(--font-sans)"}}>
-      <div style={{fontSize:13,color:"#fff",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{notification}</div>
-    </div>}
-    
-    <style>{`
-      @keyframes slideIn {
-        from { transform: translateX(400px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-    `}</style>
 
     {/* MODALES */}
     <Modal show={modal==="turno"} onClose={closeM} title="Nueva reserva">
