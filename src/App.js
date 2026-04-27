@@ -720,6 +720,16 @@ export default function App() {
   if(!session) return <Login onLogin={(token,user)=>setSession({token,user})}/>;
 
   const {turnos,clientes,abonos,planes,instructores,caja,stock,abono_turnos,cfg} = data;
+  const getHorasForDay = (dayOfWeek)=>{
+    if(!cfg.horarios_por_dia) return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
+    try {
+      const hor = JSON.parse(cfg.horarios_por_dia);
+      const h = hor[dayOfWeek]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
+      return Array.from({length:h.fin-h.inicio},(_,i)=>h.inicio+i);
+    } catch {
+      return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
+    }
+  };
   const horas = Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
   const cById = id=>clientes.find(c=>c.id===id);
   const pById = id=>planes.find(p=>p.id===id);
@@ -1109,6 +1119,25 @@ export default function App() {
         <div key={i}><div style={{fontSize:12,color:TX.s,marginBottom:4}}>{r.l}</div><div style={{fontSize:15,fontWeight:500,color:TX.p}}>{r.v}</div></div>
       )}
     </div>
+    
+    {/* Horarios por día */}
+    <div style={{...card,marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontWeight:500,fontSize:14,color:TX.p}}>⏰ Horarios por día</div>
+        <Btn sm v="primary" onClick={()=>openM("horarios",{})}>Editar</Btn>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {DIAS_FULL.map((dia,i)=>{
+          const horarios = cfg.horarios_por_dia?JSON.parse(cfg.horarios_por_dia||"{}"):{}||{};
+          const h = horarios[i]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
+          return <div key={i} style={{padding:10,background:"#0D1830",borderRadius:8,borderLeft:`3px solid ${BR.coral}`,fontSize:12}}>
+            <div style={{fontWeight:500,color:TX.p,marginBottom:4}}>{dia}</div>
+            <div style={{color:TX.s}}>{h.inicio}:00 - {h.fin}:00</div>
+          </div>;
+        })}
+      </div>
+    </div>
+    
     {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:500,marginBottom:12,fontSize:14,color:TX.p}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><span style={{fontWeight:500,color:TX.p}}>{i.nombre}</span><span style={{color:TX.s}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
     <div style={card}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
   </div>;
@@ -1299,6 +1328,51 @@ export default function App() {
       <R2 isMobile={isMobile}><Sel label="Tipo" value={form.tipo_mov||"salida"} onChange={sf("tipo_mov")}><option value="entrada">Entrada</option><option value="salida">Salida / Venta</option></Sel><Inp label="Cantidad" type="number" value={form.cantidad_mov||""} onChange={sf("cantidad_mov")}/></R2>
       <Inp label="Motivo" type="text" value={form.motivo||""} onChange={sf("motivo")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={moverStock} disabled={saving}>{saving?"Guardando...":"Confirmar"}</Btn></div>
+    </Modal>
+
+    <Modal show={modal==="horarios"} onClose={closeM} title="⏰ Horarios por día">
+      <div style={{marginBottom:16}}>
+        {DIAS_FULL.map((dia,i)=>{
+          const horarios = form.horarios_por_dia?JSON.parse(form.horarios_por_dia||"{}"):{}||{};
+          const h = horarios[i]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
+          return <div key={i} style={{marginBottom:14,padding:12,background:"#0D1830",borderRadius:8,border:`1px solid #1E3070`}}>
+            <div style={{fontSize:13,fontWeight:500,color:TX.p,marginBottom:8}}>{dia}</div>
+            <R2 isMobile={isMobile}>
+              <FG label="Inicio">
+                <select style={inp} value={h.inicio??""} onChange={e=>{
+                  const hor = JSON.parse(form.horarios_por_dia||"{}");
+                  hor[i]={...h,inicio:Number(e.target.value)};
+                  setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
+                }}>
+                  {Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}
+                </select>
+              </FG>
+              <FG label="Fin">
+                <select style={inp} value={h.fin??""} onChange={e=>{
+                  const hor = JSON.parse(form.horarios_por_dia||"{}");
+                  hor[i]={...h,fin:Number(e.target.value)};
+                  setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
+                }}>
+                  {Array.from({length:25},(_,i)=><option key={i} value={i}>{i}:00</option>)}
+                </select>
+              </FG>
+            </R2>
+          </div>;
+        })}
+      </div>
+      <Div/>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <Btn onClick={closeM}>Cancelar</Btn>
+        <Btn v="primary" onClick={async()=>{
+          setSaving(true);
+          try {
+            await db.patch("config",form.id,{horarios_por_dia:form.horarios_por_dia},tk);
+            await load();
+            closeM();
+          } catch(e){console.error(e);alert("Error");}
+          setSaving(false);
+        }} disabled={saving}>{saving?"Guardando...":"Guardar horarios"}</Btn>
+      </div>
     </Modal>
 
     <Modal show={modal==="config"} onClose={closeM} title="Configuración">
