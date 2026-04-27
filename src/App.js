@@ -1191,6 +1191,17 @@ export default function App() {
             </select>
           </FG>
         </R2>
+        <FG label="Motivo de reprogramación">
+          <select style={inp} value={form.motivo_reprog||""} onChange={e=>setForm(f=>({...f,motivo_reprog:e.target.value}))}>
+            <option value="">Seleccionar motivo...</option>
+            <option value="cliente_solicito">Cliente lo solicitó</option>
+            <option value="conflicto_cancha">Conflicto de cancha</option>
+            <option value="instructor_no_disponible">Instructor no disponible</option>
+            <option value="mantenimiento">Mantenimiento de cancha</option>
+            <option value="clima">Condiciones climáticas</option>
+            <option value="otro">Otro</option>
+          </select>
+        </FG>
         <Btn v="primary" onClick={async()=>{
           const nuevaFecha = reprogramFecha||form.fecha;
           const nuevaHora = reprogramHora||form.hora;
@@ -1199,13 +1210,22 @@ export default function App() {
           if(existe){setMsg("❌ Ese horario ya está ocupado");return;}
           setSaving(true);
           try {
-            await db.patch("turnos",form.id,{fecha:nuevaFecha,hora:Number(nuevaHora)},tk);
+            await db.patch("turnos",form.id,{fecha:nuevaFecha,hora:Number(nuevaHora),motivo_reprog:form.motivo_reprog||""},tk);
+            
+            // Enviar WhatsApp si el cliente tiene teléfono
+            if(form.cliente?.telefono){
+              const motivos = {cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};
+              const razon = motivos[form.motivo_reprog]||"";
+              const msg_wsp = `¡Hola ${form.cliente.nombre}! Tu turno ha sido reprogramado ${razon}.\n\n📅 Nuevo turno:\nFecha: ${nuevaFecha}\nHora: ${nuevaHora}:00\n\n¿Alguna duda? Nos contactamos 😊`;
+              enviarWsp(form.cliente.telefono,msg_wsp);
+            }
+            
             await load();
             setMsg("✓ Turno reprogramado");
             setTimeout(()=>{closeM();setMsg("");setReprogramFecha("");setReprogramHora("");},800);
           } catch(e){console.error(e);setMsg("Error al reprogramar");}
           setSaving(false);
-        }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"✓ Reprogramar"}</Btn>
+        }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"✓ Reprogramar y avisar"}</Btn>
       </div>}
       
       {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
