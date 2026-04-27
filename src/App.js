@@ -407,38 +407,22 @@ const PortalCliente = () => {
   };
 
   const enviarPago = async () => {
-    if (!comprobante) {
-      setMsg("Sube una foto del comprobante de transferencia");
-      return;
-    }
-    setSaving(true);
-    setMsg("");
+    if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
+    if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
+    setSaving(true);setMsg("");
     try {
-      // Convertir imagen a base64
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result;
-        const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
-        const msgPago = encodeURIComponent(
-          `🏀 *PAGO DE RESERVA*\n\n` +
-          `Nombre: *${form.nombre}*\n` +
-          `Teléfono: *${form.telefono}*\n\n` +
-          `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
-          `⏰ Horarios: *${horasStr}hs*\n` +
-          `💰 Total: *${gs(totalSel)}*\n\n` +
-          `✅ Comprobante adjunto\n\n` +
-          `Por favor confirmar cuando verifiques el pago.`
-        );
-        window.open(`https://wa.me/${ADMIN_TEL}?text=${msgPago}`, "_blank");
-        
-        // Guardar reserva después de enviar
-        setTimeout(() => reservar(), 500);
-      };
-      reader.readAsDataURL(comprobante);
-    } catch(e) {
-      setMsg("Error al procesar el comprobante");
-      setSaving(false);
-    }
+      const {match,cliente}=buscarCliente();
+      let clienteId=cliente?.id;
+      let nota="Pago realizado desde portal";
+      if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
+      else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - Pago realizado`;clienteId=cliente.id;}
+      else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - Pago realizado`;clienteId=cliente.id;}
+      for(const h of slotsSel){
+        await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"reservado",cliente_id:clienteId,precio:precioH(h),sena:precioH(h),saldo:0,notas:nota},SUPA_KEY);
+      }
+      setPaso("confirmado");
+    } catch(e){setMsg("Error al confirmar. Intentá de nuevo.");}
+    setSaving(false);
   };
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,color:"rgba(255,255,255,0.5)",fontFamily:"var(--font-sans)"}}>Cargando...</div>;
@@ -570,7 +554,7 @@ const PortalCliente = () => {
       {paso==="pago"&&<>
         <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:TX.s,marginBottom:16,fontFamily:"var(--font-sans)"}}>← Volver</button>
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
-          <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Realizá tu transferencia</div>
+          <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Completá tu pago</div>
           
           {/* Resumen */}
           <div style={{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,borderRadius:12,padding:"14px 18px",marginBottom:20}}>
@@ -582,45 +566,26 @@ const PortalCliente = () => {
           <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:20,border:"1px solid #1A2B5A"}}>
             <div style={{fontSize:12,color:TX.s,fontWeight:600,marginBottom:12,textTransform:"uppercase"}}>📱 Transferencia bancaria</div>
             <div style={{fontSize:13,color:TX.p,lineHeight:1.8}}>
-              <div style={{marginBottom:8}}><span style={{color:TX.s}}>Banco:</span> <strong>UENO</strong></div>
-              <div style={{marginBottom:8}}><span style={{color:TX.s}}>Alias:</span> <strong style={{fontSize:14,letterSpacing:1}}>80168039-5</strong></div>
+              <div style={{marginBottom:8}}><span style={{color:TX.s}}>Banco:</span> <strong>Cualquiera</strong></div>
+              <div style={{marginBottom:8}}><span style={{color:TX.s}}>Alias:</span> <strong style={{fontSize:14,letterSpacing:1,color:BR.coral}}>80168039-5</strong></div>
               <div><span style={{color:TX.s}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
             </div>
           </div>
 
-          {/* Upload comprobante */}
-          <div style={{marginBottom:20}}>
-            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:8}}>📸 Comprobante de pago</label>
-            <div style={{position:"relative",overflow:"hidden"}}>
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={e=>setComprobante(e.target.files?.[0]||null)}
-                style={{display:"none",width:"100%"}}
-                id="comprobante-input"
-              />
-              <label htmlFor="comprobante-input" style={{
-                display:"block",
-                width:"100%",
-                padding:"16px",
-                border:"2px dashed #1E3070",
-                borderRadius:10,
-                textAlign:"center",
-                cursor:"pointer",
-                color:comprobante?BR.coral:TX.s,
-                fontSize:13,
-                fontWeight:500,
-                transition:"all 0.2s"
-              }}>
-                {comprobante?`✓ ${comprobante.name}`:"Sube foto de transferencia"}
-              </label>
+          {/* Instrucciones */}
+          <div style={{background:"#0D2E1A",borderRadius:12,padding:"14px 16px",marginBottom:20,border:"1px solid #1A5A30"}}>
+            <div style={{fontSize:12,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>ℹ️ Instrucciones</div>
+            <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>
+              1. Realizá la transferencia al alias<br/>
+              2. Confirmá aquí que ya pagaste<br/>
+              3. Recibirás confirmación por WhatsApp
             </div>
           </div>
 
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
           
           <button onClick={enviarPago} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-            {saving?"Enviando...":"Confirmar pago y reserva →"}
+            {saving?"Confirmando...":"✓ Ya pagué, confirmar reserva →"}
           </button>
         </div>
       </>}
@@ -628,7 +593,7 @@ const PortalCliente = () => {
       {paso==="confirmado"&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"36px 24px",textAlign:"center"}}>
         <div style={{width:72,height:72,borderRadius:"50%",background:"#0D2E1A",border:"2px solid #1A5A30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"}}>✅</div>
         <div style={{fontSize:22,fontWeight:700,color:TX.p,marginBottom:8}}>¡Reserva confirmada!</div>
-        <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>Tu turno está reservado para el <strong style={{color:TX.p}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong>. Pago verificado ✓</div>
+        <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>Tu turno está reservado para el <strong style={{color:TX.p}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong>.</div>
         <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A"}}>
           <div style={{fontSize:13,color:TX.s,lineHeight:2.2}}>
             <div>📍 {cfg.nombre_club} — Tavapy, Alto Paraná</div>
@@ -636,7 +601,7 @@ const PortalCliente = () => {
           </div>
         </div>
         <div style={{background:"#0D2E1A",borderRadius:12,padding:"14px 16px",marginBottom:20,border:"1px solid #1A5A30",textAlign:"left"}}>
-          <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>ℹ️ Próximos pasos</div>
+          <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>✓ Próximos pasos</div>
           <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibirás una confirmación por WhatsApp. Presenta este comprobante de reserva el día de tu turno.</div>
         </div>
         <button onClick={abrirWsp} style={{width:"100%",padding:"15px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",marginBottom:10}}>
