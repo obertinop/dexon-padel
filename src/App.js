@@ -214,6 +214,105 @@ const Login = ({onLogin}) => {
   </div>;
 };
 
+// Selector de fecha custom para móvil
+const SelectorFecha = ({value, onChange, min}) => {
+  const [mostrar, setMostrar] = useState(false);
+  const hoyStr = hoy();
+  const dias = Array.from({length: 30}, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d.toISOString().slice(0, 10);
+  }).filter(f => f >= (min || hoyStr));
+  
+  const formatDia = (fechaStr) => {
+    const diasSem = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    const fecha = new Date(fechaStr + "T00:00:00");
+    const esCurrent = fechaStr === value;
+    
+    if (fechaStr === hoyStr) return {label: "Hoy", subLabel: "hoy", current: esCurrent};
+    const mañanaStr = new Date(new Date().getTime() + 86400000).toISOString().slice(0, 10);
+    if (fechaStr === mañanaStr) return {label: "Mañana", subLabel: "mañana", current: esCurrent};
+    
+    const dia = diasSem[fecha.getDay()];
+    const num = fecha.getDate();
+    const mes = meses[fecha.getMonth()];
+    return {label: `${dia} ${num}`, subLabel: mes, current: esCurrent};
+  };
+
+  return (
+    <div style={{position: "relative"}}>
+      <button 
+        onClick={() => setMostrar(!mostrar)}
+        style={{
+          width: "100%",
+          padding: "14px 14px",
+          border: "1px solid #1E3A7A",
+          borderRadius: 10,
+          fontSize: 15,
+          color: "#fff",
+          background: "#0D1830",
+          fontFamily: "var(--font-sans)",
+          outline: "none",
+          boxSizing: "border-box",
+          minHeight: "44px",
+          textAlign: "left",
+          cursor: "pointer"
+        }}
+      >
+        {value ? fmtFechaLegible(value) : "Selecciona una fecha"}
+      </button>
+      
+      {mostrar && (
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          background: "#111E40",
+          border: "1px solid #1E3070",
+          borderRadius: 10,
+          marginTop: 4,
+          maxHeight: 250,
+          overflowY: "auto",
+          zIndex: 10
+        }}>
+          {dias.map(fecha => {
+            const info = formatDia(fecha);
+            return (
+              <button
+                key={fecha}
+                onClick={() => {
+                  onChange(fecha);
+                  setMostrar(false);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  border: "none",
+                  background: info.current ? "#1A3570" : "transparent",
+                  color: info.current ? "#7EAAFF" : TX.p,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  borderBottom: "1px solid #1A2B5A",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <span style={{fontWeight: info.current ? 600 : 500}}>{info.label}</span>
+                <span style={{fontSize: 12, color: TX.s}}>{info.subLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── PORTAL CLIENTE ──
 const PortalCliente = () => {
   const isMobile = useIsMobile();
@@ -337,7 +436,7 @@ const PortalCliente = () => {
         {/* Selector fecha */}
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"16px 18px",marginBottom:12}}>
           <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>¿Qué día querés jugar?</label>
-          <input type="date" value={fecha} min={hoy()} onChange={e=>{setFecha(e.target.value);setSlotsSel([]);}} style={{...inpPortal,fontSize:16,fontWeight:500}}/>
+          <SelectorFecha value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
         </div>
 
         {/* Clima */}
