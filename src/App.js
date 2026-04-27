@@ -654,6 +654,7 @@ export default function App() {
   const [modal,setModal] = useState(null);
   const [dlg,setDlg] = useState(null);
   const [form,setForm] = useState({});
+  const [msg,setMsg] = useState("");
   const [clima,setClima] = useState(null);
   const tk = session?.token;
 
@@ -1146,39 +1147,62 @@ export default function App() {
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarTurno} disabled={saving}>{saving?"Guardando...":"Guardar reserva"}</Btn></div>
     </Modal>
 
-    <Modal show={modal==="verTurno"} onClose={closeM} title="Detalle del turno">
+    <Modal show={modal==="verTurno"} onClose={closeM} title="Turno">
       {form.cliente&&<><div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20}}><Avatar nombre={form.cliente.nombre} size={48}/><div><div style={{fontSize:16,fontWeight:500,color:TX.p}}>{form.cliente.nombre}</div><div style={{fontSize:13,color:TX.s}}>{form.cliente.telefono}</div></div></div>
-      <div style={{...metric,marginBottom:14,display:"grid",gap:8}}>
-        {[["Fecha/Hora",`${form.fecha} · ${form.hora}:00hs`],["Tipo",tipoBadge(form.tipo)],["Estado",estadoBadge(form.estado)],["Precio",gs(form.precio)],form.sena>0&&["Seña",<span style={{color:"#7ADDA8"}}>{gs(form.sena)}</span>],form.sena>0&&["Saldo",<strong style={{color:TX.p}}>{gs(form.precio-(form.sena||0))}</strong>],form.instructor&&["Instructor",form.instructor.nombre],form.notas&&["Notas",form.notas]].filter(Boolean).map(([k,v],i)=>
-          <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:TX.s}}>{k}</span><span style={{color:TX.p}}>{v}</span></div>
-        )}
-      </div>
-      <Div/>
       
-      {/* Opción de reagendar */}
-      {form.estado!=="cancelado"&&<div style={{background:"#0D1830",borderRadius:12,border:"1px solid #1A2B5A",padding:"14px",marginBottom:14}}>
-        <div style={{fontSize:12,color:TX.s,fontWeight:600,marginBottom:10,textTransform:"uppercase"}}>📅 Reagendar</div>
+      {/* Info actual */}
+      <div style={{...card,marginBottom:14}}>
+        <div style={{fontSize:12,color:TX.s,fontWeight:600,marginBottom:10,textTransform:"uppercase"}}>Turno actual</div>
+        <div style={{display:"grid",gap:6}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
+            <span style={{color:TX.s}}>Fecha</span>
+            <span style={{color:TX.p,fontWeight:500}}>{form.fecha}</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
+            <span style={{color:TX.s}}>Hora</span>
+            <span style={{color:TX.p,fontWeight:500}}>{form.hora}:00</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
+            <span style={{color:TX.s}}>Tipo</span>
+            <span style={{color:TX.p}}>{tipoBadge(form.tipo)}</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
+            <span style={{color:TX.s}}>Estado</span>
+            <span style={{color:TX.p}}>{estadoBadge(form.estado)}</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
+            <span style={{color:TX.s}}>Precio</span>
+            <span style={{color:TX.p,fontWeight:500}}>{gs(form.precio)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Reagendar */}
+      {form.estado!=="cancelado"&&<div style={{...card,background:"#0D2A1A",border:"1px solid #1A5A30",marginBottom:14}}>
+        <div style={{fontSize:12,color:"#7ADDA8",fontWeight:600,marginBottom:12,textTransform:"uppercase"}}>🔄 Reprogramar turno</div>
         <R2 isMobile={isMobile}>
           <FG label="Nueva fecha">
             <input type="date" value={form.fecha||""} onChange={sf("fecha")} style={inp}/>
           </FG>
-          <FG label="Nuevo horario">
+          <FG label="Nueva hora">
             <select style={inp} value={form.hora??""} onChange={sf("hora")}>
               {horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}
             </select>
           </FG>
         </R2>
-        <Btn v="primary" sm onClick={async()=>{
-          if(!form.id||!form.fecha||form.hora===undefined){alert("Completá todos los datos");return;}
-          if(turnos.find(t=>t.id!==form.id&&t.fecha===form.fecha&&t.hora===Number(form.hora)&&t.estado!=="cancelado")){alert("Ese horario ya está ocupado.");return;}
+        <Btn v="primary" onClick={async()=>{
+          if(!form.id||!form.fecha||form.hora===undefined){setMsg("Completá todos los datos");return;}
+          const existe = turnos.find(t=>t.id!==form.id&&t.fecha===form.fecha&&t.hora===Number(form.hora)&&t.estado!=="cancelado");
+          if(existe){setMsg("❌ Ese horario ya está ocupado");return;}
           setSaving(true);
           try {
             await db.put("turnos",form.id,{fecha:form.fecha,hora:Number(form.hora)},tk);
             await load();
-            closeM();
-          } catch(e){alert("Error al reagendar");}
+            setMsg("✓ Turno reprogramado");
+            setTimeout(()=>{closeM();setMsg("");},1000);
+          } catch(e){setMsg("Error al reprogramar");}
           setSaving(false);
-        }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"✓ Confirmar reagendamiento"}</Btn>
+        }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"✓ Reprogramar"}</Btn>
       </div>}
       
       {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
