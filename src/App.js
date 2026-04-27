@@ -635,7 +635,7 @@ export default function App() {
   const esPortal = window.location.pathname.startsWith("/reservar");
   if(esPortal) return <PortalCliente/>;
 
-  const [tab,setTab] = useState("hoy");
+  const [tab,setTab] = useState("agenda");
   const [cajaFechaIni,setCajaFechaIni] = useState("");
   const [cajaFechaFin,setCajaFechaFin] = useState("");
   const [cajaTipo,setCajaTipo] = useState("");
@@ -860,7 +860,7 @@ export default function App() {
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
-  const TABS=[{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"agenda",l:"Agenda"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"config",l:"Config"}];
+  const TABS=[{id:"agenda",l:"Agenda"},{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"config",l:"Config"}];
 
   // ── VISTAS ADMIN ──
   const Hoy=()=>{
