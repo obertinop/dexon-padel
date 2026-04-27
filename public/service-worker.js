@@ -35,8 +35,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // No cache POST requests
-        if (event.request.method === 'POST') {
+        // No cache POST, PATCH, DELETE requests
+        if (event.request.method === 'POST' || event.request.method === 'PATCH' || event.request.method === 'DELETE') {
           return response;
         }
         
