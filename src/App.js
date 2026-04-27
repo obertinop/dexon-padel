@@ -76,6 +76,22 @@ const db = {
 // ── HELPERS ──
 const gs = n => "Gs "+Math.round(n||0).toLocaleString("es-PY");
 const hoy = () => new Date().toISOString().slice(0,10);
+const fmtFechaLegible = (fechaStr) => {
+  if (!fechaStr) return "";
+  const hoyStr = hoy();
+  const fecha = new Date(fechaStr + "T00:00:00");
+  const mañanaStr = new Date(fecha.getTime() + 86400000).toISOString().slice(0,10);
+  
+  if (fechaStr === hoyStr) return "Hoy";
+  if (fechaStr === mañanaStr) return "Mañana";
+  
+  const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const dia = dias[fecha.getDay()];
+  const num = fecha.getDate();
+  const mes = meses[fecha.getMonth()];
+  return `${dia} ${num} de ${mes}`;
+};
 const fmtD = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const initials = n => n?.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
 const avatarBg = n => { const c=["#1A3570","#0D3020","#3A1A10","#2A1A40","#0A2A3A","#1A2A0A"]; return c[(n||"").charCodeAt(0)%c.length]; };
@@ -287,7 +303,7 @@ const PortalCliente = () => {
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,color:"rgba(255,255,255,0.5)",fontFamily:"var(--font-sans)"}}>Cargando...</div>;
 
-  const inpPortal = {width:"100%",padding:"12px 14px",border:"1px solid #1E3A7A",borderRadius:10,fontSize:15,color:"#fff",background:"#0D1830",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"};
+  const inpPortal = {width:"100%",padding:"14px 14px",border:"1px solid #1E3A7A",borderRadius:10,fontSize:15,color:"#fff",background:"#0D1830",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:"44px"};
 
   return <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)"}}>
     {/* HEADER */}
@@ -393,7 +409,7 @@ const PortalCliente = () => {
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
           <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Confirmá tu reserva</div>
           <div style={{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,borderRadius:12,padding:"14px 18px",marginBottom:20}}>
-            <div style={{fontSize:16,fontWeight:700,color:"#fff"}}>{fecha} · {slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
+            <div style={{fontSize:16,fontWeight:700,color:"#fff"}}>{fmtFechaLegible(fecha)} · {slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
             <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",marginTop:4}}>{slotsSel.length} hora{slotsSel.length>1?"s":""} · Total: {gs(totalSel)} · Se abona al llegar</div>
           </div>
           <div style={{marginBottom:14}}>
@@ -414,7 +430,7 @@ const PortalCliente = () => {
       {paso==="confirmado"&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"36px 24px",textAlign:"center"}}>
         <div style={{width:72,height:72,borderRadius:"50%",background:"#0D2E1A",border:"2px solid #1A5A30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"}}>✅</div>
         <div style={{fontSize:22,fontWeight:700,color:TX.p,marginBottom:8}}>¡Reserva registrada!</div>
-        <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>Tu turno fue registrado para el <strong style={{color:TX.p}}>{fecha}</strong> a las <strong style={{color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong>.</div>
+        <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>Tu turno fue registrado para el <strong style={{color:TX.p}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong>.</div>
         <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A"}}>
           <div style={{fontSize:13,color:TX.s,lineHeight:2.2}}>
             <div>📍 {cfg.nombre_club} — Tavapy, Alto Paraná</div>
