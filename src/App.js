@@ -1333,27 +1333,37 @@ export default function App() {
     <Modal show={modal==="horarios"} onClose={closeM} title="⏰ Horarios por día">
       <div style={{marginBottom:16}}>
         {DIAS_FULL.map((dia,i)=>{
-          const horarios = form.horarios_por_dia?JSON.parse(form.horarios_por_dia||"{}"):{}||{};
-          const h = horarios[i]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
+          let h = {inicio:cfg.hora_inicio,fin:cfg.hora_fin};
+          try {
+            if(form.horarios_por_dia) {
+              const parsed = JSON.parse(form.horarios_por_dia);
+              h = parsed[i]||h;
+            }
+          } catch(e){}
+          
           return <div key={i} style={{marginBottom:14,padding:12,background:"#0D1830",borderRadius:8,border:`1px solid #1E3070`}}>
             <div style={{fontSize:13,fontWeight:500,color:TX.p,marginBottom:8}}>{dia}</div>
             <R2 isMobile={isMobile}>
               <FG label="Inicio">
-                <select style={inp} value={h.inicio||""} onChange={e=>{
-                  const hor = JSON.parse(form.horarios_por_dia||"{}");
-                  hor[i]={...h,inicio:Number(e.target.value)};
-                  setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
+                <select style={inp} value={Number(h.inicio)||0} onChange={e=>{
+                  try {
+                    const hor = form.horarios_por_dia?JSON.parse(form.horarios_por_dia):{};
+                    hor[i]={inicio:Number(e.target.value),fin:h.fin};
+                    setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
+                  } catch(err){}
                 }}>
-                  {Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}
+                  {Array.from({length:24},(_,j)=><option key={j} value={j}>{j}:00</option>)}
                 </select>
               </FG>
               <FG label="Fin">
-                <select style={inp} value={h.fin||""} onChange={e=>{
-                  const hor = JSON.parse(form.horarios_por_dia||"{}");
-                  hor[i]={...h,fin:Number(e.target.value)};
-                  setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
+                <select style={inp} value={Number(h.fin)||24} onChange={e=>{
+                  try {
+                    const hor = form.horarios_por_dia?JSON.parse(form.horarios_por_dia):{};
+                    hor[i]={inicio:h.inicio,fin:Number(e.target.value)};
+                    setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
+                  } catch(err){}
                 }}>
-                  {Array.from({length:25},(_,i)=><option key={i} value={i}>{i}:00</option>)}
+                  {Array.from({length:25},(_,j)=><option key={j} value={j}>{j}:00</option>)}
                 </select>
               </FG>
             </R2>
@@ -1366,12 +1376,14 @@ export default function App() {
         <Btn v="primary" onClick={async()=>{
           setSaving(true);
           try {
-            const cfgId = cfg?.id||form.id;
-            if(!cfgId){alert("Error: sin ID de config");setSaving(false);return;}
-            await db.patch("config",cfgId,{horarios_por_dia:form.horarios_por_dia||"{}"},tk);
+            const cfgId = cfg?.id;
+            if(!cfgId){setSaving(false);return;}
+            const horarios = form.horarios_por_dia||"{}";
+            await db.patch("config",cfgId,{horarios_por_dia:horarios},tk);
             await load();
-            closeM();
-          } catch(e){console.error(e);alert("Error al guardar horarios");}
+            setMsg("✓ Horarios guardados");
+            setTimeout(()=>{closeM();setMsg("");},800);
+          } catch(e){console.error(e);setMsg("Error al guardar");}
           setSaving(false);
         }} disabled={saving}>{saving?"Guardando...":"Guardar horarios"}</Btn>
       </div>
