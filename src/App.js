@@ -639,6 +639,7 @@ export default function App() {
   const [cajaFechaIni,setCajaFechaIni] = useState("");
   const [cajaFechaFin,setCajaFechaFin] = useState("");
   const [cajaTipo,setCajaTipo] = useState("");
+  const [isRefreshing,setIsRefreshing] = useState(false);
   const [session,setSession] = useState(()=>{
     const tk=localStorage.getItem("dx_token");
     const u=localStorage.getItem("dx_user");
@@ -655,7 +656,8 @@ export default function App() {
   const tk = session?.token;
 
   const load = useCallback(async()=>{
-    if(!tk) return; setLoading(true);
+    if(!tk) return;
+    setIsRefreshing(true);
     try {
       const [tu,cl,ab,pl,ins,ca,st,es,cf,at] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc",tk),
@@ -671,7 +673,7 @@ export default function App() {
       ]);
       setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],cfg:cf?.[0]||prev.cfg}));
     } catch(e){console.error(e);}
-    setLoading(false);
+    setIsRefreshing(false);
   },[tk]);
 
   useEffect(()=>{if(tk)load();},[load,tk]);
@@ -692,6 +694,13 @@ export default function App() {
     evs.forEach(e=>window.addEventListener(e,reset));
     return()=>{clearTimeout(timer);evs.forEach(e=>window.removeEventListener(e,reset));};
   },[session]);
+
+  // Auto-refresh cada 30 segundos
+  useEffect(()=>{
+    if(!tk) return;
+    const interval = setInterval(()=>{load();},30*1000);
+    return ()=>clearInterval(interval);
+  },[tk,load]);
 
   const doLogout = async()=>{
     if(session?.token) await auth.logout(session.token);
@@ -1070,6 +1079,10 @@ export default function App() {
           {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?TX.p:TX.t,borderBottom:tab===t.id?`2px solid ${BR.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)"}}>{t.l}</button>)}
         </div>
         <button onClick={doLogout} style={{padding:"6px 12px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:"rgba(216,90,48,0.08)",color:BR.coral,border:`1px solid ${BR.coralD}`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:8,paddingLeft:8,borderLeft:`1px solid ${BR.coralD}`,opacity:isRefreshing?1:0.5,transition:"opacity 0.3s"}}>
+          <div style={{width:6,height:6,borderRadius:"50%",background:isRefreshing?BR.coral:"#4A6A9A",animation:isRefreshing?"pulse 1s infinite":"none"}}/>
+          <span style={{fontSize:10,color:TX.t,whiteSpace:"nowrap"}}>Auto-sync</span>
+        </div>
       </div>
     </div>
 
