@@ -1186,7 +1186,7 @@ export default function App() {
             <input type="date" value={reprogramFecha||form.fecha||""} onChange={e=>setReprogramFecha(e.target.value)} style={inp}/>
           </FG>
           <FG label="Nueva hora">
-            <select style={inp} value={reprogramHora||form.hora??""} onChange={e=>setReprogramHora(Number(e.target.value))}>
+            <select style={inp} value={reprogramHora!===""?reprogramHora:form.hora||""} onChange={e=>setReprogramHora(Number(e.target.value))}>
               {horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}
             </select>
           </FG>
