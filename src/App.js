@@ -350,7 +350,18 @@ const PortalCliente = () => {
       }).catch(()=>{});
   },[]);
 
-  const horasArr = Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
+  const horasArr = (() => {
+    try {
+      if(cfg.horarios_por_dia) {
+        const parsed = JSON.parse(cfg.horarios_por_dia);
+        const fechaObj = new Date(fecha + "T00:00:00");
+        const dayOfWeek = fechaObj.getDay();
+        const h = parsed[dayOfWeek];
+        if(h) return Array.from({length:h.fin-h.inicio},(_,i)=>h.inicio+i);
+      }
+    } catch(e){}
+    return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
+  })();
   const precioH = h => h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?cfg.tarifa_pico:cfg.tarifa_base;
   const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado");
   const pasado = h => fecha===hoy()&&h<=new Date().getHours();
