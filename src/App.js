@@ -1154,6 +1154,33 @@ export default function App() {
         )}
       </div>
       <Div/>
+      
+      {/* Opción de reagendar */}
+      {form.estado!=="cancelado"&&<div style={{background:"#0D1830",borderRadius:12,border:"1px solid #1A2B5A",padding:"14px",marginBottom:14}}>
+        <div style={{fontSize:12,color:TX.s,fontWeight:600,marginBottom:10,textTransform:"uppercase"}}>📅 Reagendar</div>
+        <R2 isMobile={isMobile}>
+          <FG label="Nueva fecha">
+            <input type="date" value={form.fecha||""} onChange={sf("fecha")} style={inp}/>
+          </FG>
+          <FG label="Nuevo horario">
+            <select style={inp} value={form.hora??""} onChange={sf("hora")}>
+              {horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}
+            </select>
+          </FG>
+        </R2>
+        <Btn v="primary" sm onClick={async()=>{
+          if(!form.id||!form.fecha||form.hora===undefined){alert("Completá todos los datos");return;}
+          if(turnos.find(t=>t.id!==form.id&&t.fecha===form.fecha&&t.hora===Number(form.hora)&&t.estado!=="cancelado")){alert("Ese horario ya está ocupado.");return;}
+          setSaving(true);
+          try {
+            await db.put("turnos",form.id,{fecha:form.fecha,hora:Number(form.hora)},tk);
+            await load();
+            closeM();
+          } catch(e){alert("Error al reagendar");}
+          setSaving(false);
+        }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"✓ Confirmar reagendamiento"}</Btn>
+      </div>}
+      
       {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
         <Btn v="success" onClick={()=>{closeM();setDlg({type:"confirmar",t:form});}}>✓ Cobrar y confirmar {gs(form.precio-(form.sena||0))}</Btn>
         <Btn v="ghost" onClick={()=>{closeM();setDlg({type:"noshow",t:form});}}>Marcar como no show</Btn>
