@@ -638,6 +638,9 @@ export default function App() {
   if(esPortal) return <PortalCliente/>;
 
   const [tab,setTab] = useState("hoy");
+  const [cajaFechaIni,setCajaFechaIni] = useState("");
+  const [cajaFechaFin,setCajaFechaFin] = useState("");
+  const [cajaTipo,setCajaTipo] = useState("");
   const [session,setSession] = useState(()=>{
     const tk=localStorage.getItem("dx_token");
     const u=localStorage.getItem("dx_user");
@@ -938,6 +941,13 @@ export default function App() {
     const ingH=caja.filter(m=>m.fecha===h&&m.tipo==="ingreso").reduce((a,m)=>a+m.monto,0);
     const ingM=caja.filter(m=>m.fecha.startsWith(mes)&&m.tipo==="ingreso").reduce((a,m)=>a+m.monto,0);
     const egrM=caja.filter(m=>m.fecha.startsWith(mes)&&m.tipo==="egreso").reduce((a,m)=>a+m.monto,0);
+    
+    // Filtrar caja según criterios
+    let cajaFiltrada = caja;
+    if(cajaFechaIni) cajaFiltrada = cajaFiltrada.filter(m=>m.fecha>=cajaFechaIni);
+    if(cajaFechaFin) cajaFiltrada = cajaFiltrada.filter(m=>m.fecha<=cajaFechaFin);
+    if(cajaTipo) cajaFiltrada = cajaFiltrada.filter(m=>m.tipo===cajaTipo);
+    
     return<div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
         <div style={metric}><div style={{fontSize:12,color:TX.s,marginBottom:6}}>Ingresos hoy</div><div style={{fontSize:21,fontWeight:500,color:TX.p}}>{gs(ingH)}</div></div>
@@ -948,10 +958,34 @@ export default function App() {
         <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Movimientos</span>
         <Btn v="primary" onClick={()=>openM("movCaja",{tipo:"egreso",categoria:"gasto",fecha:hoy()})}>+ Registrar gasto</Btn>
       </div>
+      
+      {/* Filtros */}
+      <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"14px 18px",marginBottom:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"flex-end"}}>
+          <div>
+            <label style={lbl}>Desde</label>
+            <input type="date" value={cajaFechaIni} onChange={e=>setCajaFechaIni(e.target.value)} style={{...inp,fontSize:13}}/>
+          </div>
+          <div>
+            <label style={lbl}>Hasta</label>
+            <input type="date" value={cajaFechaFin} onChange={e=>setCajaFechaFin(e.target.value)} style={{...inp,fontSize:13}}/>
+          </div>
+          <div>
+            <label style={lbl}>Tipo</label>
+            <select value={cajaTipo} onChange={e=>setCajaTipo(e.target.value)} style={{...inp,fontSize:13}}>
+              <option value="">Todos</option>
+              <option value="ingreso">Ingresos</option>
+              <option value="egreso">Egresos</option>
+            </select>
+          </div>
+          <Btn sm v="ghost" onClick={()=>{setCajaFechaIni("");setCajaFechaFin("");setCajaTipo("");}}>Limpiar</Btn>
+        </div>
+      </div>
+      
       <div style={{overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse",borderRadius:10,overflow:"hidden"}}>
           <thead><tr>{["Fecha","Descripción","Categoría","Monto",""].map((h,i)=><th key={i} style={{textAlign:i>=3?"right":"left",padding:"10px 14px",fontSize:12,fontWeight:500,color:TX.s,borderBottom:"1px solid #1E3070",background:"#0D1830"}}>{h}</th>)}</tr></thead>
-          <tbody>{caja.map(m=><tr key={m.id} style={{background:"#111E40"}}>
+          <tbody>{cajaFiltrada.map(m=><tr key={m.id} style={{background:"#111E40"}}>
             <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",color:TX.s}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</td>
             <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",color:TX.p}}>{m.descripcion}</td>
             <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A"}}><Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge></td>
