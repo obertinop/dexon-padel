@@ -511,35 +511,47 @@ export default function App() {
     const stockBajo=stock.filter(s=>s.minimo>0&&s.cantidad<=s.minimo);
     return <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-        <div><div style={{fontSize:22,fontWeight:500}}>{cfg.nombre_club}</div><div style={{fontSize:13,color:"var(--color-text-secondary)",marginTop:2}}>{new Date().toLocaleDateString("es-PY",{weekday:"long",day:"numeric",month:"long"})}</div></div>
+        <div>
+          <div style={{fontSize:22,fontWeight:500,color:TX.primary}}>{cfg.nombre_club}</div>
+          <div style={{fontSize:13,color:TX.secondary,marginTop:2}}>{new Date().toLocaleDateString("es-PY",{weekday:"long",day:"numeric",month:"long"})}</div>
+        </div>
         <Btn v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>+ Reservar</Btn>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-        {[{l:"Ingresos hoy",v:gs(ingH)},{l:"Ingresos mes",v:gs(ingM)},{l:"Balance mes",v:gs(ingM-egrM),c:ingM-egrM>=0?C.ok:C.danger},{l:"Turnos hoy",v:tHoy.length,sub:pendCobro.length>0?`${pendCobro.length} pendientes`:null}].map((m,i)=><div key={i} style={metric}><div style={{fontSize:12,color:"var(--color-text-secondary)",marginBottom:6}}>{m.l}</div><div style={{fontSize:21,fontWeight:500,color:m.c||"var(--color-text-primary)"}}>{m.v}</div>{m.sub&&<div style={{fontSize:11,color:C.warn,marginTop:3}}>{m.sub}</div>}</div>)}
+        {[{l:"Ingresos hoy",v:gs(ingH)},{l:"Ingresos mes",v:gs(ingM)},{l:"Balance mes",v:gs(ingM-egrM),c:ingM-egrM>=0?BRAND.ok:BRAND.danger},{l:"Turnos hoy",v:tHoy.length,sub:pendCobro.length>0?`${pendCobro.length} pendientes`:null}].map((m,i)=>
+          <div key={i} style={metric}>
+            <div style={{fontSize:12,color:TX.secondary,marginBottom:6}}>{m.l}</div>
+            <div style={{fontSize:21,fontWeight:500,color:m.c||TX.primary}}>{m.v}</div>
+            {m.sub&&<div style={{fontSize:11,color:BRAND.warn,marginTop:3}}>{m.sub}</div>}
+          </div>
+        )}
       </div>
       {clima&&<div style={{...card,marginBottom:16}}>
-        <div style={{fontWeight:500,fontSize:13,marginBottom:12,color:"var(--color-text-secondary)"}}>Pronóstico — Alto Paraná</div>
+        <div style={{fontWeight:500,fontSize:13,marginBottom:12,color:TX.secondary}}>Pronóstico — Alto Paraná</div>
         <div style={{display:"flex",gap:8,overflowX:"auto"}}>
-          {clima.map((d,i)=>{const esH=d.fecha===h;const lluvia=d.lluvia>=60;return<div key={i} style={{flex:1,minWidth:70,textAlign:"center",padding:"10px 8px",borderRadius:10,background:esH?"#FAECE7":lluvia?"#E6F1FB":"var(--color-background-secondary)",border:esH?`1px solid ${C.coral}`:"none"}}>
-            <div style={{fontSize:11,color:"var(--color-text-secondary)",marginBottom:4}}>{esH?"Hoy":DIAS[new Date(d.fecha+"T12:00:00").getDay()]}</div>
+          {clima.map((d,i)=>{const esH=d.fecha===h;const lluvia=d.lluvia>=60;return<div key={i} style={{flex:1,minWidth:70,textAlign:"center",padding:"10px 8px",borderRadius:10,background:esH?"#1A3570":lluvia?"#0D2040":"#0D1830",border:esH?`1px solid ${BRAND.coral}`:"1px solid #1A2B5A"}}>
+            <div style={{fontSize:11,color:TX.secondary,marginBottom:4}}>{esH?"Hoy":DIAS[new Date(d.fecha+"T12:00:00").getDay()]}</div>
             <div style={{fontSize:22,marginBottom:4}}>{climaIcon(d.code)}</div>
-            <div style={{fontSize:13,fontWeight:500}}>{d.max}°</div>
-            <div style={{fontSize:11,color:"var(--color-text-secondary)"}}>{d.min}°</div>
-            <div style={{fontSize:11,marginTop:4,color:lluvia?C.info:C.ok,fontWeight:500}}>{d.lluvia}%💧</div>
+            <div style={{fontSize:14,fontWeight:500,color:TX.primary}}>{d.max}°</div>
+            <div style={{fontSize:11,color:TX.secondary}}>{d.min}°</div>
+            <div style={{fontSize:11,marginTop:4,color:lluvia?BRAND.info:BRAND.ok,fontWeight:500}}>{d.lluvia}%💧</div>
           </div>;})}
         </div>
       </div>}
       {(vencidos.length>0||stockBajo.length>0)&&<div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        {vencidos.length>0&&<div style={{flex:1,background:C.warnL,borderRadius:10,padding:"9px 14px",fontSize:13,color:C.warn}}>{vencidos.length} abono{vencidos.length>1?"s":""} vencido{vencidos.length>1?"s":""}</div>}
-        {stockBajo.length>0&&<div style={{flex:1,background:C.dangerL,borderRadius:10,padding:"9px 14px",fontSize:13,color:C.danger}}>{stockBajo.map(s=>s.nombre).join(", ")} — stock bajo</div>}
+        {vencidos.length>0&&<div style={{flex:1,background:"#2A1A0A",borderRadius:10,padding:"9px 14px",fontSize:13,color:"#F5A882",border:"1px solid #5A3010"}}>{vencidos.length} abono{vencidos.length>1?"s":""} vencido{vencidos.length>1?"s":""}</div>}
+        {stockBajo.length>0&&<div style={{flex:1,background:"#2A0A0A",borderRadius:10,padding:"9px 14px",fontSize:13,color:"#F58282",border:"1px solid #5A1010"}}>{stockBajo.map(s=>s.nombre).join(", ")} — stock bajo</div>}
       </div>}
       <div style={card}>
-        <div style={{fontWeight:500,marginBottom:14,fontSize:14}}>Turnos de hoy</div>
+        <div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.primary}}>Turnos de hoy</div>
         {tHoy.length===0?<Empty t="Sin turnos para hoy"/>:<div style={{display:"grid",gap:8}}>
-          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"var(--color-background-secondary)",border:"0.5px solid var(--color-border-tertiary)",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
-            <div style={{fontSize:16,fontWeight:500,color:C.coral,minWidth:44}}>{t.hora}:00</div>
+          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"#0D1830",border:"1px solid #1A2B5A",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
+            <div style={{fontSize:16,fontWeight:500,color:BRAND.coral,minWidth:44}}>{t.hora}:00</div>
             <Avatar nombre={c?.nombre} size={36}/>
-            <div style={{flex:1,minWidth:0}}><div style={{fontWeight:500,fontSize:13}}>{c?.nombre||"?"}</div><div style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}{ins&&<span>· {ins.nombre}</span>}{t.sena>0&&<span style={{color:C.ok}}>· Seña: {gs(t.sena)}</span>}</div></div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:500,fontSize:13,color:TX.primary}}>{c?.nombre||"?"}</div>
+              <div style={{fontSize:11,color:TX.secondary,marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}{ins&&<span>· {ins.nombre}</span>}{t.sena>0&&<span style={{color:BRAND.ok}}>· Seña: {gs(t.sena)}</span>}</div>
+            </div>
             {t.estado==="reservado"&&<div style={{display:"flex",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
               <Btn v="success" sm onClick={()=>setDlg({type:"confirmar",t})}>✓ Cobrar {gs(t.precio-(t.sena||0))}</Btn>
               <Btn v="danger" sm onClick={()=>setDlg({type:"cancelar",t})}>✗</Btn>
