@@ -676,7 +676,6 @@ export default function App() {
       ]);
       
       const nuevosTurnos = tu||[];
-      setLastTurnoCount(nuevosTurnos.length);
       setData(prev=>({turnos:nuevosTurnos,clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],cfg:cf?.[0]||prev.cfg}));
     } catch(e){console.error(e);}
     setIsRefreshing(false);
