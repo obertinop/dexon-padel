@@ -1199,7 +1199,7 @@ export default function App() {
           if(existe){setMsg("❌ Ese horario ya está ocupado");return;}
           setSaving(true);
           try {
-            await db.update("turnos",form.id,{fecha:nuevaFecha,hora:Number(nuevaHora)},tk);
+            await db.patch("turnos",form.id,{fecha:nuevaFecha,hora:Number(nuevaHora)},tk);
             await load();
             setMsg("✓ Turno reprogramado");
             setTimeout(()=>{closeM();setMsg("");setReprogramFecha("");setReprogramHora("");},800);
