@@ -658,24 +658,31 @@ export default function App() {
   const tk = session?.token;
 
   const playNotificationSound = () => {
-    // Crear un sonido simple con Web Audio API (beep)
     try {
+      // Crear sonido de notificación con Web Audio API (dos beeps)
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
       
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      const playBeep = (frequency, duration, delay) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + delay);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + duration);
+        
+        oscillator.start(audioContext.currentTime + delay);
+        oscillator.stop(audioContext.currentTime + delay + duration);
+      };
       
-      // Frecuencia y duración del beep
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      // Beep 1: 800Hz por 0.2s
+      playBeep(800, 0.2, 0);
+      // Beep 2: 1000Hz por 0.2s (después de un pequeño gap)
+      playBeep(1000, 0.2, 0.25);
     } catch(e){console.log("Sonido no disponible");}
   };
 
@@ -714,12 +721,24 @@ export default function App() {
           setNotification(msg);
           setTimeout(()=>setNotification(null),5000);
           
-          // Web Notification API si está disponible
+          // Web Notification API - notificación del sistema operativo CON SONIDO
           if("Notification" in window && Notification.permission==="granted"){
-            new Notification("DEXON - Nueva Reserva",{
-              body:`${c?.nombre||"Cliente"} ha enviado comprobante\n${fecha} a las ${hora}:00hs`,
-              icon:"/logo192.png"
+            // Reproducir sonido ANTES de mostrar la notificación
+            playNotificationSound();
+            
+            const notif = new Notification("🔔 NUEVA RESERVA - DEXON",{
+              body:`${c?.nombre||"Cliente"}\n📅 ${fecha} a las ${hora}:00hs\n💰 ${gs(nuevosTurnosRecientes[0].precio)}`,
+              icon:"/logo192.png",
+              badge:"/logo192.png",
+              tag:"dexon-reserva",
+              requireInteraction:true // Mantiene la notificación hasta que el usuario la cierre
             });
+            
+            // Click en la notificación abre la ventana
+            notif.onclick = () => {
+              window.focus();
+              setTab("pendientes");
+            };
           }
         }
       }
