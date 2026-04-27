@@ -680,7 +680,7 @@ export default function App() {
       setData(prev=>({turnos:nuevosTurnos,clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],cfg:cf?.[0]||prev.cfg}));
     } catch(e){console.error(e);}
     setIsRefreshing(false);
-  },[tk,lastTurnoCount]);
+  },[tk]);
 
   useEffect(()=>{if(tk)load();},[load,tk]);
 
