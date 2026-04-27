@@ -1187,9 +1187,9 @@ export default function App() {
 
   const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"#0F1C3F",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
 
-  return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":940,margin:"0 auto",background:"#081020",minHeight:"100vh"}}>
-    <div style={{background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 2px 16px rgba(0,0,0,0.4)"}}>
-      <div style={{display:"flex",alignItems:"center",padding:"0 8px"}}>
+  return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":940,margin:"0 auto",background:"#081020",minHeight:"100vh",paddingTop:isMobile?68:0}}>
+    <div style={{position:isMobile?"fixed":"relative",top:0,left:0,right:0,zIndex:1000,background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 2px 16px rgba(0,0,0,0.4)",paddingTop:isMobile?"max(8px, env(safe-area-inset-top))":"0"}}>
+      <div style={{display:"flex",alignItems:"center",padding:`0 8px ${isMobile?"8px":"0"} 8px`}}>
         <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain",marginRight:8,flexShrink:0,padding:"8px 0"}}/>
         <div style={{display:"flex",flex:1,overflowX:"auto"}}>
           {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?TX.p:TX.t,borderBottom:tab===t.id?`2px solid ${BR.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)"}}>{t.l}</button>)}
@@ -1202,7 +1202,7 @@ export default function App() {
       </div>
     </div>
 
-    <div style={{padding:"18px 12px"}}>
+    <div style={{padding:"18px 12px",paddingTop:isMobile?"18px":"18px",paddingBottom:"env(safe-area-inset-bottom)"}}>
       {loading?<div style={{textAlign:"center",padding:80,color:TX.s,fontSize:13}}>Cargando...</div>:(
         <>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="config"&&<Config/>}</>
       )}
