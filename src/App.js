@@ -749,10 +749,10 @@ export default function App() {
     return()=>{clearTimeout(timer);evs.forEach(e=>window.removeEventListener(e,reset));};
   },[session]);
 
-  // Auto-refresh cada 30 segundos
+  // Auto-refresh cada 10 segundos
   useEffect(()=>{
     if(!tk) return;
-    const interval = setInterval(()=>{load();},30*1000);
+    const interval = setInterval(()=>{load();},10*1000);
     return ()=>clearInterval(interval);
   },[tk,load]);
 
