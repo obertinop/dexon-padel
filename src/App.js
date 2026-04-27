@@ -409,8 +409,23 @@ const PortalCliente = () => {
   const enviarPago = async () => {
     if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
     if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
-    // Solo vamos a confirmado, sin guardar aún
-    setPaso("confirmado");
+    setSaving(true);setMsg("");
+    try {
+      const {match,cliente}=buscarCliente();
+      let clienteId=cliente?.id;
+      let nota="Comprobante enviado vía WhatsApp - Pendiente confirmación";
+      // Si es cliente nuevo, crear primero
+      if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
+      else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
+      else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
+      
+      // Guardar turnos con estado pendiente_pago
+      for(const h of slotsSel){
+        await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota},SUPA_KEY);
+      }
+      setPaso("confirmado");
+    } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
+    setSaving(false);
   };
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,color:"rgba(255,255,255,0.5)",fontFamily:"var(--font-sans)"}}>Cargando...</div>;
@@ -779,7 +794,7 @@ export default function App() {
   // ── VISTAS ADMIN ──
   const Hoy=()=>{
     const h=hoy();const mes=h.slice(0,7);
-    const tHoy=turnos.filter(t=>t.fecha===h&&t.estado!=="cancelado").sort((a,b)=>a.hora-b.hora);
+    const tHoy=turnos.filter(t=>t.fecha===h&&(t.estado==="reservado"||t.estado==="pendiente_pago"||t.estado==="confirmado")).sort((a,b)=>a.hora-b.hora);
     const ingH=caja.filter(m=>m.fecha===h&&m.tipo==="ingreso").reduce((a,m)=>a+m.monto,0);
     const ingM=caja.filter(m=>m.fecha.startsWith(mes)&&m.tipo==="ingreso").reduce((a,m)=>a+m.monto,0);
     const egrM=caja.filter(m=>m.fecha.startsWith(mes)&&m.tipo==="egreso").reduce((a,m)=>a+m.monto,0);
@@ -819,8 +834,8 @@ export default function App() {
             <div style={{fontSize:16,fontWeight:500,color:BR.coral,minWidth:44}}>{t.hora}:00</div>
             <Avatar nombre={c?.nombre} size={36}/>
             <div style={{flex:1,minWidth:0}}><div style={{fontWeight:500,fontSize:13,color:TX.p}}>{c?.nombre||"?"}</div><div style={{fontSize:11,color:TX.s,marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}{ins&&<span>· {ins.nombre}</span>}{t.sena>0&&<span style={{color:BR.ok}}>· Seña: {gs(t.sena)}</span>}</div></div>
-            {t.estado==="reservado"&&<div style={{display:"flex",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
-              <Btn v="success" sm onClick={()=>setDlg({type:"confirmar",t})}>✓ Cobrar {gs(t.precio-(t.sena||0))}</Btn>
+            {(t.estado==="reservado"||t.estado==="pendiente_pago")&&<div style={{display:"flex",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+              <Btn v="success" sm onClick={()=>setDlg({type:"confirmar",t})}>{t.estado==="pendiente_pago"?"💰 Confirmar pago":`✓ Cobrar ${gs(t.precio-(t.sena||0))}`}</Btn>
               <Btn v="danger" sm onClick={()=>setDlg({type:"cancelar",t})}>✗</Btn>
             </div>}
           </div>;})}
