@@ -640,6 +640,8 @@ export default function App() {
   const [cajaFechaFin,setCajaFechaFin] = useState("");
   const [cajaTipo,setCajaTipo] = useState("");
   const [isRefreshing,setIsRefreshing] = useState(false);
+  const [lastTurnoCount,setLastTurnoCount] = useState(0);
+  const [notification,setNotification] = useState(null);
   const [session,setSession] = useState(()=>{
     const tk=localStorage.getItem("dx_token");
     const u=localStorage.getItem("dx_user");
@@ -654,6 +656,28 @@ export default function App() {
   const [form,setForm] = useState({});
   const [clima,setClima] = useState(null);
   const tk = session?.token;
+
+  const playNotificationSound = () => {
+    // Crear un sonido simple con Web Audio API (beep)
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Frecuencia y duración del beep
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch(e){console.log("Sonido no disponible");}
+  };
 
   const load = useCallback(async()=>{
     if(!tk) return;
@@ -671,10 +695,40 @@ export default function App() {
         db.get("config","limit=1",tk),
         db.get("abono_turnos","order=abono_id.asc",tk),
       ]);
-      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],cfg:cf?.[0]||prev.cfg}));
+      
+      const nuevosTurnos = tu||[];
+      
+      // Detectar nuevos turnos con estado pendiente_pago
+      if(lastTurnoCount>0 && nuevosTurnos.length>lastTurnoCount){
+        const nuevosTurnosRecientes = nuevosTurnos.filter(t=>t.estado==="pendiente_pago").slice(-5);
+        if(nuevosTurnosRecientes.length>0){
+          const c = (cl||[]).find(cliente=>cliente.id===nuevosTurnosRecientes[0].cliente_id);
+          const hora = nuevosTurnosRecientes[0].hora;
+          const fecha = nuevosTurnosRecientes[0].fecha;
+          
+          // Reproducir sonido
+          playNotificationSound();
+          
+          // Mostrar notificación
+          const msg = `🔔 Nueva reserva\n${c?.nombre||"Cliente"} - ${hora}:00hs`;
+          setNotification(msg);
+          setTimeout(()=>setNotification(null),5000);
+          
+          // Web Notification API si está disponible
+          if("Notification" in window && Notification.permission==="granted"){
+            new Notification("DEXON - Nueva Reserva",{
+              body:`${c?.nombre||"Cliente"} ha enviado comprobante\n${fecha} a las ${hora}:00hs`,
+              icon:"/logo192.png"
+            });
+          }
+        }
+      }
+      
+      setLastTurnoCount(nuevosTurnos.length);
+      setData(prev=>({turnos:nuevosTurnos,clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],cfg:cf?.[0]||prev.cfg}));
     } catch(e){console.error(e);}
     setIsRefreshing(false);
-  },[tk]);
+  },[tk,lastTurnoCount]);
 
   useEffect(()=>{if(tk)load();},[load,tk]);
 
@@ -701,6 +755,13 @@ export default function App() {
     const interval = setInterval(()=>{load();},30*1000);
     return ()=>clearInterval(interval);
   },[tk,load]);
+
+  // Solicitar permiso para Web Notifications
+  useEffect(()=>{
+    if("Notification" in window && Notification.permission==="default"){
+      Notification.requestPermission();
+    }
+  },[]);
 
   const doLogout = async()=>{
     if(session?.token) await auth.logout(session.token);
@@ -1091,6 +1152,18 @@ export default function App() {
         <>{tab==="hoy"&&<Hoy/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="config"&&<Config/>}</>
       )}
     </div>
+
+    {/* Notificación visual */}
+    {notification&&<div style={{position:"fixed",top:80,right:12,background:"linear-gradient(135deg,#0D2A1A,#1A5A30)",borderRadius:12,border:"1px solid #7ADDA8",padding:"16px 18px",boxShadow:"0 8px 24px rgba(0,0,0,0.4)",zIndex:9998,maxWidth:320,animation:"slideIn 0.3s ease-out",fontFamily:"var(--font-sans)"}}>
+      <div style={{fontSize:13,color:"#fff",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{notification}</div>
+    </div>}
+    
+    <style>{`
+      @keyframes slideIn {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `}</style>
 
     {/* MODALES */}
     <Modal show={modal==="turno"} onClose={closeM} title="Nueva reserva">
