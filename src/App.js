@@ -1181,10 +1181,10 @@ export default function App() {
         <div style={{fontSize:12,color:"#7ADDA8",fontWeight:600,marginBottom:12,textTransform:"uppercase"}}>🔄 Reprogramar turno</div>
         <R2 isMobile={isMobile}>
           <FG label="Nueva fecha">
-            <input type="date" value={form.fecha||""} onChange={sf("fecha")} style={inp}/>
+            <input type="date" value={form.fecha||""} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))} style={inp}/>
           </FG>
           <FG label="Nueva hora">
-            <select style={inp} value={form.hora??""} onChange={sf("hora")}>
+            <select style={inp} value={form.hora??""} onChange={e=>setForm(f=>({...f,hora:Number(e.target.value)}))}>
               {horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}
             </select>
           </FG>
@@ -1198,8 +1198,8 @@ export default function App() {
             await db.put("turnos",form.id,{fecha:form.fecha,hora:Number(form.hora)},tk);
             await load();
             setMsg("✓ Turno reprogramado");
-            setTimeout(()=>{closeM();setMsg("");},1000);
-          } catch(e){setMsg("Error al reprogramar");}
+            setTimeout(()=>{closeM();setMsg("");},800);
+          } catch(e){console.error(e);setMsg("Error al reprogramar");}
           setSaving(false);
         }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"✓ Reprogramar"}</Btn>
       </div>}
