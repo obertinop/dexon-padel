@@ -827,7 +827,7 @@ export default function App() {
         <div style={{display:"flex",flex:1,overflowX:"auto"}}>
           {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?"#fff":"rgba(255,255,255,0.45)",borderBottom:tab===t.id?`2px solid ${BR.coral}`:"2px solid transparent",fontWeight:tab===t.id?600:400,fontFamily:"var(--font-sans)"}}>{t.l}</button>)}
         </div>
-        <button onClick={doLogout} style={{padding:"6px 12px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:"rgba(216,90,48,0.15)",color:BR.coral,border:"1px solid rgba(216,90,48,0.3)",whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
+        <button onClick={doLogout} style={{padding:"6px 12px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:"rgba(216,90,48,0.08)",color:BR.coral,border:`1px solid ${BR.coralD}`",whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
       </div>
     </div>
 
