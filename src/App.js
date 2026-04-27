@@ -860,7 +860,7 @@ export default function App() {
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
-  const TABS=[{id:"hoy",l:"Hoy"},{id:"agenda",l:"Agenda"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"config",l:"Config"}];
+  const TABS=[{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"agenda",l:"Agenda"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"config",l:"Config"}];
 
   // ── VISTAS ADMIN ──
   const Hoy=()=>{
@@ -912,6 +912,42 @@ export default function App() {
           </div>;})}
         </div>}
       </div>
+    </div>;
+  };
+
+  const Pendientes=()=>{
+    const pendientes=turnos.filter(t=>t.estado==="pendiente_pago").sort((a,b)=>{
+      if(a.fecha!==b.fecha) return a.fecha.localeCompare(b.fecha);
+      return a.hora-b.hora;
+    });
+    
+    return<div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Reservas pendientes de confirmación</span>
+        <span style={{fontSize:12,color:TX.s,background:"#1E3070",padding:"4px 10px",borderRadius:6}}>{pendientes.length} pendiente{pendientes.length!==1?"s":""}</span>
+      </div>
+      {pendientes.length===0?<Empty t="Sin reservas pendientes"/>:<div style={{display:"grid",gap:8}}>
+        {pendientes.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);const fechaStr=fmtFechaLegible(t.fecha);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,background:"#0D1830",border:"1px solid #2A5F9F",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",minWidth:50,gap:2}}>
+            <div style={{fontSize:12,color:TX.s}}>📅</div>
+            <div style={{fontSize:13,fontWeight:600,color:BR.coral}}>{fechaStr.split(" ")[0]}</div>
+            <div style={{fontSize:11,color:TX.t}}>{t.hora}:00</div>
+          </div>
+          <Avatar nombre={c?.nombre} size={36}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:500,fontSize:13,color:TX.p}}>{c?.nombre||"?"}</div>
+            <div style={{fontSize:11,color:TX.s,marginTop:2}}>📱 {c?.telefono||"Sin teléfono"}</div>
+            <div style={{fontSize:11,color:TX.s,marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:BR.coral}}>{gs(t.precio)}</div>
+            <div style={{display:"flex",gap:6}}>
+              <Btn v="success" sm onClick={e=>{e.stopPropagation();setDlg({type:"confirmar",t});}}>💰 Confirmar</Btn>
+              <Btn v="danger" sm onClick={e=>{e.stopPropagation();setDlg({type:"cancelar",t});}}>✗</Btn>
+            </div>
+          </div>
+        </div>;})}
+      </div>}
     </div>;
   };
 
@@ -1149,7 +1185,7 @@ export default function App() {
 
     <div style={{padding:"18px 12px"}}>
       {loading?<div style={{textAlign:"center",padding:80,color:TX.s,fontSize:13}}>Cargando...</div>:(
-        <>{tab==="hoy"&&<Hoy/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="config"&&<Config/>}</>
+        <>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="config"&&<Config/>}</>
       )}
     </div>
 
