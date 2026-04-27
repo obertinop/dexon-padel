@@ -30,6 +30,17 @@ const card = { background:"#111E40", border:"1px solid #1E3070", borderRadius:14
 const metric = { background:"#0D1830", borderRadius:12, padding:"14px 16px", border:"1px solid #1A2B5A" };
 const lbl = { fontSize:12, color:TX.s, fontWeight:500, marginBottom:5, display:"block" };
 
+// Hook para detectar móvil
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  return isMobile;
+};
+
 // ── AUTH ──
 const auth = {
   login: async (email, pw) => {
@@ -102,7 +113,7 @@ const Inp = ({label,...p}) => {
   return <FG label={label}><input ref={ref} {...p} style={inp} defaultValue={p.value??""} onChange={p.onChange}/></FG>;
 };
 const Sel = ({label,children,...p}) => <FG label={label}><select {...p} style={inp}>{children}</select></FG>;
-const R2 = ({children}) => <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{children}</div>;
+const R2 = ({children,isMobile}) => <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>{children}</div>;
 const Div = () => <div style={{height:"1px",background:"#1E3070",margin:"16px 0"}}/>;
 const Empty = ({t}) => <div style={{textAlign:"center",padding:"40px 0",color:TX.t,fontSize:13}}>{t}</div>;
 
@@ -189,6 +200,7 @@ const Login = ({onLogin}) => {
 
 // ── PORTAL CLIENTE ──
 const PortalCliente = () => {
+  const isMobile = useIsMobile();
   const [cfg,setCfg] = useState({nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22});
   const [turnos,setTurnos] = useState([]);
   const [clientes,setClientes] = useState([]);
@@ -304,7 +316,7 @@ const PortalCliente = () => {
       </div>
     </div>
 
-    <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px"}}>
+    <div style={{maxWidth:isMobile?"100%":480,margin:"0 auto",padding:isMobile?"16px 12px":"20px 16px"}}>
       {paso==="lista"&&<>
         {/* Selector fecha */}
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"16px 18px",marginBottom:12}}>
@@ -313,14 +325,16 @@ const PortalCliente = () => {
         </div>
 
         {/* Clima */}
-        {climaFecha&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:16}}>
-          <div style={{fontSize:38}}>{climaIcon(climaFecha.code)}</div>
+        {climaFecha&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"14px 18px",marginBottom:12,display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",gap:isMobile?12:16}}>
+          <div style={{fontSize:38,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:600,color:TX.p}}>Pronóstico — Tavapy</div>
-            <div style={{fontSize:13,color:TX.s,marginTop:3}}>{climaFecha.max}° máx · {climaFecha.min}° mín · {climaFecha.lluvia}% lluvia</div>
+            <div style={{fontSize:13,color:TX.s,marginTop:3,lineHeight:1.5}}>{climaFecha.max}° máx · {climaFecha.min}° mín · {climaFecha.lluvia}% lluvia</div>
           </div>
-          {climaFecha.lluvia>=60&&<Badge type="info">🌧 Posible lluvia</Badge>}
-          {climaFecha.lluvia<30&&<Badge type="ok">☀️ Buen día</Badge>}
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:isMobile?"flex-start":"flex-end",width:isMobile?"100%":"auto"}}>
+            {climaFecha.lluvia>=60&&<Badge type="info">🌧 Lluvia</Badge>}
+            {climaFecha.lluvia<30&&<Badge type="ok">☀️ Buen día</Badge>}
+          </div>
         </div>}
 
         {/* Horarios */}
@@ -333,18 +347,18 @@ const PortalCliente = () => {
           {libres.map(h=>{
             const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
             const selec=slotsSel.includes(h);
-            return <div key={h} onClick={()=>toggleSlot(h)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:"1px solid #1A2B5A",cursor:"pointer",background:selec?"#1A3570":"#111E40"}}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:44,height:44,borderRadius:12,background:selec?BR.blueM:isPico?"rgba(216,90,48,0.2)":"#0D1830",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BR.coral:TX.s}}>
+            return <div key={h} onClick={()=>toggleSlot(h)} style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",padding:isMobile?"12px 14px":"14px 18px",borderBottom:"1px solid #1A2B5A",cursor:"pointer",background:selec?"#1A3570":"#111E40",gap:isMobile?8:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,width:isMobile?"100%":"auto"}}>
+                <div style={{width:44,height:44,borderRadius:12,background:selec?BR.blueM:isPico?"rgba(216,90,48,0.2)":"#0D1830",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BR.coral:TX.s,flexShrink:0}}>
                   {h}
                 </div>
-                <div>
-                  <div style={{fontSize:14,fontWeight:500,color:TX.p}}>{h}:00 — {h+1}:00 hs</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:isMobile?13:14,fontWeight:500,color:TX.p}}>{h}:00 — {h+1}:00 hs</div>
                   <div style={{fontSize:12,color:TX.s,marginTop:1}}>{isPico?"Horario pico 🔥":"Tarifa normal"}</div>
                 </div>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:15,fontWeight:700,color:selec?"#7EAAFF":isPico?BR.coral:TX.p}}>{gs(precioH(h))}</div>
+              <div style={{textAlign:isMobile?"left":"right",width:isMobile?"100%":"auto"}}>
+                <div style={{fontSize:isMobile?14:15,fontWeight:700,color:selec?"#7EAAFF":isPico?BR.coral:TX.p}}>{gs(precioH(h))}</div>
                 {selec&&<div style={{fontSize:11,color:"#7EAAFF",marginTop:2}}>✓ Seleccionado</div>}
               </div>
             </div>;
@@ -424,6 +438,7 @@ const PortalCliente = () => {
 
 // ── APP PRINCIPAL ──
 export default function App() {
+  const isMobile = useIsMobile();
   const esPortal = window.location.pathname.startsWith("/reservar");
   if(esPortal) return <PortalCliente/>;
 
@@ -797,7 +812,7 @@ export default function App() {
           </div>)}
         </div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
         <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Horarios pico</div>{hPico.map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #1A2B5A"}}><span style={{fontSize:13,minWidth:48,color:TX.p}}>{x.h}:00</span><div style={{flex:1,height:6,background:"#1A2B5A",borderRadius:3,overflow:"hidden"}}><div style={{width:`${x.n/maxH*100}%`,height:"100%",background:BR.coral,borderRadius:3}}/></div><span style={{fontSize:12,color:TX.s,minWidth:16}}>{x.n}</span></div>)}</div>
         <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Top clientes</div>{topC.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #1A2B5A"}}><Avatar nombre={c.nombre} size={28}/><span style={{flex:1,fontSize:13,color:TX.p}}>{c.nombre}</span><Badge type="info">{c.n} turnos</Badge></div>)}</div>
       </div>
@@ -809,7 +824,7 @@ export default function App() {
       <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Configuración</span>
       <div style={{display:"flex",gap:8}}><Btn v="ghost" onClick={()=>openM("instructor",{})}>+ Instructor</Btn><Btn v="primary" onClick={()=>openM("config",{...cfg})}>Editar</Btn></div>
     </div>
-    <div style={{...card,display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:16}}>
+    <div style={{...card,display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:20,marginBottom:16}}>
       {[{l:"Club",v:cfg.nombre_club},{l:"Tarifa base",v:gs(cfg.tarifa_base)},{l:"Tarifa pico",v:gs(cfg.tarifa_pico)},{l:"Horario pico",v:`${cfg.hora_pico_inicio}:00 - ${cfg.hora_pico_fin}:00`},{l:"Apertura",v:`${cfg.hora_inicio}:00`},{l:"Cierre",v:`${cfg.hora_fin}:00`}].map((r,i)=>
         <div key={i}><div style={{fontSize:12,color:TX.s,marginBottom:4}}>{r.l}</div><div style={{fontSize:15,fontWeight:500,color:TX.p}}>{r.v}</div></div>
       )}
@@ -820,7 +835,7 @@ export default function App() {
 
   const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"#0F1C3F",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
 
-  return <div style={{fontFamily:"var(--font-sans)",maxWidth:940,margin:"0 auto",background:"#081020",minHeight:"100vh"}}>
+  return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":940,margin:"0 auto",background:"#081020",minHeight:"100vh"}}>
     <div style={{background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 2px 16px rgba(0,0,0,0.4)"}}>
       <div style={{display:"flex",alignItems:"center",padding:"0 8px"}}>
         <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain",marginRight:8,flexShrink:0,padding:"8px 0"}}/>
@@ -840,7 +855,7 @@ export default function App() {
     {/* MODALES */}
     <Modal show={modal==="turno"} onClose={closeM} title="Nueva reserva">
       <Sel label="Cliente" value={form.cliente_id||""} onChange={sf("cliente_id")}><option value="">Seleccioná un cliente</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
-      <R2><Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/><FG label="Hora"><select style={inp} value={form.hora??""} onChange={sf("hora")}>{horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}</select></FG></R2>
+      <R2 isMobile={isMobile}><Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/><FG label="Hora"><select style={inp} value={form.hora??""} onChange={sf("hora")}>{horas.map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}</select></FG></R2>
       <Sel label="Tipo" value={form.tipo||"ocasional"} onChange={sf("tipo")}><option value="ocasional">Ocasional</option><option value="clase">Clase con instructor</option><option value="bloqueado">Bloquear horario</option></Sel>
       {form.tipo==="clase"&&<><Sel label="Instructor" value={form.instructor_id||""} onChange={sf("instructor_id")}><option value="">Sin instructor</option>{instructores.map(i=><option key={i.id} value={i.id}>{i.nombre}</option>)}</Sel><Inp label="Precio clase (Gs)" type="number" value={form.precio_clase||""} onChange={sf("precio_clase")}/></>}
       {form.tipo==="ocasional"&&<><div style={{background:"#0D1830",borderRadius:8,padding:"10px 12px",fontSize:13,marginBottom:14,color:TX.s}}>Precio: <strong style={{color:TX.p}}>{gs(precioTurno(Number(form.hora||cfg.hora_inicio)))}</strong>{Number(form.hora)>=cfg.hora_pico_inicio&&Number(form.hora)<cfg.hora_pico_fin&&<span style={{color:BR.coral}}> (pico)</span>}</div><Inp label="Seña (Gs) — opcional" type="number" value={form.sena||""} onChange={sf("sena")}/></>}
@@ -868,7 +883,7 @@ export default function App() {
     <Modal show={modal==="cliente"} onClose={closeM} title={form.id?"Editar cliente":"Nuevo cliente"}>
       <Inp label="Nombre completo" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
       <Inp label="Teléfono" type="text" value={form.telefono||""} onChange={sf("telefono")}/>
-      <R2><Sel label="Nivel" value={form.nivel||"intermedio"} onChange={sf("nivel")}><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></Sel></R2>
+      <R2 isMobile={isMobile}><Sel label="Nivel" value={form.nivel||"intermedio"} onChange={sf("nivel")}><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></Sel></R2>
       <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
       <Div/><div style={{display:"flex",justifyContent:"space-between"}}>
         {form.id&&<Btn v="danger" onClick={()=>setDlg({type:"eliminarCliente",id:form.id,nombre:form.nombre})}>Eliminar</Btn>}
@@ -895,7 +910,7 @@ export default function App() {
 
     <Modal show={modal==="plan"} onClose={closeM} title={form.id?"Editar plan":"Nuevo plan"}>
       <Inp label="Nombre" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
-      <R2><Inp label="Horas por semana" type="number" value={form.horas_semana||""} onChange={sf("horas_semana")}/><Inp label="Precio mensual (Gs)" type="number" value={form.precio||""} onChange={sf("precio")}/></R2>
+      <R2 isMobile={isMobile}><Inp label="Horas por semana" type="number" value={form.horas_semana||""} onChange={sf("horas_semana")}/><Inp label="Precio mensual (Gs)" type="number" value={form.precio||""} onChange={sf("precio")}/></R2>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarPlan} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 
@@ -908,7 +923,7 @@ export default function App() {
 
     <Modal show={modal==="movCaja"} onClose={closeM} title="Registrar movimiento">
       <Inp label="Descripción" type="text" value={form.descripcion||""} onChange={sf("descripcion")} autoFocus/>
-      <R2><Inp label="Monto (Gs)" type="number" value={form.monto||""} onChange={sf("monto")}/><Sel label="Tipo" value={form.tipo||"egreso"} onChange={sf("tipo")}><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></Sel></R2>
+      <R2 isMobile={isMobile}><Inp label="Monto (Gs)" type="number" value={form.monto||""} onChange={sf("monto")}/><Sel label="Tipo" value={form.tipo||"egreso"} onChange={sf("tipo")}><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></Sel></R2>
       <Sel label="Categoría" value={form.categoria||"gasto"} onChange={sf("categoria")}><option value="gasto">Gasto operativo</option><option value="stock">Stock</option><option value="otro">Otro</option></Sel>
       <Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarMovCaja} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
@@ -917,23 +932,23 @@ export default function App() {
     <Modal show={modal==="stockItem"} onClose={closeM} title={form.id?"Editar producto":"Nuevo producto"}>
       <Inp label="Nombre" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
       <Sel label="Categoría" value={form.categoria||"general"} onChange={sf("categoria")}><option value="pelotas">Pelotas</option><option value="paletas">Paletas</option><option value="bebidas">Bebidas</option><option value="accesorios">Accesorios</option><option value="general">General</option></Sel>
-      <R2><Inp label="Cantidad actual" type="number" value={form.cantidad??""} onChange={sf("cantidad")}/><Inp label="Stock mínimo" type="number" value={form.minimo??""} onChange={sf("minimo")}/></R2>
-      <R2><Inp label="Precio venta (Gs)" type="number" value={form.precio_venta??""} onChange={sf("precio_venta")}/><Inp label="Precio costo (Gs)" type="number" value={form.precio_costo??""} onChange={sf("precio_costo")}/></R2>
+      <R2 isMobile={isMobile}><Inp label="Cantidad actual" type="number" value={form.cantidad??""} onChange={sf("cantidad")}/><Inp label="Stock mínimo" type="number" value={form.minimo??""} onChange={sf("minimo")}/></R2>
+      <R2 isMobile={isMobile}><Inp label="Precio venta (Gs)" type="number" value={form.precio_venta??""} onChange={sf("precio_venta")}/><Inp label="Precio costo (Gs)" type="number" value={form.precio_costo??""} onChange={sf("precio_costo")}/></R2>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarStock} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 
     <Modal show={modal==="moverStock"} onClose={closeM} title="Movimiento de stock">
       <Sel label="Producto" value={form.stock_id||""} onChange={sf("stock_id")}><option value="">Seleccioná un producto</option>{stock.map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad})</option>)}</Sel>
-      <R2><Sel label="Tipo" value={form.tipo_mov||"salida"} onChange={sf("tipo_mov")}><option value="entrada">Entrada</option><option value="salida">Salida / Venta</option></Sel><Inp label="Cantidad" type="number" value={form.cantidad_mov||""} onChange={sf("cantidad_mov")}/></R2>
+      <R2 isMobile={isMobile}><Sel label="Tipo" value={form.tipo_mov||"salida"} onChange={sf("tipo_mov")}><option value="entrada">Entrada</option><option value="salida">Salida / Venta</option></Sel><Inp label="Cantidad" type="number" value={form.cantidad_mov||""} onChange={sf("cantidad_mov")}/></R2>
       <Inp label="Motivo" type="text" value={form.motivo||""} onChange={sf("motivo")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={moverStock} disabled={saving}>{saving?"Guardando...":"Confirmar"}</Btn></div>
     </Modal>
 
     <Modal show={modal==="config"} onClose={closeM} title="Configuración">
       <Inp label="Nombre del club" type="text" value={form.nombre_club||""} onChange={sf("nombre_club")}/>
-      <R2><Inp label="Tarifa base (Gs)" type="number" value={form.tarifa_base||""} onChange={sf("tarifa_base")}/><Inp label="Tarifa pico (Gs)" type="number" value={form.tarifa_pico||""} onChange={sf("tarifa_pico")}/></R2>
-      <R2><FG label="Hora pico inicio"><select style={inp} value={form.hora_pico_inicio??""} onChange={sf("hora_pico_inicio")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG><FG label="Hora pico fin"><select style={inp} value={form.hora_pico_fin??""} onChange={sf("hora_pico_fin")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG></R2>
-      <R2><FG label="Apertura"><select style={inp} value={form.hora_inicio??""} onChange={sf("hora_inicio")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG><FG label="Cierre"><select style={inp} value={form.hora_fin??""} onChange={sf("hora_fin")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG></R2>
+      <R2 isMobile={isMobile}><Inp label="Tarifa base (Gs)" type="number" value={form.tarifa_base||""} onChange={sf("tarifa_base")}/><Inp label="Tarifa pico (Gs)" type="number" value={form.tarifa_pico||""} onChange={sf("tarifa_pico")}/></R2>
+      <R2 isMobile={isMobile}><FG label="Hora pico inicio"><select style={inp} value={form.hora_pico_inicio??""} onChange={sf("hora_pico_inicio")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG><FG label="Hora pico fin"><select style={inp} value={form.hora_pico_fin??""} onChange={sf("hora_pico_fin")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG></R2>
+      <R2 isMobile={isMobile}><FG label="Apertura"><select style={inp} value={form.hora_inicio??""} onChange={sf("hora_inicio")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG><FG label="Cierre"><select style={inp} value={form.hora_fin??""} onChange={sf("hora_fin")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG></R2>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarConfig} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 
