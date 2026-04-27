@@ -1339,7 +1339,7 @@ export default function App() {
             <div style={{fontSize:13,fontWeight:500,color:TX.p,marginBottom:8}}>{dia}</div>
             <R2 isMobile={isMobile}>
               <FG label="Inicio">
-                <select style={inp} value={h.inicio??""} onChange={e=>{
+                <select style={inp} value={h.inicio||""} onChange={e=>{
                   const hor = JSON.parse(form.horarios_por_dia||"{}");
                   hor[i]={...h,inicio:Number(e.target.value)};
                   setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
@@ -1348,7 +1348,7 @@ export default function App() {
                 </select>
               </FG>
               <FG label="Fin">
-                <select style={inp} value={h.fin??""} onChange={e=>{
+                <select style={inp} value={h.fin||""} onChange={e=>{
                   const hor = JSON.parse(form.horarios_por_dia||"{}");
                   hor[i]={...h,fin:Number(e.target.value)};
                   setForm(f=>({...f,horarios_por_dia:JSON.stringify(hor)}));
@@ -1366,10 +1366,12 @@ export default function App() {
         <Btn v="primary" onClick={async()=>{
           setSaving(true);
           try {
-            await db.patch("config",form.id,{horarios_por_dia:form.horarios_por_dia},tk);
+            const cfgId = cfg?.id||form.id;
+            if(!cfgId){alert("Error: sin ID de config");setSaving(false);return;}
+            await db.patch("config",cfgId,{horarios_por_dia:form.horarios_por_dia||"{}"},tk);
             await load();
             closeM();
-          } catch(e){console.error(e);alert("Error");}
+          } catch(e){console.error(e);alert("Error al guardar horarios");}
           setSaving(false);
         }} disabled={saving}>{saving?"Guardando...":"Guardar horarios"}</Btn>
       </div>
