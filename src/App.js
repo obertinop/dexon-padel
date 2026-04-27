@@ -181,6 +181,8 @@ const Login = ({onLogin}) => {
   const [pw,setPw]=useState("");
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState("");
+  const [showNotifPrompt,setShowNotifPrompt]=useState(false);
+  
   const doLogin = async () => {
     if(!email||!pw) return;
     setLoading(true); setErr("");
@@ -188,10 +190,34 @@ const Login = ({onLogin}) => {
       const d = await auth.login(email,pw);
       localStorage.setItem("dx_token",d.access_token);
       localStorage.setItem("dx_user",JSON.stringify({id:d.user.id,email:d.user.email}));
-      onLogin(d.access_token,d.user);
+      
+      // Mostrar popup de notificaciones después de login exitoso
+      setShowNotifPrompt(true);
+      
+      // Luego de 1 segundo, hacer login
+      setTimeout(()=>{
+        onLogin(d.access_token,d.user);
+      },500);
     } catch(e) { setErr(e.message); }
     setLoading(false);
   };
+  
+  const requestNotifications = async () => {
+    if("Notification" in window){
+      try {
+        const permission = await Notification.requestPermission();
+        if(permission==="granted"){
+          // Mostrar notificación de prueba
+          new Notification("🔔 Notificaciones activadas",{
+            body:"Recibirás alertas cuando haya nuevas reservas",
+            icon:"/logo192.png"
+          });
+        }
+      } catch(e){console.error(e);}
+    }
+    setShowNotifPrompt(false);
+  };
+  
   return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`}}>
     <div style={{width:380,padding:"44px 36px",background:"rgba(255,255,255,0.04)",backdropFilter:"blur(20px)",borderRadius:20,border:"1px solid rgba(255,255,255,0.08)",boxShadow:"0 32px 80px rgba(0,0,0,0.5)"}}>
       <div style={{textAlign:"center",marginBottom:36}}>
@@ -211,6 +237,18 @@ const Login = ({onLogin}) => {
         {loading?"Ingresando...":"Ingresar"}
       </button>
     </div>
+    
+    {/* Popup de notificaciones */}
+    {showNotifPrompt&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
+      <div style={{backgroundColor:"#111E40",borderRadius:14,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid #1E3070"}}>
+        <div style={{fontSize:18,fontWeight:600,marginBottom:12,color:"#fff"}}>🔔 Activa notificaciones</div>
+        <div style={{fontSize:14,color:"#9AAAD4",marginBottom:20,lineHeight:1.6}}>Recibirás alertas instantáneas cuando haya nuevas reservas para que confirmes el pago.</div>
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <button onClick={()=>setShowNotifPrompt(false)} style={{padding:"10px 16px",background:"transparent",color:"#6677AA",border:"1px solid #1E3070",borderRadius:8,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Después</button>
+          <button onClick={requestNotifications} style={{padding:"10px 16px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Activar</button>
+        </div>
+      </div>
+    </div>}
   </div>;
 };
 
