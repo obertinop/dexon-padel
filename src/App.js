@@ -538,7 +538,7 @@ const PortalCliente = () => {
           </div>
           <div style={{marginBottom:20}}>
             <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Teléfono</label>
-            <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpPortal} placeholder="0981-123456"/>
+            <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpPortal} placeholder="Tu número"/>
           </div>
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
           <button onClick={()=>setPaso("pago")} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
