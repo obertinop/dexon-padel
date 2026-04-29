@@ -642,11 +642,291 @@ const PortalCliente = () => {
   </div>;
 };
 
+// ── LANDING PAGE ──
+function LandingPage({ onAdmin }) {
+  const isMobile = useIsMobile();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const scrollTo = (id) => {
+    setMenuOpen(false);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const st = {
+    page: { fontFamily: "'Segoe UI', sans-serif", background: "#08101F", color: "#E8EEFF", minHeight: "100vh", overflowX: "hidden" },
+    nav: { position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(8,16,31,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1E3070", padding: isMobile ? "12px 20px" : "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between" },
+    logo: { height: 36, objectFit: "contain" },
+    logoText: { fontSize: 18, fontWeight: 800, color: "#E8EEFF", letterSpacing: 1 },
+    navLinks: { display: isMobile ? "none" : "flex", gap: 28, alignItems: "center" },
+    navLink: { color: "#9AAAD4", fontSize: 14, fontWeight: 500, cursor: "pointer", transition: "color 0.2s", textDecoration: "none" },
+    navBtns: { display: "flex", gap: 10, alignItems: "center" },
+    btnOutline: { padding: "8px 18px", border: "1px solid #D85A30", borderRadius: 8, background: "transparent", color: "#D85A30", fontSize: 13, fontWeight: 600, cursor: "pointer" },
+    btnSolid: { padding: "8px 18px", border: "none", borderRadius: 8, background: "#D85A30", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+    hero: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", textAlign: "center", padding: isMobile ? "100px 24px 60px" : "120px 40px 80px", position: "relative", overflow: "hidden" },
+    heroBg: { position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(15,28,63,0.9) 0%, #08101F 70%)", zIndex: 0 },
+    heroAccent: { position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,90,48,0.12) 0%, transparent 70%)", zIndex: 0 },
+    heroContent: { position: "relative", zIndex: 1, maxWidth: 700 },
+    heroBadge: { display: "inline-block", padding: "6px 16px", background: "rgba(216,90,48,0.15)", border: "1px solid rgba(216,90,48,0.3)", borderRadius: 20, fontSize: 12, color: "#D85A30", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 24 },
+    heroTitle: { fontSize: isMobile ? 38 : 64, fontWeight: 900, lineHeight: 1.05, margin: "0 0 20px", letterSpacing: -1 },
+    heroSpan: { color: "#D85A30" },
+    heroSub: { fontSize: isMobile ? 16 : 20, color: "#9AAAD4", lineHeight: 1.6, marginBottom: 40, maxWidth: 520, margin: "0 auto 40px" },
+    heroButtons: { display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" },
+    btnHeroMain: { padding: isMobile ? "14px 28px" : "16px 36px", border: "none", borderRadius: 12, background: "#D85A30", color: "#fff", fontSize: isMobile ? 15 : 17, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(216,90,48,0.35)" },
+    btnHeroSec: { padding: isMobile ? "14px 28px" : "16px 36px", border: "1.5px solid #2A3F6B", borderRadius: 12, background: "transparent", color: "#E8EEFF", fontSize: isMobile ? 15 : 17, fontWeight: 600, cursor: "pointer" },
+    section: { padding: isMobile ? "60px 24px" : "80px 40px", maxWidth: 1100, margin: "0 auto" },
+    sectionTitle: { fontSize: isMobile ? 26 : 36, fontWeight: 800, marginBottom: 12, letterSpacing: -0.5 },
+    sectionSub: { fontSize: 15, color: "#9AAAD4", marginBottom: 48, lineHeight: 1.6 },
+    divider: { width: 48, height: 4, background: "#D85A30", borderRadius: 2, marginBottom: 16 },
+    grid2: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 },
+    grid3: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 },
+    featureCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, padding: "28px 24px" },
+    featureIcon: { fontSize: 32, marginBottom: 16 },
+    featureTitle: { fontSize: 17, fontWeight: 700, marginBottom: 8, color: "#E8EEFF" },
+    featureText: { fontSize: 14, color: "#9AAAD4", lineHeight: 1.7 },
+    mapBox: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, overflow: "hidden" },
+    mapFrame: { width: "100%", height: isMobile ? 260 : 360, border: "none", display: "block" },
+    mapInfo: { padding: "24px 28px" },
+    mapInfoRow: { display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 },
+    mapInfoIcon: { fontSize: 20, marginTop: 2, flexShrink: 0 },
+    mapInfoText: { fontSize: 14, color: "#9AAAD4", lineHeight: 1.6 },
+    mapInfoLabel: { fontWeight: 700, color: "#E8EEFF", display: "block", marginBottom: 2 },
+    contactGrid: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, alignItems: "start" },
+    contactCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, padding: "28px 24px" },
+    waBtn: { display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", padding: "14px 20px", background: "#25D366", border: "none", borderRadius: 12, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", textDecoration: "none", marginTop: 20 },
+    scheduleRow: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1E3070", fontSize: 14 },
+    scheduleDay: { color: "#9AAAD4" },
+    scheduleHrs: { color: "#E8EEFF", fontWeight: 600 },
+    footer: { background: "#050D1A", borderTop: "1px solid #1E3070", padding: isMobile ? "30px 24px" : "40px 40px", textAlign: "center" },
+    footerLogo: { fontSize: 20, fontWeight: 900, color: "#E8EEFF", letterSpacing: 1, marginBottom: 8 },
+    footerSub: { fontSize: 13, color: "#6677AA", marginBottom: 20 },
+    footerLinks: { display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 },
+    footerLink: { fontSize: 13, color: "#6677AA", cursor: "pointer" },
+    footerCopy: { fontSize: 12, color: "#3A4A6B" },
+    mobileMenu: { position: "fixed", top: 64, left: 0, right: 0, background: "#0A1428", borderBottom: "1px solid #1E3070", zIndex: 99, padding: "16px 24px", display: "flex", flexDirection: "column", gap: 4 },
+    mobileLink: { padding: "12px 0", fontSize: 16, fontWeight: 500, color: "#9AAAD4", cursor: "pointer", borderBottom: "1px solid #0F1C3F" },
+  };
+
+  return (
+    <div style={st.page}>
+      {/* NAV */}
+      <nav style={st.nav}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <img src={LOGO} alt="DEXON" style={st.logo} onError={e => { e.target.style.display = "none"; }} />
+          <span style={st.logoText}>DEXON PADEL</span>
+        </div>
+        {!isMobile && (
+          <div style={st.navLinks}>
+            <span style={st.navLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</span>
+            <span style={st.navLink} onClick={() => scrollTo("cancha")}>La cancha</span>
+            <span style={st.navLink} onClick={() => scrollTo("ubicacion")}>Ubicación</span>
+            <span style={st.navLink} onClick={() => scrollTo("contacto")}>Contacto</span>
+          </div>
+        )}
+        <div style={st.navBtns}>
+          {!isMobile && (
+            <button style={st.btnOutline} onClick={onAdmin}>Admin</button>
+          )}
+          <button style={st.btnSolid} onClick={() => window.location.href = "/reservar"}>Reservar →</button>
+          {isMobile && (
+            <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: "none", border: "none", color: "#9AAAD4", fontSize: 22, cursor: "pointer", padding: "0 4px" }}>
+              {menuOpen ? "✕" : "☰"}
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {/* MOBILE MENU */}
+      {isMobile && menuOpen && (
+        <div style={st.mobileMenu}>
+          <div style={st.mobileLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</div>
+          <div style={st.mobileLink} onClick={() => scrollTo("cancha")}>La cancha</div>
+          <div style={st.mobileLink} onClick={() => scrollTo("ubicacion")}>Ubicación</div>
+          <div style={st.mobileLink} onClick={() => scrollTo("contacto")}>Contacto</div>
+          <div style={{ ...st.mobileLink, color: "#D85A30" }} onClick={onAdmin}>Administración</div>
+        </div>
+      )}
+
+      {/* HERO */}
+      <section style={st.hero}>
+        <div style={st.heroBg} />
+        <div style={st.heroAccent} />
+        <div style={st.heroContent}>
+          <span style={st.heroBadge}>🎾 Tavapy · Alto Paraná · Paraguay</span>
+          <h1 style={st.heroTitle}>
+            Tu cancha de<br /><span style={st.heroSpan}>pádel en Tavapy</span>
+          </h1>
+          <p style={st.heroSub}>
+            Reservá tu turno fácil y rápido. Disfrutá del mejor pádel de la zona con instalaciones de primer nivel.
+          </p>
+          <div style={st.heroButtons}>
+            <button style={st.btnHeroMain} onClick={() => window.location.href = "/reservar"}>
+              Reservar cancha →
+            </button>
+            <button style={st.btnHeroSec} onClick={() => scrollTo("nosotros")}>
+              Conocer más
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* QUIÉNES SOMOS */}
+      <section id="nosotros" style={{ background: "#0A1428" }}>
+        <div style={st.section}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>Quiénes somos</h2>
+          <p style={st.sectionSub}>
+            DEXON PADEL es el primer club de pádel de Tavapy, Alto Paraná. Nació con la misión de acercar este deporte a la comunidad local, con una cancha profesional, ambiente familiar y atención personalizada.
+          </p>
+          <div style={st.grid3}>
+            {[
+              { icon: "🏆", title: "Calidad profesional", text: "Cancha construida con materiales de primer nivel, iluminación LED y superficie reglamentaria para el mejor juego." },
+              { icon: "👨‍👩‍👧", title: "Ambiente familiar", text: "Un espacio pensado para todos: principiantes, aficionados y jugadores avanzados. Venís con quien quieras." },
+              { icon: "📅", title: "Reservas simples", text: "Sistema de reservas online disponible las 24 horas. Elegí tu horario, confirmá por WhatsApp y listo." },
+            ].map((f, i) => (
+              <div key={i} style={st.featureCard}>
+                <div style={st.featureIcon}>{f.icon}</div>
+                <div style={st.featureTitle}>{f.title}</div>
+                <div style={st.featureText}>{f.text}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* LA CANCHA */}
+      <section id="cancha">
+        <div style={st.section}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>La cancha</h2>
+          <p style={st.sectionSub}>Todo lo que necesitás para jugar al pádel en un solo lugar.</p>
+          <div style={st.grid2}>
+            {[
+              { icon: "💡", title: "Iluminación LED", text: "Iluminación profesional para jugar de día o de noche sin inconvenientes." },
+              { icon: "🎾", title: "Superficie reglamentaria", text: "Piso de césped sintético de alta calidad, homologado para competencia." },
+              { icon: "🅿️", title: "Estacionamiento", text: "Amplio espacio para estacionar sin preocupaciones." },
+              { icon: "🚿", title: "Vestuarios", text: "Instalaciones limpias y cómodas para cambiarte antes y después del partido." },
+            ].map((f, i) => (
+              <div key={i} style={{ ...st.featureCard, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 28, flexShrink: 0 }}>{f.icon}</span>
+                <div>
+                  <div style={st.featureTitle}>{f.title}</div>
+                  <div style={st.featureText}>{f.text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* UBICACIÓN */}
+      <section id="ubicacion" style={{ background: "#0A1428" }}>
+        <div style={st.section}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>Dónde estamos</h2>
+          <p style={st.sectionSub}>Encontranos en Tavapy, Alto Paraná. Fácil acceso desde Ciudad del Este y alrededores.</p>
+          <div style={st.mapBox}>
+            <iframe
+              title="Ubicación DEXON PADEL"
+              style={st.mapFrame}
+              src="https://maps.google.com/maps?q=Tavapy,+Alto+Paraná,+Paraguay&output=embed&z=14"
+              allowFullScreen=""
+              loading="lazy"
+            />
+            <div style={st.mapInfo}>
+              <div style={st.mapInfoRow}>
+                <span style={st.mapInfoIcon}>📍</span>
+                <div style={st.mapInfoText}>
+                  <span style={st.mapInfoLabel}>Dirección</span>
+                  Tavapy, Alto Paraná, Paraguay
+                </div>
+              </div>
+              <div style={st.mapInfoRow}>
+                <span style={st.mapInfoIcon}>🕐</span>
+                <div style={st.mapInfoText}>
+                  <span style={st.mapInfoLabel}>Horarios</span>
+                  Lunes a Viernes: 18:00 – 24:00 · Sábados y Domingos: 10:00 – 24:00
+                </div>
+              </div>
+              <div style={st.mapInfoRow}>
+                <span style={st.mapInfoIcon}>📞</span>
+                <div style={st.mapInfoText}>
+                  <span style={st.mapInfoLabel}>Teléfono / WhatsApp</span>
+                  <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{ color: "#25D366", textDecoration: "none", fontWeight: 600 }}>
+                    +595 994 952 201
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CONTACTO */}
+      <section id="contacto">
+        <div style={st.section}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>Contacto</h2>
+          <p style={st.sectionSub}>¿Tenés dudas o querés coordinar algo especial? Escribinos y te respondemos rápido.</p>
+          <div style={st.contactGrid}>
+            <div style={st.contactCard}>
+              <div style={{ fontSize: 28, marginBottom: 16 }}>💬</div>
+              <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>WhatsApp</div>
+              <div style={{ fontSize: 14, color: "#9AAAD4", lineHeight: 1.7, marginBottom: 4 }}>
+                La forma más rápida de contactarnos. Respondemos en minutos.
+              </div>
+              <div style={{ fontSize: 14, color: "#9AAAD4" }}>Consultas · Reservas · Información general</div>
+              <a href={`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20PADEL%2C%20quería%20consultar...`} target="_blank" rel="noreferrer" style={st.waBtn}>
+                <span style={{ fontSize: 20 }}>📱</span> Escribir por WhatsApp
+              </a>
+            </div>
+            <div style={st.contactCard}>
+              <div style={{ fontSize: 28, marginBottom: 16 }}>🕐</div>
+              <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>Horarios de atención</div>
+              {[
+                { dia: "Lunes a Viernes", hrs: "18:00 – 24:00" },
+                { dia: "Sábados", hrs: "10:00 – 24:00" },
+                { dia: "Domingos", hrs: "10:00 – 24:00" },
+              ].map((h, i) => (
+                <div key={i} style={st.scheduleRow}>
+                  <span style={st.scheduleDay}>{h.dia}</span>
+                  <span style={st.scheduleHrs}>{h.hrs}</span>
+                </div>
+              ))}
+              <button style={{ ...st.btnHeroMain, width: "100%", marginTop: 20, fontSize: 14 }} onClick={() => window.location.href = "/reservar"}>
+                Reservar cancha →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer style={st.footer}>
+        <div style={st.footerLogo}>DEXON PADEL</div>
+        <div style={st.footerSub}>Tavapy · Alto Paraná · Paraguay</div>
+        <div style={st.footerLinks}>
+          <span style={st.footerLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</span>
+          <span style={st.footerLink} onClick={() => scrollTo("cancha")}>La cancha</span>
+          <span style={st.footerLink} onClick={() => scrollTo("ubicacion")}>Ubicación</span>
+          <span style={st.footerLink} onClick={() => scrollTo("contacto")}>Contacto</span>
+          <span style={{ ...st.footerLink, color: "#D85A30" }} onClick={onAdmin}>Administración</span>
+        </div>
+        <div style={st.footerCopy}>© {new Date().getFullYear()} DEXON PADEL · Todos los derechos reservados</div>
+      </footer>
+    </div>
+  );
+}
+
 // ── APP PRINCIPAL ──
 export default function App() {
   const isMobile = useIsMobile();
   const esPortal = window.location.pathname.startsWith("/reservar");
   if(esPortal) return <PortalCliente/>;
+
+  const esAdmin = window.location.pathname.startsWith("/admin");
+  if(!esAdmin) {
+    return <LandingPage onAdmin={() => window.location.href = "/admin"} />;
+  }
 
   const [tab,setTab] = useState("agenda");
   const [cajaFechaIni,setCajaFechaIni] = useState("");
