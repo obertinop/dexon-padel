@@ -1,3 +1,10 @@
-# https://www.robotstxt.org/robotstxt.html
+# Permitir todos los bots
 User-agent: *
-Disallow:
+Allow: /
+
+# Específicamente permitir Facebook
+User-agent: facebookexternalhit
+Allow: /
+
+# Sitemap
+Sitemap: https://dexon.com.py/sitemap.xml
