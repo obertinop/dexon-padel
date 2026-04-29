@@ -892,7 +892,23 @@ function LandingPage({ onAdmin }) {
                   <span style={st.scheduleHrs}>{h.hrs}</span>
                 </div>
               ))}
-              <button style={{ ...st.btnHeroMain, width: "100%", marginTop: 20, fontSize: 14 }} onClick={() => window.location.href = "/reservar"}>
+              <button
+                style={{
+                  width: "100%",
+                  marginTop: 20,
+                  padding: "14px 20px",
+                  border: "none",
+                  borderRadius: 12,
+                  background: "#D85A30",
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxSizing: "border-box",
+                  display: "block",
+                }}
+                onClick={() => window.location.href = "/reservar"}
+              >
                 Reservar cancha →
               </button>
             </div>
