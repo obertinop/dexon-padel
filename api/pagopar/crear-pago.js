@@ -31,8 +31,10 @@ export default async function handler(req, res) {
   // ID único de pedido (alfanumérico, único entre staging y producción)
   const idPedido = `RES-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-  // Token según docs: sha1(privateKey + idPedido + monto como float string)
-  const token = sha1(PRIVATE_KEY + idPedido + parseFloat(total).toString());
+  const montoInt = parseInt(total, 10);
+
+  // Token según docs Pagopar v2.0: sha1(privateKey + publicKey + monto_total)
+  const token = sha1(PRIVATE_KEY + PUBLIC_KEY + montoInt.toString());
 
   // Fecha máxima de pago: 30 minutos desde ahora
   const fechaMax = new Date(Date.now() + 30 * 60 * 1000)
@@ -48,14 +50,18 @@ export default async function handler(req, res) {
     telNorm = telNorm.startsWith("0") ? `+595${telNorm.slice(1)}` : `+595${telNorm}`;
   }
 
+  const SITE_URL = process.env.SITE_URL || "https://www.dexon.com.py";
+
   const payload = {
     token,
     public_key: PUBLIC_KEY,
-    monto_total: parseInt(total, 10),
+    monto_total: montoInt,
     tipo_pedido: "VENTA-COMERCIO",
     id_pedido_comercio: idPedido,
     descripcion_resumen: descripcion,
     fecha_maxima_pago: fechaMax,
+    // $hash es reemplazado por Pagopar con el hash real de la transacción
+    url_retorno: `${SITE_URL}/reserva-resultado?hash=$hash`,
     comprador: {
       ruc: "",
       email: email || "sinmail@dexonpadel.com.py",
@@ -70,7 +76,7 @@ export default async function handler(req, res) {
       direccion_referencia: null,
     },
     compras_items: [{
-      ciudad: "1",
+      ciudad: 1,
       categoria: "909",
       nombre: descripcion,
       cantidad: slots.length,
@@ -78,7 +84,7 @@ export default async function handler(req, res) {
       url_imagen: "",
       descripcion: descripcion,
       id_producto: idPedido,
-      precio_total: parseInt(total, 10),
+      precio_total: montoInt,
       vendedor_telefono: "",
       vendedor_direccion: "",
       vendedor_direccion_referencia: "",
@@ -101,10 +107,12 @@ export default async function handler(req, res) {
   }
 
   if (!pagoparData?.respuesta) {
-    console.error("Pagopar rechazó el pedido:", pagoparData);
-    return res.status(400).json({
-      error: typeof pagoparData?.resultado === "string" ? pagoparData.resultado : "Pagopar rechazó el pedido"
-    });
+    console.error("Pagopar rechazó el pedido:", JSON.stringify(pagoparData));
+    const msg =
+      typeof pagoparData?.resultado === "string"
+        ? pagoparData.resultado
+        : pagoparData?.resultado?.[0]?.mensaje || pagoparData?.mensaje || "Pagopar rechazó el pedido";
+    return res.status(400).json({ error: msg, raw: pagoparData });
   }
 
   const hashPedido = pagoparData.resultado[0].data;

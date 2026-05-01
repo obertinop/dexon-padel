@@ -23,7 +23,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Pagopar no configurado en el servidor" });
   }
 
-  const token = sha1(PRIVATE_KEY + "CONSULTA");
+  // Token según docs Pagopar: sha1(privateKey + hash_pedido)
+  const token = sha1(PRIVATE_KEY + hashPedido);
 
   try {
     const r = await fetch(`${API_URL}/api/pedidos/1.1/traer`, {
