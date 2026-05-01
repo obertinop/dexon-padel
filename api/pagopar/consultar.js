@@ -1,6 +1,5 @@
 // /api/pagopar/consultar.js
 // Consulta el estado actual de un pedido en Pagopar
-// Útil para botón "Verificar estado" en admin y para la página /reserva-resultado
 import crypto from "crypto";
 
 const sha1 = (s) => crypto.createHash("sha1").update(s).digest("hex");
@@ -23,8 +22,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Pagopar no configurado en el servidor" });
   }
 
-  // Token según docs Pagopar: sha1(privateKey + hash_pedido)
-  const token = sha1(PRIVATE_KEY + hashPedido);
+  // Token según docs oficiales: sha1(privateKey + "CONSULTA")
+  const token = sha1(PRIVATE_KEY + "CONSULTA");
 
   try {
     const r = await fetch(`${API_URL}/api/pedidos/1.1/traer`, {

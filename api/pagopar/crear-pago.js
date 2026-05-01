@@ -6,7 +6,6 @@ import { createClient } from "@supabase/supabase-js";
 const sha1 = (s) => crypto.createHash("sha1").update(s).digest("hex");
 
 export default async function handler(req, res) {
-  // CORS (por si en algún momento se llama desde otro dominio)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -15,7 +14,6 @@ export default async function handler(req, res) {
 
   const { nombre, telefono, email, documento, fecha, slots, total } = req.body || {};
 
-  // Validaciones básicas
   if (!nombre || !telefono || !fecha || !Array.isArray(slots) || slots.length === 0 || !total) {
     return res.status(400).json({ error: "Faltan datos obligatorios" });
   }
@@ -28,29 +26,22 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Pagopar no configurado en el servidor" });
   }
 
-  // ID único de pedido (alfanumérico, único entre staging y producción)
   const idPedido = `RES-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-
   const montoInt = parseInt(total, 10);
 
-  // Token según docs Pagopar v2.0: sha1(privateKey + publicKey + monto_total)
-  const token = sha1(PRIVATE_KEY + PUBLIC_KEY + montoInt.toString());
+  // Token según docs oficiales: sha1(privateKey + idPedido + strval(floatval(monto)))
+  const token = sha1(PRIVATE_KEY + idPedido + String(parseFloat(montoInt)));
 
-  // Fecha máxima de pago: 30 minutos desde ahora
   const fechaMax = new Date(Date.now() + 30 * 60 * 1000)
     .toISOString().replace("T", " ").slice(0, 19);
 
-  // Construcción del payload
   const horasStr = slots.map(h => `${h}:00`).join(", ");
   const descripcion = `Reserva DEXON Padel - ${fecha} - ${horasStr}`;
 
-  // Normalizar teléfono al formato internacional
   let telNorm = telefono.replace(/\s+/g, "");
   if (!telNorm.startsWith("+")) {
     telNorm = telNorm.startsWith("0") ? `+595${telNorm.slice(1)}` : `+595${telNorm}`;
   }
-
-  const SITE_URL = process.env.SITE_URL || "https://www.dexon.com.py";
 
   const payload = {
     token,
@@ -60,8 +51,6 @@ export default async function handler(req, res) {
     id_pedido_comercio: idPedido,
     descripcion_resumen: descripcion,
     fecha_maxima_pago: fechaMax,
-    // $hash es reemplazado por Pagopar con el hash real de la transacción
-    url_retorno: `${SITE_URL}/reserva-resultado?hash=$hash`,
     comprador: {
       ruc: "",
       email: email || "sinmail@dexonpadel.com.py",
@@ -76,7 +65,7 @@ export default async function handler(req, res) {
       direccion_referencia: null,
     },
     compras_items: [{
-      ciudad: 1,
+      ciudad: "1",
       categoria: "909",
       nombre: descripcion,
       cantidad: slots.length,
@@ -92,7 +81,6 @@ export default async function handler(req, res) {
     }],
   };
 
-  // Llamada a Pagopar
   let pagoparData;
   try {
     const r = await fetch(`${API_URL}/api/comercios/2.0/iniciar-transaccion`, {
@@ -118,13 +106,11 @@ export default async function handler(req, res) {
   const hashPedido = pagoparData.resultado[0].data;
   const pedidoNum = pagoparData.resultado[0].pedido;
 
-  // Crear turnos en Supabase con estado "pendiente_pago"
   const sb = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // Buscar o crear cliente
   const telLimpio = telefono.replace(/\D/g, "");
   let clienteId = null;
   const { data: clientesEnc } = await sb
@@ -152,8 +138,7 @@ export default async function handler(req, res) {
     clienteId = nuevoCli.id;
   }
 
-  // Insertar turnos
-  const precioPorSlot = Math.round(parseInt(total, 10) / slots.length);
+  const precioPorSlot = Math.round(montoInt / slots.length);
   const turnosNuevos = slots.map(h => ({
     fecha,
     hora: h,
@@ -176,7 +161,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Error guardando turnos" });
   }
 
-  // Devolver al frontend la URL de checkout
   return res.status(200).json({
     ok: true,
     checkout_url: `https://www.pagopar.com/pagos/${hashPedido}`,
