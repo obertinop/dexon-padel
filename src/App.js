@@ -330,6 +330,7 @@ const PortalCliente = () => {
   const [msg,setMsg] = useState("");
   const [clima,setClima] = useState({});
   const [comprobante,setComprobante] = useState(null);
+  const [metodoPago,setMetodoPago] = useState("transferencia");
 
   useEffect(()=>{
     const load = async () => {
@@ -551,72 +552,134 @@ const PortalCliente = () => {
         <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:TX.s,marginBottom:16,fontFamily:"var(--font-sans)"}}>← Volver</button>
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
           <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Completá tu pago</div>
-          
+
           {/* Resumen */}
           <div style={{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,borderRadius:12,padding:"14px 18px",marginBottom:20}}>
             <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>Total a pagar: {gs(totalSel)}</div>
             <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginTop:4}}>{slotsSel.length} hora{slotsSel.length>1?"s":""} · {fmtFechaLegible(fecha)}</div>
           </div>
 
-          {/* Datos de transferencia */}
-          <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:20,border:"1px solid #1A2B5A"}}>
-            <div style={{fontSize:12,color:TX.s,fontWeight:600,marginBottom:12,textTransform:"uppercase"}}>📱 Transferencia bancaria</div>
-            <div style={{fontSize:13,color:TX.p,lineHeight:1.8}}>
-              <div style={{marginBottom:8}}><span style={{color:TX.s}}>Banco:</span> <strong>UENO</strong></div>
-              <div style={{marginBottom:8}}><span style={{color:TX.s}}>Alias:</span> <strong style={{fontSize:14,letterSpacing:1,color:BR.coral}}>80168039-5</strong></div>
-              <div><span style={{color:TX.s}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
+          {/* Selector de método de pago */}
+          <div style={{fontSize:12,color:TX.s,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:0.4}}>Elegí cómo pagar</div>
+
+          <div onClick={()=>setMetodoPago("transferencia")} style={{
+            border:metodoPago==="transferencia"?`2px solid ${BR.coral}`:"1px solid #1E3070",
+            borderRadius:12,padding:"14px 16px",marginBottom:10,cursor:"pointer",
+            background:metodoPago==="transferencia"?"#1A1530":"#0D1830",
+            transition:"all 0.15s"
+          }}>
+            <div style={{fontSize:14,fontWeight:600,color:TX.p,marginBottom:4}}>Transferencia bancaria</div>
+            <div style={{fontSize:12,color:TX.s}}>UENO · Enviás comprobante por WhatsApp</div>
+          </div>
+
+          <div onClick={()=>setMetodoPago("pagopar")} style={{
+            border:metodoPago==="pagopar"?`2px solid ${BR.coral}`:"1px solid #1E3070",
+            borderRadius:12,padding:"14px 16px",marginBottom:18,cursor:"pointer",
+            background:metodoPago==="pagopar"?"#1A1530":"#0D1830",
+            transition:"all 0.15s"
+          }}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+              <div style={{fontSize:14,fontWeight:600,color:TX.p}}>Pago online</div>
+              <span style={{fontSize:10,padding:"2px 7px",background:"#0D2E5A",color:"#7EAAFF",borderRadius:6}}>Confirmación inmediata</span>
+            </div>
+            <div style={{fontSize:12,color:TX.s,marginBottom:8}}>Tarjeta · PIX · Tigo Money · Personal · QR</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+              {["Visa","Master","PIX","Tigo","Personal","Zimple"].map(t=>(
+                <span key={t} style={{fontSize:10,padding:"2px 6px",background:"#0D1830",border:"1px solid #1E3070",borderRadius:5,color:TX.s}}>{t}</span>
+              ))}
             </div>
           </div>
 
-          {/* Instrucciones */}
-          <div style={{background:"#0D2E1A",borderRadius:12,padding:"14px 16px",marginBottom:20,border:"1px solid #1A5A30"}}>
-            <div style={{fontSize:12,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>ℹ️ Cómo funciona</div>
-            <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>
-              1. Realizá la transferencia al alias <strong>80168039-5</strong><br/>
-              2. Clickea el botón verde de WhatsApp<br/>
-              3. Enviá la foto del comprobante<br/>
-              4. Recibirás confirmación
-            </div>
-          </div>
+          {/* Datos según método */}
+          {metodoPago==="transferencia" && (
+            <>
+              <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
+                <div style={{fontSize:13,color:TX.p,lineHeight:1.8}}>
+                  <div style={{marginBottom:6}}><span style={{color:TX.s}}>Banco:</span> <strong>UENO</strong></div>
+                  <div style={{marginBottom:6}}><span style={{color:TX.s}}>Alias:</span> <strong style={{fontSize:14,letterSpacing:1,color:BR.coral}}>80168039-5</strong></div>
+                  <div><span style={{color:TX.s}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
+                </div>
+              </div>
+              <div style={{background:"#0D2E1A",borderRadius:12,padding:"12px 14px",marginBottom:18,border:"1px solid #1A5A30"}}>
+                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.6}}>
+                  1. Hacé la transferencia al alias <strong>80168039-5</strong><br/>
+                  2. Tocá el botón verde<br/>
+                  3. Enviá la foto del comprobante por WhatsApp
+                </div>
+              </div>
+            </>
+          )}
 
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
-          
-          <button onClick={async ()=>{
-            if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
-            if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
-            setSaving(true);setMsg("");
-            try {
-              const {match,cliente}=buscarCliente();
-              let clienteId=cliente?.id;
-              let nota="Comprobante enviado vía WhatsApp - Pendiente confirmación";
-              // Si es cliente nuevo, crear primero
-              if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
-              else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
-              else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
-              
-              // Guardar turnos con estado pendiente_pago
-              for(const h of slotsSel){
-                await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota},SUPA_KEY);
+
+          {/* Botón según método elegido */}
+          {metodoPago==="transferencia" ? (
+            <button onClick={async ()=>{
+              if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
+              if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
+              setSaving(true);setMsg("");
+              try {
+                const {match,cliente}=buscarCliente();
+                let clienteId=cliente?.id;
+                let nota="Comprobante enviado vía WhatsApp - Pendiente confirmación";
+                if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
+                else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
+                else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
+
+                for(const h of slotsSel){
+                  await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota,metodo_pago:"transferencia"},SUPA_KEY);
+                }
+
+                const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
+                const msgWsp = encodeURIComponent(
+                  `🏀 *COMPROBANTE DE PAGO*\n\n` +
+                  `Nombre: *${form.nombre}*\n` +
+                  `Teléfono: *${form.telefono}*\n\n` +
+                  `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
+                  `⏰ Horarios: *${horasStr}hs*\n` +
+                  `💰 Total: *${gs(totalSel)}*\n\n` +
+                  `Adjunto: Foto de la transferencia al alias 80168039-5`
+                );
+                window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
+                setPaso("confirmado");
+              } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
+              setSaving(false);
+            }} disabled={saving} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+              {saving?"Guardando...":"📱 Enviar comprobante por WhatsApp"}
+            </button>
+          ) : (
+            <button onClick={async ()=>{
+              if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tus datos.");return;}
+              if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
+              setSaving(true);setMsg("");
+              try {
+                const r = await fetch("/api/pagopar/crear-pago",{
+                  method:"POST",
+                  headers:{"Content-Type":"application/json"},
+                  body: JSON.stringify({
+                    nombre: form.nombre.trim(),
+                    telefono: form.telefono.trim(),
+                    fecha,
+                    slots: slotsSel,
+                    total: totalSel
+                  })
+                });
+                const d = await r.json();
+                if(!r.ok || !d.checkout_url){
+                  setMsg(d.error || "Error iniciando pago. Intentá de nuevo.");
+                  setSaving(false);
+                  return;
+                }
+                window.location.href = d.checkout_url;
+              } catch(e){
+                console.error(e);
+                setMsg("Error de conexión. Intentá de nuevo.");
+                setSaving(false);
               }
-              
-              // Abrir WhatsApp después de guardar
-              const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
-              const msgWsp = encodeURIComponent(
-                `🏀 *COMPROBANTE DE PAGO*\n\n` +
-                `Nombre: *${form.nombre}*\n` +
-                `Teléfono: *${form.telefono}*\n\n` +
-                `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
-                `⏰ Horarios: *${horasStr}hs*\n` +
-                `💰 Total: *${gs(totalSel)}*\n\n` +
-                `Adjunto: Foto de la transferencia al alias 80168039-5`
-              );
-              window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
-              setPaso("confirmado");
-            } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
-            setSaving(false);
-          }} disabled={saving} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",marginBottom:10}}>
-            {saving?"Guardando y abriendo WhatsApp...":"📱 Enviar comprobante por WhatsApp"}
-          </button>
+            }} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+              {saving?"Procesando...":"Pagar online →"}
+            </button>
+          )}
         </div>
       </>}
 
@@ -938,9 +1001,119 @@ function LandingPage({ onAdmin }) {
   );
 }
 
+// ── RESULTADO DE PAGO PAGOPAR ──
+const ResultadoPago = () => {
+  const [estado, setEstado] = useState("verificando");
+  const [datos, setDatos] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hash = params.get("hash");
+    if (!hash) { setEstado("error"); return; }
+
+    const consultar = async () => {
+      try {
+        const r = await fetch(`/api/pagopar/consultar?hash=${hash}`);
+        const d = await r.json();
+        if (d?.resultado?.[0]) {
+          const res = d.resultado[0];
+          setDatos(res);
+          if (res.pagado) setEstado("pagado");
+          else if (res.cancelado) setEstado("cancelado");
+          else setEstado("pendiente");
+        } else {
+          setEstado("error");
+        }
+      } catch(e) {
+        console.error(e);
+        setEstado("error");
+      }
+    };
+    consultar();
+  }, []);
+
+  const wrap = {minHeight:"100vh",background:BR.dark,color:TX.p,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",padding:20};
+  const card = {background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"36px 24px",textAlign:"center",maxWidth:420,width:"100%"};
+  const icon = {width:72,height:72,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"};
+
+  if (estado === "verificando") return (
+    <div style={wrap}><div style={card}>
+      <div style={{...icon,background:"#1A3570",border:"2px solid #2A5F9F"}}>⏳</div>
+      <div style={{fontSize:20,fontWeight:700,marginBottom:8}}>Verificando pago...</div>
+      <div style={{fontSize:14,color:TX.s}}>Estamos confirmando tu transacción con Pagopar</div>
+    </div></div>
+  );
+
+  if (estado === "pagado") return (
+    <div style={wrap}><div style={card}>
+      <div style={{...icon,background:"#0D3020",border:"2px solid #1A5A30"}}>✓</div>
+      <div style={{fontSize:22,fontWeight:700,marginBottom:8,color:"#7ADDA8"}}>¡Pago confirmado!</div>
+      <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>
+        Tu reserva está confirmada. Te esperamos en <strong style={{color:TX.p}}>DEXON Padel</strong>.
+      </div>
+      <div style={{background:"#0D1830",borderRadius:12,padding:16,marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A",fontSize:13,color:TX.s,lineHeight:2}}>
+        <div>💰 Monto: <strong style={{color:TX.p}}>{gs(parseFloat(datos.monto))}</strong></div>
+        <div>💳 Método: <strong style={{color:TX.p}}>{datos.forma_pago}</strong></div>
+        <div>🧾 Comprobante: <strong style={{color:TX.p}}>{datos.numero_pedido}</strong></div>
+      </div>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        Volver al portal
+      </button>
+    </div></div>
+  );
+
+  if (estado === "pendiente") return (
+    <div style={wrap}><div style={card}>
+      <div style={{...icon,background:"#3A2A10",border:"2px solid #854F0B"}}>⏳</div>
+      <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:"#FAC775"}}>Pago pendiente</div>
+      <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>
+        Tu pago aún no fue confirmado. Si elegiste boca de cobranza, acercate al local indicado.
+      </div>
+      {datos?.mensaje_resultado_pago && (
+        <div style={{background:"#0D1830",borderRadius:12,padding:14,marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A",fontSize:13,color:TX.s,lineHeight:1.6}}
+          dangerouslySetInnerHTML={{__html: datos.mensaje_resultado_pago.descripcion}}/>
+      )}
+      <button onClick={()=>window.location.reload()} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",marginBottom:8,fontFamily:"var(--font-sans)"}}>
+        Verificar de nuevo
+      </button>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        Volver al portal
+      </button>
+    </div></div>
+  );
+
+  if (estado === "cancelado") return (
+    <div style={wrap}><div style={card}>
+      <div style={{...icon,background:"#3A1010",border:"2px solid #A32D2D"}}>×</div>
+      <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:"#F58282"}}>Pago cancelado</div>
+      <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>El pago fue cancelado. Podés intentar nuevamente.</div>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        Volver a reservar
+      </button>
+    </div></div>
+  );
+
+  return (
+    <div style={wrap}><div style={card}>
+      <div style={{...icon,background:"#3A1010",border:"2px solid #A32D2D"}}>!</div>
+      <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:"#F58282"}}>Error verificando pago</div>
+      <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>No pudimos consultar el estado. Contactanos por WhatsApp si ya pagaste.</div>
+      <button onClick={()=>window.open(`https://wa.me/${ADMIN_TEL}`,"_blank")} style={{width:"100%",padding:14,background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",marginBottom:10,fontFamily:"var(--font-sans)"}}>
+        📱 Contactar por WhatsApp
+      </button>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        Volver al portal
+      </button>
+    </div></div>
+  );
+};
+
 // ── APP PRINCIPAL ──
 export default function App() {
   const isMobile = useIsMobile();
+  const esResultado = window.location.pathname.startsWith("/reserva-resultado");
+  if(esResultado) return <ResultadoPago/>;
+
   const esPortal = window.location.pathname.startsWith("/reservar");
   if(esPortal) return <PortalCliente/>;
 
@@ -1206,11 +1379,32 @@ export default function App() {
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:500,fontSize:13,color:TX.p}}>{c?.nombre||"?"}</div>
             <div style={{fontSize:11,color:TX.s,marginTop:2}}>📱 {c?.telefono||"Sin teléfono"}</div>
-            <div style={{fontSize:11,color:TX.s,marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}</div>
+            <div style={{fontSize:11,color:TX.s,marginTop:2,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+              {tipoBadge(t.tipo)} {estadoBadge(t.estado)}
+              {t.metodo_pago==="pagopar"&&<span style={{fontSize:10,padding:"2px 7px",background:"#0D2E5A",color:"#7EAAFF",borderRadius:5,border:"1px solid #1E5095"}}>Pagopar{t.pagopar_forma_pago?` · ${t.pagopar_forma_pago}`:""}</span>}
+              {t.metodo_pago==="transferencia"&&<span style={{fontSize:10,padding:"2px 7px",background:"#1A2A0A",color:"#A8D47A",borderRadius:5,border:"1px solid #3B6D11"}}>Transferencia</span>}
+            </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
             <div style={{fontSize:13,fontWeight:600,color:BR.coral}}>{gs(t.precio)}</div>
-            <div style={{display:"flex",gap:6}}>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+              {t.metodo_pago==="pagopar"&&t.pagopar_hash&&<Btn sm onClick={async e=>{
+                e.stopPropagation();
+                try{
+                  const r=await fetch(`/api/pagopar/consultar?hash=${t.pagopar_hash}`);
+                  const d=await r.json();
+                  const res=d?.resultado?.[0];
+                  if(!res){alert("No se pudo consultar el estado");return;}
+                  if(res.pagado){
+                    alert(`✓ Pagado el ${res.fecha_pago}\nMétodo: ${res.forma_pago}\nComprob: ${res.numero_pedido}\n\nRecargá la página para ver actualizado.`);
+                    load();
+                  } else if(res.cancelado){
+                    alert(`✗ Pago cancelado/expirado en Pagopar`);
+                  } else {
+                    alert(`⏳ Pendiente: ${res.mensaje_resultado_pago?.titulo||"Esperando pago"}`);
+                  }
+                }catch(err){alert("Error consultando Pagopar");}
+              }}>🔍 Verificar</Btn>}
               <Btn v="success" sm onClick={e=>{e.stopPropagation();setDlg({type:"confirmar",t});}}>💰 Confirmar</Btn>
               <Btn v="danger" sm onClick={e=>{e.stopPropagation();setDlg({type:"cancelar",t});}}>✗</Btn>
             </div>
