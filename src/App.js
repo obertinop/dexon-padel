@@ -672,7 +672,9 @@ const PortalCliente = () => {
                 });
                 const d = await r.json();
                 if(!r.ok || !d.checkout_url){
-                  setMsg(d.error || "Error iniciando pago. Intentá de nuevo.");
+                  const detalle = d.detail ? ` (${d.detail})` : "";
+                  setMsg((d.error || "Error iniciando pago.") + detalle);
+                  console.error("[crear-pago]", d);
                   setSaving(false);
                   return;
                 }
