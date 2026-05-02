@@ -1339,7 +1339,7 @@ export default function App() {
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
-  const TABS=[{id:"agenda",l:"Agenda"},{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"config",l:"Config"}];
+  const TABS=[{id:"agenda",l:"Agenda"},{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"whatsapp",l:"💬 WA"},{id:"config",l:"Config"}];
 
   // ── VISTAS ADMIN ──
   const Hoy=()=>{
@@ -1685,6 +1685,80 @@ export default function App() {
     <div style={card}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
   </div>;
 
+  const WhatsApp=()=>{
+    const [msgs,setMsgs]=useState([]);
+    const [loadingMsgs,setLoadingMsgs]=useState(true);
+    const [error,setError]=useState(null);
+    const [soloNoLeidos,setSoloNoLeidos]=useState(false);
+
+    const cargar=useCallback(async()=>{
+      setLoadingMsgs(true);setError(null);
+      try{
+        const r=await fetch(`/api/whatsapp/mensajes?limit=100${soloNoLeidos?"&solo_no_leidos=true":""}`);
+        if(!r.ok)throw new Error(await r.text());
+        setMsgs(await r.json());
+      }catch(e){setError(e.message);}
+      finally{setLoadingMsgs(false);}
+    },[soloNoLeidos]);
+
+    useEffect(()=>{cargar();},[cargar]);
+
+    const marcarLeido=async(ids)=>{
+      await fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
+      setMsgs(p=>p.map(m=>ids.includes(m.id)?{...m,leido:true}:m));
+    };
+
+    const noLeidos=msgs.filter(m=>!m.leido).length;
+
+    return <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div>
+          <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Mensajes WhatsApp</span>
+          {noLeidos>0&&<span style={{marginLeft:10,background:BR.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{noLeidos} nuevos</span>}
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <label style={{fontSize:12,color:TX.s,cursor:"pointer",display:"flex",gap:6,alignItems:"center"}}>
+            <input type="checkbox" checked={soloNoLeidos} onChange={e=>setSoloNoLeidos(e.target.checked)} style={{cursor:"pointer"}}/>
+            Solo no leídos
+          </label>
+          <Btn sm v="ghost" onClick={cargar}>Actualizar</Btn>
+          {noLeidos>0&&<Btn sm v="primary" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Marcar todos leídos</Btn>}
+        </div>
+      </div>
+
+      {error&&<div style={{...card,background:BR.dangerL,color:BR.danger,marginBottom:12,fontSize:13}}>{error}</div>}
+
+      {loadingMsgs?<div style={{textAlign:"center",padding:60,color:TX.s,fontSize:13}}>Cargando...</div>
+      :msgs.length===0?<div style={{...card,textAlign:"center",padding:40}}>
+          <div style={{fontSize:32,marginBottom:10}}>💬</div>
+          <div style={{color:TX.s,fontSize:14}}>{soloNoLeidos?"No hay mensajes sin leer":"No hay mensajes recibidos aún"}</div>
+          <div style={{color:TX.t,fontSize:12,marginTop:8}}>Los mensajes que los clientes envíen por WhatsApp aparecerán aquí</div>
+        </div>
+      :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {msgs.map(m=>{
+          const telLimpio=(m.de||"").replace(/\D/g,"");
+          const ts=new Date(m.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+          return <div key={m.id} style={{...card,borderLeft:`3px solid ${m.leido?"#1E3070":BR.coral}`,opacity:m.leido?0.75:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>👤</div>
+                <div>
+                  <div style={{fontWeight:600,fontSize:14,color:TX.p}}>{m.nombre||m.de}</div>
+                  <div style={{fontSize:11,color:TX.t}}>{m.de} · {ts}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {!m.leido&&<Btn sm v="ghost" onClick={()=>marcarLeido([m.id])}>Leído</Btn>}
+                <button onClick={()=>window.open(`https://wa.me/${telLimpio}`,"_blank")} style={{padding:"4px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"#1A3A1A",color:"#25D366",border:"1px solid #1A4A1A",fontFamily:"var(--font-sans)"}}>Responder</button>
+              </div>
+            </div>
+            <div style={{fontSize:13,color:TX.p,padding:"8px 12px",background:"#0D1830",borderRadius:8,lineHeight:1.5}}>{m.mensaje}</div>
+          </div>;
+        })}
+      </div>}
+    </div>;
+  };
+
   const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"#0F1C3F",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
 
   return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":940,margin:"0 auto",background:"#081020",minHeight:"100vh",paddingTop:isMobile?68:0}}>
@@ -1704,7 +1778,7 @@ export default function App() {
 
     <div style={{padding:"18px 12px",paddingTop:isMobile?"18px":"18px",paddingBottom:"env(safe-area-inset-bottom)"}}>
       {loading?<div style={{textAlign:"center",padding:80,color:TX.s,fontSize:13}}>Cargando...</div>:(
-        <>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="config"&&<Config/>}</>
+        <>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="whatsapp"&&<WhatsApp/>}{tab==="config"&&<Config/>}</>
       )}
     </div>
 
