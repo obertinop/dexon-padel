@@ -1762,7 +1762,19 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{fontSize:13,color:TX.p,padding:"8px 12px",background:"#0D1830",borderRadius:8,lineHeight:1.5,marginBottom:estaAbierto?10:0}}>{m.mensaje}</div>
+            {/* Contenido del mensaje según tipo */}
+            {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
+              ?<div style={{padding:"8px 12px",background:"#0D1830",borderRadius:8,marginBottom:estaAbierto?10:0}}>
+                  <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36,accentColor:"#25D366"}}/>
+                  {m.mensaje&&m.mensaje!=="[Audio]"&&m.mensaje!=="[Nota de voz]"&&<div style={{fontSize:12,color:TX.s,marginTop:4}}>{m.mensaje}</div>}
+                </div>
+              :m.tipo==="image"&&m.media_id
+              ?<div style={{padding:"8px 12px",background:"#0D1830",borderRadius:8,marginBottom:estaAbierto?10:0}}>
+                  <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="imagen" style={{maxWidth:"100%",maxHeight:260,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
+                  {m.mensaje&&m.mensaje!=="[Imagen]"&&<div style={{fontSize:12,color:TX.s,marginTop:4}}>{m.mensaje}</div>}
+                </div>
+              :<div style={{fontSize:13,color:TX.p,padding:"8px 12px",background:"#0D1830",borderRadius:8,lineHeight:1.5,marginBottom:estaAbierto?10:0}}>{m.mensaje}</div>
+            }
 
             {estaAbierto&&<div style={{marginTop:8,display:"flex",gap:8,alignItems:"flex-end"}}>
               <textarea
