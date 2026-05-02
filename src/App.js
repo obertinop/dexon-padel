@@ -1705,14 +1705,30 @@ export default function App() {
 
     useEffect(()=>{cargar();},[cargar]);
 
+    const [enviando,setEnviando]=useState({});
+    const [enviado,setEnviado]=useState({});
+
     const marcarLeido=async(ids)=>{
       await fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
       setMsgs(p=>p.map(m=>ids.includes(m.id)?{...m,leido:true}:m));
     };
 
-    const enviarRespuesta=(tel,texto)=>{
-      const t=(tel||"").replace(/\D/g,"");
-      window.open(`https://wa.me/${t}?text=${encodeURIComponent(texto)}`,"_blank");
+    const enviarRespuesta=async(id,tel,texto)=>{
+      if(!texto?.trim())return;
+      setEnviando(p=>({...p,[id]:true}));
+      try{
+        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:tel,mensaje:texto.trim()})});
+        const data=await r.json();
+        if(!r.ok)throw new Error(data.error||"Error enviando");
+        setEnviado(p=>({...p,[id]:true}));
+        setRespuestas(p=>({...p,[id]:""}));
+        marcarLeido([id]);
+        setTimeout(()=>{setEnviado(p=>({...p,[id]:false}));setAbierto(null);},1500);
+      }catch(e){
+        alert("Error al enviar: "+e.message);
+      }finally{
+        setEnviando(p=>({...p,[id]:false}));
+      }
     };
 
     const noLeidos=msgs.filter(m=>!m.leido).length;
@@ -1780,20 +1796,19 @@ export default function App() {
               <textarea
                 value={respuestas[m.id]||""}
                 onChange={e=>setRespuestas(p=>({...p,[m.id]:e.target.value}))}
-                placeholder="Escribí tu respuesta..."
+                onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta(m.id,m.de,respuestas[m.id]);}}
+                placeholder="Escribí tu respuesta... (Ctrl+Enter para enviar)"
                 rows={3}
                 style={{...inp,resize:"vertical",flex:1,fontSize:13}}
+                disabled={enviando[m.id]}
               />
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 <button
-                  onClick={()=>{
-                    if(!respuestas[m.id]?.trim())return;
-                    enviarRespuesta(m.de,respuestas[m.id].trim());
-                    if(!m.leido)marcarLeido([m.id]);
-                  }}
-                  style={{padding:"8px 14px",borderRadius:8,fontSize:13,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,whiteSpace:"nowrap"}}
+                  onClick={()=>enviarRespuesta(m.id,m.de,respuestas[m.id])}
+                  disabled={enviando[m.id]||!respuestas[m.id]?.trim()}
+                  style={{padding:"8px 14px",borderRadius:8,fontSize:13,cursor:"pointer",background:enviado[m.id]?"#1A4A1A":"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,whiteSpace:"nowrap",opacity:(enviando[m.id]||!respuestas[m.id]?.trim())?0.6:1}}
                 >
-                  Enviar WA
+                  {enviando[m.id]?"Enviando...":enviado[m.id]?"✓ Enviado":"Enviar"}
                 </button>
                 <button
                   onClick={()=>setAbierto(null)}
