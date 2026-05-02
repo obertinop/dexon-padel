@@ -118,11 +118,15 @@ export default async function handler(req, res) {
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const telLimpio = telefono.replace(/\D/g, "");
-  const { data: clientesEnc } = await sb
-    .from("clientes")
-    .select("id")
-    .or(`telefono.eq.${telefono},telefono.eq.${telLimpio}`)
-    .limit(1);
+  // Buscar con .eq() separados para evitar problemas con '+' en .or()
+  let clientesEnc = null;
+  const { data: enc1 } = await sb.from("clientes").select("id").eq("telefono", telefono).limit(1);
+  if (enc1?.length > 0) {
+    clientesEnc = enc1;
+  } else {
+    const { data: enc2 } = await sb.from("clientes").select("id").eq("telefono", telLimpio).limit(1);
+    if (enc2?.length > 0) clientesEnc = enc2;
+  }
 
   let clienteId;
   if (clientesEnc?.length > 0) {
@@ -132,8 +136,19 @@ export default async function handler(req, res) {
       .from("clientes")
       .insert({ nombre: nombre.trim(), telefono: telefono.trim(), nivel: "intermedio", notas: "Registrado vía Pagopar" })
       .select("id").single();
-    if (errCli) return res.status(500).json({ error: "Error guardando cliente" });
-    clienteId = nuevoCli.id;
+    if (errCli) {
+      console.error("[supabase] Error insertando cliente:", JSON.stringify(errCli));
+      // Si es conflicto de unicidad (race condition), intentar buscar de nuevo
+      if (errCli.code === "23505") {
+        const { data: reintento } = await sb.from("clientes").select("id").eq("telefono", telefono).limit(1);
+        if (reintento?.length > 0) { clienteId = reintento[0].id; }
+        else return res.status(500).json({ error: "Error guardando cliente", detail: errCli.message });
+      } else {
+        return res.status(500).json({ error: "Error guardando cliente", detail: errCli.message, code: errCli.code });
+      }
+    } else {
+      clienteId = nuevoCli.id;
+    }
   }
 
   const precioPorSlot = Math.round(montoInt / slots.length);
