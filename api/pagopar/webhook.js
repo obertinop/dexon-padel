@@ -30,10 +30,10 @@ export default async function handler(req, res) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // Buscar todos los turnos de este pedido (puede haber más de uno por hash)
+  // Buscar todos los turnos de este pedido
   const { data: turnos, error: errBuscar } = await sb
     .from("turnos")
-    .select("id, precio, hora, fecha")
+    .select("id, precio, hora, fecha, cliente_id, tipo")
     .eq("pagopar_hash", hash_pedido);
 
   if (errBuscar) {
@@ -43,7 +43,6 @@ export default async function handler(req, res) {
 
   if (!turnos || turnos.length === 0) {
     console.warn("Turnos no encontrados para hash:", hash_pedido);
-    // Devolvemos 200 para que Pagopar no reintente eternamente
     return res.status(200).json(json.resultado);
   }
 
@@ -67,14 +66,73 @@ export default async function handler(req, res) {
       console.error("Error actualizando turnos como pagados:", errUpd);
       return res.status(500).json({ error: "Error actualizando turnos" });
     }
+
+    // Registrar el ingreso en caja (idempotente: una fila por turno, evita duplicados en reintentos)
+    const { data: yaRegistrados } = await sb
+      .from("caja")
+      .select("turno_id")
+      .in("turno_id", idsTurnos)
+      .eq("tipo", "ingreso");
+
+    const idsYa = new Set((yaRegistrados || []).map(r => r.turno_id));
+    const nuevosMov = turnos
+      .filter(t => !idsYa.has(t.id))
+      .map(t => ({
+        descripcion: `Pago online (${data.forma_pago || "Pagopar"}) - Pedido ${data.numero_pedido || hash_pedido.slice(0,8)}`,
+        tipo: "ingreso",
+        categoria: t.tipo === "clase" ? "clase" : "reserva",
+        monto: t.precio,
+        fecha: t.fecha,
+        turno_id: t.id,
+      }));
+
+    if (nuevosMov.length > 0) {
+      const { error: errCaja } = await sb.from("caja").insert(nuevosMov);
+      if (errCaja) {
+        console.error("Error registrando movimientos en caja:", errCaja);
+        // no bloqueamos la respuesta — el turno ya está reservado
+      } else {
+        console.log(`✓ Caja: ${nuevosMov.length} mov(s) registrado(s)`);
+      }
+    }
+
     console.log(`✓ Pago confirmado hash=${hash_pedido} turnos=${idsTurnos.length}`);
 
+    // Notificar por WhatsApp al cliente y al admin (fire & forget)
+    const primerTurno = turnos[0];
+    const { data: cliente } = await sb
+      .from("clientes")
+      .select("nombre, telefono")
+      .eq("id", primerTurno.cliente_id)
+      .single();
+
+    if (cliente) {
+      const horasStr = turnos.map(t => `${t.hora}:00`).join(" · ");
+      const montoTotal = turnos.reduce((a, t) => a + t.precio, 0);
+      const host = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "https://www.dexon.com.py";
+
+      fetch(`${host}/api/whatsapp/enviar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo: "pago_confirmado",
+          nombre: cliente.nombre,
+          telefono: cliente.telefono,
+          fecha: primerTurno.fecha,
+          horarios: horasStr,
+          monto: `Gs ${montoTotal.toLocaleString("es-PY")}`,
+          forma_pago: data.forma_pago || "Pago online",
+        }),
+      }).catch(e => console.error("[whatsapp] Error llamando endpoint:", e));
+    }
+
   } else if (pagado === false && data.fecha_pago === null && data.cancelado === false) {
-    // Pedido aún pendiente de pago — no hacer nada (sigue como pendiente_pago)
     console.log(`Pedido todavía pendiente: ${hash_pedido}`);
 
   } else {
-    // REVERSIÓN o cancelación
+    // REVERSIÓN o cancelación → cancelar turnos y revertir ingreso si existía
     const { error: errRev } = await sb
       .from("turnos")
       .update({
@@ -86,9 +144,28 @@ export default async function handler(req, res) {
     if (errRev) {
       console.error("Error reversando turnos:", errRev);
     }
+
+    // Registrar egreso por la reversión (solo si había ingreso previo)
+    const { data: ingresosPrevios } = await sb
+      .from("caja")
+      .select("id, turno_id, monto")
+      .in("turno_id", idsTurnos)
+      .eq("tipo", "ingreso");
+
+    if (ingresosPrevios?.length > 0) {
+      const movRev = ingresosPrevios.map(m => ({
+        descripcion: `Reversión Pagopar - turno ${m.turno_id}`,
+        tipo: "egreso",
+        categoria: "reserva",
+        monto: m.monto,
+        fecha: new Date().toISOString().slice(0, 10),
+        turno_id: m.turno_id,
+      }));
+      await sb.from("caja").insert(movRev);
+    }
+
     console.log(`× Pago reversado hash=${hash_pedido}`);
   }
 
-  // Pagopar espera que devolvamos el contenido de "resultado" tal cual
   return res.status(200).json(json.resultado);
 }

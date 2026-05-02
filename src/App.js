@@ -325,7 +325,7 @@ const PortalCliente = () => {
   const [fecha,setFecha] = useState(hoy());
   const [slotsSel,setSlotsSel] = useState([]);
   const [paso,setPaso] = useState("lista");
-  const [form,setForm] = useState({nombre:"",telefono:""});
+  const [form,setForm] = useState({nombre:"",telefono:"",documento:""});
   const [saving,setSaving] = useState(false);
   const [msg,setMsg] = useState("");
   const [clima,setClima] = useState({});
@@ -610,6 +610,15 @@ const PortalCliente = () => {
             </>
           )}
 
+          {/* Datos requeridos por Pagopar (solo cuando se elige pago online) */}
+          {metodoPago==="pagopar" && (
+            <div style={{background:"#0D1830",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
+              <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad <span style={{color:BR.coral}}>*</span></label>
+              <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpPortal} placeholder="Número de CI (sin puntos)"/>
+              <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>Requerido por la pasarela de pago para verificación.</div>
+            </div>
+          )}
+
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
 
           {/* Botón según método elegido */}
@@ -641,6 +650,21 @@ const PortalCliente = () => {
                   `Adjunto: Foto de la transferencia al alias 80168039-5`
                 );
                 window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
+
+                // Notificación WhatsApp automática al cliente y admin (fire & forget)
+                fetch("/api/whatsapp/enviar",{
+                  method:"POST",
+                  headers:{"Content-Type":"application/json"},
+                  body:JSON.stringify({
+                    tipo:"transferencia_pendiente",
+                    nombre:form.nombre.trim(),
+                    telefono:form.telefono.trim(),
+                    fecha:fmtFechaLegible(fecha),
+                    horarios:horasStr+"hs",
+                    monto:gs(totalSel),
+                  })
+                }).catch(()=>{});
+
                 setPaso("confirmado");
               } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
               setSaving(false);
@@ -650,6 +674,7 @@ const PortalCliente = () => {
           ) : (
             <button onClick={async ()=>{
               if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tus datos.");return;}
+              if(!form.documento.trim()){setMsg("Ingresá tu cédula de identidad.");return;}
               if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
               setSaving(true);setMsg("");
               try {
@@ -657,8 +682,9 @@ const PortalCliente = () => {
                   method:"POST",
                   headers:{"Content-Type":"application/json"},
                   body: JSON.stringify({
-                    nombre: form.nombre.trim(),
-                    telefono: form.telefono.trim(),
+                    nombre:    form.nombre.trim(),
+                    telefono:  form.telefono.trim(),
+                    documento: form.documento.trim(),
                     fecha,
                     slots: slotsSel,
                     total: totalSel
@@ -666,7 +692,9 @@ const PortalCliente = () => {
                 });
                 const d = await r.json();
                 if(!r.ok || !d.checkout_url){
-                  setMsg(d.error || "Error iniciando pago. Intentá de nuevo.");
+                  const detalle = d.detail ? ` (${d.detail})` : "";
+                  setMsg((d.error || "Error iniciando pago.") + detalle);
+                  console.error("[crear-pago]", d);
                   setSaving(false);
                   return;
                 }
@@ -676,8 +704,17 @@ const PortalCliente = () => {
                 setMsg("Error de conexión. Intentá de nuevo.");
                 setSaving(false);
               }
-            }} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-              {saving?"Procesando...":"Pagar online →"}
+            }} disabled={saving||!form.documento.trim()} style={{
+              width:"100%",padding:"14px",
+              background: !form.documento.trim() ? "#1A2B5A" : `linear-gradient(135deg,${BR.coral},${BR.coralD})`,
+              color: !form.documento.trim() ? "#5A6B8C" : "#fff",
+              border:"none",borderRadius:12,fontSize:15,fontWeight:600,
+              cursor: (!form.documento.trim()||saving) ? "not-allowed" : "pointer",
+              fontFamily:"var(--font-sans)",
+              opacity: saving ? 0.7 : 1,
+              transition:"all 0.15s"
+            }}>
+              {saving ? "Procesando..." : (!form.documento.trim() ? "Ingresá tu CI para continuar" : "Pagar online →")}
             </button>
           )}
         </div>
@@ -697,7 +734,7 @@ const PortalCliente = () => {
           <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>✓ Próximo paso</div>
           <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibirás una confirmación por WhatsApp una vez que verifiquemos tu pago.</div>
         </div>
-        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
           Volver al inicio
         </button>
       </div>}
@@ -1302,7 +1339,7 @@ export default function App() {
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
-  const TABS=[{id:"agenda",l:"Agenda"},{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"config",l:"Config"}];
+  const TABS=[{id:"agenda",l:"Agenda"},{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"whatsapp",l:"💬 WA"},{id:"config",l:"Config"}];
 
   // ── VISTAS ADMIN ──
   const Hoy=()=>{
@@ -1648,6 +1685,145 @@ export default function App() {
     <div style={card}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
   </div>;
 
+  const WhatsApp=()=>{
+    const [msgs,setMsgs]=useState([]);
+    const [loadingMsgs,setLoadingMsgs]=useState(true);
+    const [error,setError]=useState(null);
+    const [soloNoLeidos,setSoloNoLeidos]=useState(false);
+    const [respuestas,setRespuestas]=useState({});
+    const [abierto,setAbierto]=useState(null);
+
+    const cargar=useCallback(async()=>{
+      setLoadingMsgs(true);setError(null);
+      try{
+        const r=await fetch(`/api/whatsapp/mensajes?limit=100${soloNoLeidos?"&solo_no_leidos=true":""}`);
+        if(!r.ok)throw new Error(await r.text());
+        setMsgs(await r.json());
+      }catch(e){setError(e.message);}
+      finally{setLoadingMsgs(false);}
+    },[soloNoLeidos]);
+
+    useEffect(()=>{cargar();},[cargar]);
+
+    const [enviando,setEnviando]=useState({});
+    const [enviado,setEnviado]=useState({});
+
+    const marcarLeido=async(ids)=>{
+      await fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
+      setMsgs(p=>p.map(m=>ids.includes(m.id)?{...m,leido:true}:m));
+    };
+
+    const enviarRespuesta=async(id,tel,texto)=>{
+      if(!texto?.trim())return;
+      setEnviando(p=>({...p,[id]:true}));
+      try{
+        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:tel,mensaje:texto.trim()})});
+        const data=await r.json();
+        if(!r.ok)throw new Error(data.error||"Error enviando");
+        setEnviado(p=>({...p,[id]:true}));
+        setRespuestas(p=>({...p,[id]:""}));
+        marcarLeido([id]);
+        setTimeout(()=>{setEnviado(p=>({...p,[id]:false}));setAbierto(null);},1500);
+      }catch(e){
+        alert("Error al enviar: "+e.message);
+      }finally{
+        setEnviando(p=>({...p,[id]:false}));
+      }
+    };
+
+    const noLeidos=msgs.filter(m=>!m.leido).length;
+
+    return <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div>
+          <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Mensajes WhatsApp</span>
+          {noLeidos>0&&<span style={{marginLeft:10,background:BR.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{noLeidos} nuevos</span>}
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <label style={{fontSize:12,color:TX.s,cursor:"pointer",display:"flex",gap:6,alignItems:"center"}}>
+            <input type="checkbox" checked={soloNoLeidos} onChange={e=>setSoloNoLeidos(e.target.checked)} style={{cursor:"pointer"}}/>
+            Solo no leídos
+          </label>
+          <Btn sm v="ghost" onClick={cargar}>Actualizar</Btn>
+          {noLeidos>0&&<Btn sm v="primary" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Marcar todos leídos</Btn>}
+        </div>
+      </div>
+
+      {error&&<div style={{...card,background:BR.dangerL,color:BR.danger,marginBottom:12,fontSize:13}}>{error}</div>}
+
+      {loadingMsgs?<div style={{textAlign:"center",padding:60,color:TX.s,fontSize:13}}>Cargando...</div>
+      :msgs.length===0?<div style={{...card,textAlign:"center",padding:40}}>
+          <div style={{fontSize:32,marginBottom:10}}>💬</div>
+          <div style={{color:TX.s,fontSize:14}}>{soloNoLeidos?"No hay mensajes sin leer":"No hay mensajes recibidos aún"}</div>
+          <div style={{color:TX.t,fontSize:12,marginTop:8}}>Los mensajes que los clientes envíen por WhatsApp aparecerán aquí</div>
+        </div>
+      :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {msgs.map(m=>{
+          const ts=new Date(m.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+          const estaAbierto=abierto===m.id;
+          return <div key={m.id} style={{...card,borderLeft:`3px solid ${m.leido?"#1E3070":BR.coral}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>👤</div>
+                <div>
+                  <div style={{fontWeight:600,fontSize:14,color:TX.p}}>{m.nombre||m.de}</div>
+                  <div style={{fontSize:11,color:TX.t}}>{m.de} · {ts}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {!m.leido&&<Btn sm v="ghost" onClick={()=>marcarLeido([m.id])}>Leído</Btn>}
+                <button onClick={()=>setAbierto(estaAbierto?null:m.id)} style={{padding:"4px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:estaAbierto?"#1A3A1A":"#0F1C3F",color:"#25D366",border:"1px solid #1A4A1A",fontFamily:"var(--font-sans)"}}>
+                  {estaAbierto?"Cerrar":"Responder"}
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido del mensaje según tipo */}
+            {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
+              ?<div style={{padding:"8px 12px",background:"#0D1830",borderRadius:8,marginBottom:estaAbierto?10:0}}>
+                  <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36,accentColor:"#25D366"}}/>
+                  {m.mensaje&&m.mensaje!=="[Audio]"&&m.mensaje!=="[Nota de voz]"&&<div style={{fontSize:12,color:TX.s,marginTop:4}}>{m.mensaje}</div>}
+                </div>
+              :m.tipo==="image"&&m.media_id
+              ?<div style={{padding:"8px 12px",background:"#0D1830",borderRadius:8,marginBottom:estaAbierto?10:0}}>
+                  <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="imagen" style={{maxWidth:"100%",maxHeight:260,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
+                  {m.mensaje&&m.mensaje!=="[Imagen]"&&<div style={{fontSize:12,color:TX.s,marginTop:4}}>{m.mensaje}</div>}
+                </div>
+              :<div style={{fontSize:13,color:TX.p,padding:"8px 12px",background:"#0D1830",borderRadius:8,lineHeight:1.5,marginBottom:estaAbierto?10:0}}>{m.mensaje}</div>
+            }
+
+            {estaAbierto&&<div style={{marginTop:8,display:"flex",gap:8,alignItems:"flex-end"}}>
+              <textarea
+                value={respuestas[m.id]||""}
+                onChange={e=>setRespuestas(p=>({...p,[m.id]:e.target.value}))}
+                onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta(m.id,m.de,respuestas[m.id]);}}
+                placeholder="Escribí tu respuesta... (Ctrl+Enter para enviar)"
+                rows={3}
+                style={{...inp,resize:"vertical",flex:1,fontSize:13}}
+                disabled={enviando[m.id]}
+              />
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <button
+                  onClick={()=>enviarRespuesta(m.id,m.de,respuestas[m.id])}
+                  disabled={enviando[m.id]||!respuestas[m.id]?.trim()}
+                  style={{padding:"8px 14px",borderRadius:8,fontSize:13,cursor:"pointer",background:enviado[m.id]?"#1A4A1A":"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,whiteSpace:"nowrap",opacity:(enviando[m.id]||!respuestas[m.id]?.trim())?0.6:1}}
+                >
+                  {enviando[m.id]?"Enviando...":enviado[m.id]?"✓ Enviado":"Enviar"}
+                </button>
+                <button
+                  onClick={()=>setAbierto(null)}
+                  style={{padding:"6px 14px",borderRadius:8,fontSize:12,cursor:"pointer",background:"#0D1830",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>}
+          </div>;
+        })}
+      </div>}
+    </div>;
+  };
+
   const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"#0F1C3F",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
 
   return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":940,margin:"0 auto",background:"#081020",minHeight:"100vh",paddingTop:isMobile?68:0}}>
@@ -1667,7 +1843,7 @@ export default function App() {
 
     <div style={{padding:"18px 12px",paddingTop:isMobile?"18px":"18px",paddingBottom:"env(safe-area-inset-bottom)"}}>
       {loading?<div style={{textAlign:"center",padding:80,color:TX.s,fontSize:13}}>Cargando...</div>:(
-        <>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="config"&&<Config/>}</>
+        <>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="whatsapp"&&<WhatsApp/>}{tab==="config"&&<Config/>}</>
       )}
     </div>
 
