@@ -1690,6 +1690,8 @@ export default function App() {
     const [loadingMsgs,setLoadingMsgs]=useState(true);
     const [error,setError]=useState(null);
     const [soloNoLeidos,setSoloNoLeidos]=useState(false);
+    const [respuestas,setRespuestas]=useState({});
+    const [abierto,setAbierto]=useState(null);
 
     const cargar=useCallback(async()=>{
       setLoadingMsgs(true);setError(null);
@@ -1706,6 +1708,11 @@ export default function App() {
     const marcarLeido=async(ids)=>{
       await fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
       setMsgs(p=>p.map(m=>ids.includes(m.id)?{...m,leido:true}:m));
+    };
+
+    const enviarRespuesta=(tel,texto)=>{
+      const t=(tel||"").replace(/\D/g,"");
+      window.open(`https://wa.me/${t}?text=${encodeURIComponent(texto)}`,"_blank");
     };
 
     const noLeidos=msgs.filter(m=>!m.leido).length;
@@ -1736,9 +1743,9 @@ export default function App() {
         </div>
       :<div style={{display:"flex",flexDirection:"column",gap:8}}>
         {msgs.map(m=>{
-          const telLimpio=(m.de||"").replace(/\D/g,"");
           const ts=new Date(m.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-          return <div key={m.id} style={{...card,borderLeft:`3px solid ${m.leido?"#1E3070":BR.coral}`,opacity:m.leido?0.75:1}}>
+          const estaAbierto=abierto===m.id;
+          return <div key={m.id} style={{...card,borderLeft:`3px solid ${m.leido?"#1E3070":BR.coral}`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
               <div style={{display:"flex",gap:10,alignItems:"center"}}>
                 <div style={{width:36,height:36,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>👤</div>
@@ -1749,10 +1756,41 @@ export default function App() {
               </div>
               <div style={{display:"flex",gap:6,flexShrink:0}}>
                 {!m.leido&&<Btn sm v="ghost" onClick={()=>marcarLeido([m.id])}>Leído</Btn>}
-                <button onClick={()=>window.open(`https://wa.me/${telLimpio}`,"_blank")} style={{padding:"4px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"#1A3A1A",color:"#25D366",border:"1px solid #1A4A1A",fontFamily:"var(--font-sans)"}}>Responder</button>
+                <button onClick={()=>setAbierto(estaAbierto?null:m.id)} style={{padding:"4px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:estaAbierto?"#1A3A1A":"#0F1C3F",color:"#25D366",border:"1px solid #1A4A1A",fontFamily:"var(--font-sans)"}}>
+                  {estaAbierto?"Cerrar":"Responder"}
+                </button>
               </div>
             </div>
-            <div style={{fontSize:13,color:TX.p,padding:"8px 12px",background:"#0D1830",borderRadius:8,lineHeight:1.5}}>{m.mensaje}</div>
+
+            <div style={{fontSize:13,color:TX.p,padding:"8px 12px",background:"#0D1830",borderRadius:8,lineHeight:1.5,marginBottom:estaAbierto?10:0}}>{m.mensaje}</div>
+
+            {estaAbierto&&<div style={{marginTop:8,display:"flex",gap:8,alignItems:"flex-end"}}>
+              <textarea
+                value={respuestas[m.id]||""}
+                onChange={e=>setRespuestas(p=>({...p,[m.id]:e.target.value}))}
+                placeholder="Escribí tu respuesta..."
+                rows={3}
+                style={{...inp,resize:"vertical",flex:1,fontSize:13}}
+              />
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <button
+                  onClick={()=>{
+                    if(!respuestas[m.id]?.trim())return;
+                    enviarRespuesta(m.de,respuestas[m.id].trim());
+                    if(!m.leido)marcarLeido([m.id]);
+                  }}
+                  style={{padding:"8px 14px",borderRadius:8,fontSize:13,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,whiteSpace:"nowrap"}}
+                >
+                  Enviar WA
+                </button>
+                <button
+                  onClick={()=>setAbierto(null)}
+                  style={{padding:"6px 14px",borderRadius:8,fontSize:12,cursor:"pointer",background:"#0D1830",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>}
           </div>;
         })}
       </div>}
