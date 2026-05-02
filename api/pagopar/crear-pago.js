@@ -19,7 +19,8 @@ export default async function handler(req, res) {
 
   const PUBLIC_KEY  = process.env.PAGOPAR_PUBLIC_KEY;
   const PRIVATE_KEY = process.env.PAGOPAR_PRIVATE_KEY;
-  const API_URL     = process.env.PAGOPAR_API_URL || "https://api.pagopar.com";
+  // Siempre sin barra final para evitar doble-slash que causa redirect 301 GET
+  const API_URL     = "https://api.pagopar.com";
 
   if (!PUBLIC_KEY || !PRIVATE_KEY) {
     return res.status(500).json({ error: "Variables PAGOPAR_PUBLIC_KEY / PAGOPAR_PRIVATE_KEY no configuradas en Vercel" });
@@ -83,13 +84,18 @@ export default async function handler(req, res) {
     }],
   };
 
+  const pagoparURL = `${API_URL}/api/comercios/2.0/iniciar-transaccion`;
+  console.log("[pagopar] POST →", pagoparURL);
+
   let pagoparData;
   try {
-    const r = await fetch(`${API_URL}/api/comercios/2.0/iniciar-transaccion`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(payload),
+    const r = await fetch(pagoparURL, {
+      method:   "POST",
+      headers:  { "Content-Type": "application/json" },
+      body:     JSON.stringify(payload),
+      redirect: "follow",
     });
+    console.log("[pagopar] HTTP status:", r.status, "url final:", r.url);
     pagoparData = await r.json();
   } catch (e) {
     console.error("[pagopar] Error de red:", e);
