@@ -537,13 +537,9 @@ const PortalCliente = () => {
             <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Nombre completo</label>
             <input type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={inpPortal} placeholder="Tu nombre y apellido"/>
           </div>
-          <div style={{marginBottom:14}}>
+          <div style={{marginBottom:20}}>
             <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Teléfono</label>
             <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpPortal} placeholder="Tu número"/>
-          </div>
-          <div style={{marginBottom:20}}>
-            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad</label>
-            <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpPortal} placeholder="Número de CI (sin puntos)"/>
           </div>
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
           <button onClick={()=>setPaso("pago")} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
@@ -612,6 +608,15 @@ const PortalCliente = () => {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Datos requeridos por Pagopar (solo cuando se elige pago online) */}
+          {metodoPago==="pagopar" && (
+            <div style={{background:"#0D1830",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
+              <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad <span style={{color:BR.coral}}>*</span></label>
+              <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpPortal} placeholder="Número de CI (sin puntos)"/>
+              <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>Requerido por la pasarela de pago para verificación.</div>
+            </div>
           )}
 
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
@@ -684,8 +689,17 @@ const PortalCliente = () => {
                 setMsg("Error de conexión. Intentá de nuevo.");
                 setSaving(false);
               }
-            }} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-              {saving?"Procesando...":"Pagar online →"}
+            }} disabled={saving||!form.documento.trim()} style={{
+              width:"100%",padding:"14px",
+              background: !form.documento.trim() ? "#1A2B5A" : `linear-gradient(135deg,${BR.coral},${BR.coralD})`,
+              color: !form.documento.trim() ? "#5A6B8C" : "#fff",
+              border:"none",borderRadius:12,fontSize:15,fontWeight:600,
+              cursor: (!form.documento.trim()||saving) ? "not-allowed" : "pointer",
+              fontFamily:"var(--font-sans)",
+              opacity: saving ? 0.7 : 1,
+              transition:"all 0.15s"
+            }}>
+              {saving ? "Procesando..." : (!form.documento.trim() ? "Ingresá tu CI para continuar" : "Pagar online →")}
             </button>
           )}
         </div>
