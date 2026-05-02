@@ -325,7 +325,7 @@ const PortalCliente = () => {
   const [fecha,setFecha] = useState(hoy());
   const [slotsSel,setSlotsSel] = useState([]);
   const [paso,setPaso] = useState("lista");
-  const [form,setForm] = useState({nombre:"",telefono:""});
+  const [form,setForm] = useState({nombre:"",telefono:"",documento:""});
   const [saving,setSaving] = useState(false);
   const [msg,setMsg] = useState("");
   const [clima,setClima] = useState({});
@@ -537,9 +537,13 @@ const PortalCliente = () => {
             <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Nombre completo</label>
             <input type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={inpPortal} placeholder="Tu nombre y apellido"/>
           </div>
-          <div style={{marginBottom:20}}>
+          <div style={{marginBottom:14}}>
             <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Teléfono</label>
             <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpPortal} placeholder="Tu número"/>
+          </div>
+          <div style={{marginBottom:20}}>
+            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad</label>
+            <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpPortal} placeholder="Número de CI (sin puntos)"/>
           </div>
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
           <button onClick={()=>setPaso("pago")} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
@@ -650,6 +654,7 @@ const PortalCliente = () => {
           ) : (
             <button onClick={async ()=>{
               if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tus datos.");return;}
+              if(!form.documento.trim()){setMsg("Ingresá tu cédula de identidad.");return;}
               if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
               setSaving(true);setMsg("");
               try {
@@ -657,8 +662,9 @@ const PortalCliente = () => {
                   method:"POST",
                   headers:{"Content-Type":"application/json"},
                   body: JSON.stringify({
-                    nombre: form.nombre.trim(),
-                    telefono: form.telefono.trim(),
+                    nombre:    form.nombre.trim(),
+                    telefono:  form.telefono.trim(),
+                    documento: form.documento.trim(),
                     fecha,
                     slots: slotsSel,
                     total: totalSel
@@ -697,7 +703,7 @@ const PortalCliente = () => {
           <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>✓ Próximo paso</div>
           <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibirás una confirmación por WhatsApp una vez que verifiquemos tu pago.</div>
         </div>
-        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
           Volver al inicio
         </button>
       </div>}
