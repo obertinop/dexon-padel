@@ -25,6 +25,16 @@ export default async function handler(req, res) {
   if (tel.startsWith("0")) tel = "595" + tel.slice(1);
   if (!tel.startsWith("595")) tel = "595" + tel;
 
+  const { tipo = "texto", media_id, caption } = req.body || {};
+
+  // Construir el cuerpo según el tipo
+  let msgBody;
+  if (tipo === "imagen" && media_id) {
+    msgBody = { type: "image", image: { id: media_id, ...(caption ? { caption } : {}) } };
+  } else {
+    msgBody = { type: "text", text: { body: mensaje } };
+  }
+
   try {
     const r = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
       method: "POST",
@@ -35,8 +45,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         messaging_product: "whatsapp",
         to: tel,
-        type: "text",
-        text: { body: mensaje },
+        ...msgBody,
       }),
     });
 
