@@ -98,6 +98,36 @@ export default async function handler(req, res) {
 
     console.log(`✓ Pago confirmado hash=${hash_pedido} turnos=${idsTurnos.length}`);
 
+    // Notificar por WhatsApp al cliente y al admin (fire & forget)
+    const primerTurno = turnos[0];
+    const { data: cliente } = await sb
+      .from("clientes")
+      .select("nombre, telefono")
+      .eq("id", primerTurno.cliente_id)
+      .single();
+
+    if (cliente) {
+      const horasStr = turnos.map(t => `${t.hora}:00`).join(" · ");
+      const montoTotal = turnos.reduce((a, t) => a + t.precio, 0);
+      const host = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "https://www.dexon.com.py";
+
+      fetch(`${host}/api/whatsapp/enviar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo: "pago_confirmado",
+          nombre: cliente.nombre,
+          telefono: cliente.telefono,
+          fecha: primerTurno.fecha,
+          horarios: horasStr,
+          monto: `Gs ${montoTotal.toLocaleString("es-PY")}`,
+          forma_pago: data.forma_pago || "Pago online",
+        }),
+      }).catch(e => console.error("[whatsapp] Error llamando endpoint:", e));
+    }
+
   } else if (pagado === false && data.fecha_pago === null && data.cancelado === false) {
     console.log(`Pedido todavía pendiente: ${hash_pedido}`);
 

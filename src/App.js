@@ -650,6 +650,21 @@ const PortalCliente = () => {
                   `Adjunto: Foto de la transferencia al alias 80168039-5`
                 );
                 window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
+
+                // Notificación WhatsApp automática al cliente y admin (fire & forget)
+                fetch("/api/whatsapp/enviar",{
+                  method:"POST",
+                  headers:{"Content-Type":"application/json"},
+                  body:JSON.stringify({
+                    tipo:"transferencia_pendiente",
+                    nombre:form.nombre.trim(),
+                    telefono:form.telefono.trim(),
+                    fecha:fmtFechaLegible(fecha),
+                    horarios:horasStr+"hs",
+                    monto:gs(totalSel),
+                  })
+                }).catch(()=>{});
+
                 setPaso("confirmado");
               } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
               setSaving(false);
