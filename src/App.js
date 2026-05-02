@@ -1766,6 +1766,8 @@ export default function App() {
         const data=await r.json();
         if(!r.ok)throw new Error(data.error||"Error enviando");
         setTexto("");setImagenPrevia(null);
+        // Recargar para mostrar el mensaje saliente guardado
+        await cargar();
       }catch(e){alert("Error: "+e.message);}
       finally{setEnviando(false);setSubiendoImg(false);}
     };
@@ -1788,20 +1790,22 @@ export default function App() {
     const totalNoLeidos=msgs.filter(m=>!m.leido).length;
 
     const MsgBurbuja=({m})=>{
+      const saliente=m.direccion==="saliente";
       const ts=new Date(m.created_at).toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit"});
-      return <div style={{maxWidth:"80%",alignSelf:"flex-start"}}>
+      const bgBurbuja=saliente?"#1A3A1A":"#0D1830";
+      return <div style={{maxWidth:"78%",alignSelf:saliente?"flex-end":"flex-start"}}>
         {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
-          ?<div style={{background:"#0D1830",borderRadius:12,padding:"8px 12px"}}>
+          ?<div style={{background:bgBurbuja,borderRadius:12,padding:"8px 12px"}}>
               <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36}}/>
             </div>
           :m.tipo==="image"&&m.media_id
-          ?<div style={{background:"#0D1830",borderRadius:12,overflow:"hidden"}}>
+          ?<div style={{background:bgBurbuja,borderRadius:12,overflow:"hidden"}}>
               <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="" style={{maxWidth:220,maxHeight:200,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
-              {m.mensaje&&m.mensaje!=="[Imagen]"&&<div style={{fontSize:12,color:TX.s,padding:"4px 10px 8px"}}>{m.mensaje}</div>}
+              {m.mensaje&&m.mensaje!=="[Imagen]"&&m.mensaje!=="[Imagen enviada]"&&<div style={{fontSize:12,color:TX.s,padding:"4px 10px 8px"}}>{m.mensaje}</div>}
             </div>
-          :<div style={{background:"#0D1830",borderRadius:12,padding:"8px 12px",fontSize:13,color:TX.p,lineHeight:1.5}}>{m.mensaje}</div>
+          :<div style={{background:bgBurbuja,borderRadius:12,padding:"8px 12px",fontSize:13,color:TX.p,lineHeight:1.5}}>{m.mensaje}</div>
         }
-        <div style={{fontSize:10,color:TX.t,marginTop:2,paddingLeft:4}}>{ts}</div>
+        <div style={{fontSize:10,color:TX.t,marginTop:2,textAlign:saliente?"right":"left",paddingRight:saliente?4:0,paddingLeft:saliente?0:4}}>{saliente?"Vos · ":""}{ts}</div>
       </div>;
     };
 
