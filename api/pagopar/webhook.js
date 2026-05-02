@@ -30,10 +30,10 @@ export default async function handler(req, res) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // Buscar todos los turnos de este pedido + datos del cliente para descripción
+  // Buscar todos los turnos de este pedido
   const { data: turnos, error: errBuscar } = await sb
     .from("turnos")
-    .select("id, precio, hora, fecha, cliente_id, tipo, clientes(nombre)")
+    .select("id, precio, hora, fecha, cliente_id, tipo")
     .eq("pagopar_hash", hash_pedido);
 
   if (errBuscar) {
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
     const nuevosMov = turnos
       .filter(t => !idsYa.has(t.id))
       .map(t => ({
-        descripcion: `Pago online (${data.forma_pago || "Pagopar"}) - ${t.clientes?.nombre || "?"}`,
+        descripcion: `Pago online (${data.forma_pago || "Pagopar"}) - Pedido ${data.numero_pedido || hash_pedido.slice(0,8)}`,
         tipo: "ingreso",
         categoria: t.tipo === "clase" ? "clase" : "reserva",
         monto: t.precio,
