@@ -1339,7 +1339,29 @@ export default function App() {
 
   const confirmarTurno = async t=>{
     setSaving(true);
-    try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);setDlg(null);await load();}
+    try{
+      const saldo=t.precio-(t.sena||0);
+      await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);
+      if(saldo>0) await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
+      // Notificar al cliente por WhatsApp
+      const cliente=cById(t.cliente_id);
+      if(cliente?.telefono){
+        fetch("/api/whatsapp/enviar",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            tipo:"pago_confirmado",
+            nombre:cliente.nombre,
+            telefono:cliente.telefono,
+            fecha:t.fecha,
+            horarios:`${t.hora}:00`,
+            monto:gs(t.precio),
+            forma_pago:t.metodo_pago||"transferencia",
+          })
+        }).catch(()=>{});
+      }
+      setDlg(null);await load();
+    }
     catch(e){alert(e.message);}
     setSaving(false);
   };

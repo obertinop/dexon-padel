@@ -72,29 +72,32 @@ export default async function handler(req, res) {
     resultados.push({ destino: "cliente", tel: telCliente, ...r });
   }
 
-  // ── Notificación al ADMIN ────────────────────────────────────────────────
+  // ── Notificación al ADMIN (texto libre) ─────────────────────────────────
   if (ADMIN_PHONE) {
     const metodo = tipo === "pago_confirmado"
       ? `Pagopar - ${forma_pago || "online"}`
       : "Transferencia bancaria";
 
-    const templateAdmin = {
-      name: "dexon_admin_reserva",
-      language: { code: "es" },
-      components: [{
-        type: "body",
-        parameters: [
-          { type: "text", text: nombre },
-          { type: "text", text: telefono },
-          { type: "text", text: fecha || "-" },
-          { type: "text", text: horarios || "-" },
-          { type: "text", text: monto || "-" },
-          { type: "text", text: metodo },
-        ],
-      }],
-    };
-    const r = await enviarTemplate(PHONE_ID, TOKEN, ADMIN_PHONE, templateAdmin);
-    resultados.push({ destino: "admin", tel: ADMIN_PHONE, ...r });
+    const textoAdmin =
+      `📋 Nueva reserva\n\n` +
+      `👤 ${nombre}\n` +
+      `📞 ${telefono}\n` +
+      `📅 ${fecha || "-"} a las ${horarios || "-"}\n` +
+      `💰 ${monto || "-"}\n` +
+      `💳 ${metodo}`;
+
+    const r = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: ADMIN_PHONE,
+        type: "text",
+        text: { body: textoAdmin },
+      }),
+    });
+    const data = await r.json();
+    resultados.push({ destino: "admin", tel: ADMIN_PHONE, ok: r.ok, error: data?.error?.message });
   }
 
   return res.status(200).json({ ok: true, resultados });
