@@ -13,7 +13,7 @@ const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov"
 // Paleta de colores
 const BR = {
   coral:"#D85A30", coralL:"#FAECE7", coralD:"#993C1D",
-  blue:"#0F1C3F", blueM:"#1A2F6B", blueL:"#E6EEFF",
+  blue:"rgba(13,20,35,0.5)", blueM:"#1A2F6B", blueL:"#E6EEFF",
   dark:"#08101F",
   ok:"#3B6D11", okL:"#EAF3DE",
   warn:"#854F0B", warnL:"#FAEEDA",
@@ -25,9 +25,9 @@ const BR = {
 const TX = { p:"#E8EEFF", s:"#9AAAD4", t:"#6677AA" };
 
 // Estilos base modo oscuro
-const inp = { padding:"8px 12px", border:"1px solid #2A3F6B", borderRadius:8, fontSize:13, width:"100%", background:"#0F1C3F", color:TX.p, fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
-const card = { background:"#111E40", border:"1px solid #1E3070", borderRadius:14, padding:"16px 18px" };
-const metric = { background:"#0D1830", borderRadius:12, padding:"14px 16px", border:"1px solid #1A2B5A" };
+const inp = { padding:"8px 12px", border:"1px solid #2A3F6B", borderRadius:8, fontSize:13, width:"100%", background:"rgba(13,20,35,0.5)", color:TX.p, fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
+const card = { background:"rgba(13,20,35,0.3)", border:"1px solid rgba(216,90,48,0.15)", borderRadius:8, padding:"16px 18px" };
+const metric = { background:"rgba(13,20,35,0.4)", borderRadius:12, padding:"14px 16px", border:"1px solid rgba(216,90,48,0.1)" };
 const lbl = { fontSize:12, color:TX.s, fontWeight:500, marginBottom:5, display:"block" };
 
 // Hook para detectar móvil
@@ -104,7 +104,7 @@ const Badge = ({type,children}) => {
   const m = {
     ok:["#0D2E1A","#7ADDA8"], warn:["#2A1A0A","#F5C07A"], danger:["#2A0A0A","#F58282"],
     info:["#0A1A3A","#7EAAFF"], coral:["#3A1A0A","#F5A882"], purple:["#1A0A3A","#B8A0F5"],
-    gray:["#1A2B5A",TX.s],
+    gray:["rgba(216,90,48,0.1)",TX.s],
   };
   const [bg,color] = m[type]||m.gray;
   return <span style={{background:bg,color,fontSize:11,padding:"3px 9px",borderRadius:100,fontWeight:500,display:"inline-block",whiteSpace:"nowrap"}}>{children}</span>;
@@ -112,12 +112,12 @@ const Badge = ({type,children}) => {
 
 const Btn = ({v="default",sm,children,...p}) => {
   const s = {
-    primary:{background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none"},
-    ghost:{background:"#1A2B5A",color:TX.p,border:"1px solid #2A3F6B"},
+    primary:{background:"#D85A30",color:"#fff",border:"none"},
+    ghost:{background:"rgba(216,90,48,0.1)",color:TX.p,border:"1px solid #2A3F6B"},
     danger:{background:"#2A0A0A",color:"#F58282",border:"1px solid #5A1010"},
     success:{background:"#0D2E1A",color:"#7ADDA8",border:"1px solid #1A5A30"},
     blue:{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,color:"#fff",border:"none"},
-    default:{background:"#1A2B5A",color:TX.p,border:"1px solid #2A3F6B"},
+    default:{background:"rgba(216,90,48,0.1)",color:TX.p,border:"1px solid #2A3F6B"},
   };
   return <button {...p} style={{padding:sm?"5px 12px":"8px 16px",borderRadius:8,fontSize:sm?12:13,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:400,...(s[v]||s.default),...p.style}}>{children}</button>;
 };
@@ -150,10 +150,10 @@ const tipoBadge = t => {
 const Modal = ({show,onClose,title,children,width=420}) => {
   if(!show) return null;
   return <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.75)",padding:"24px 16px",overflowY:"auto"}}>
-    <div style={{width:"100%",maxWidth:width,backgroundColor:"#111E40",borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid #1E3070",flexShrink:0}}>
-      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid #1E3070",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{width:"100%",maxWidth:width,backgroundColor:"#111E40",borderRadius:8,boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid rgba(216,90,48,0.15)",flexShrink:0}}>
+      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid rgba(216,90,48,0.1)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontSize:16,fontWeight:500,color:TX.p}}>{title}</span>
-        <button onClick={onClose} style={{border:"none",background:"#1A2B5A",cursor:"pointer",fontSize:16,color:TX.s,padding:"5px 9px",borderRadius:6}}>×</button>
+        <button onClick={onClose} style={{border:"none",background:"rgba(216,90,48,0.1)",cursor:"pointer",fontSize:16,color:TX.s,padding:"5px 9px",borderRadius:6}}>×</button>
       </div>
       <div style={{padding:20}}>{children}</div>
     </div>
@@ -164,7 +164,7 @@ const Modal = ({show,onClose,title,children,width=420}) => {
 const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="danger"}) => {
   if(!show) return null;
   return <div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
-    <div style={{backgroundColor:"#111E40",borderRadius:14,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid #1E3070"}}>
+    <div style={{backgroundColor:"#111E40",borderRadius:8,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid rgba(216,90,48,0.15)"}}>
       <div style={{fontSize:15,fontWeight:500,marginBottom:8,color:TX.p}}>{title}</div>
       <div style={{fontSize:13,color:TX.s,marginBottom:20}}>{msg}</div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
@@ -209,7 +209,7 @@ const Login = ({onLogin}) => {
         <label style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:500,display:"block",marginBottom:6}}>Contraseña</label>
         <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="••••••••"/>
       </div>
-      <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"13px",background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         {loading?"Ingresando...":"Ingresar"}
       </button>
     </div>
@@ -249,11 +249,11 @@ const SelectorFecha = ({value, onChange, min}) => {
         style={{
           width: "100%",
           padding: "14px 14px",
-          border: "1px solid #1E3A7A",
+          border: "1px solid rgba(216,90,48,0.2)",
           borderRadius: 10,
           fontSize: 15,
           color: "#fff",
-          background: "#0D1830",
+          background: "rgba(13,20,35,0.4)",
           fontFamily: "var(--font-sans)",
           outline: "none",
           boxSizing: "border-box",
@@ -298,7 +298,7 @@ const SelectorFecha = ({value, onChange, min}) => {
                   fontSize: 14,
                   cursor: "pointer",
                   textAlign: "left",
-                  borderBottom: "1px solid #1A2B5A",
+                  borderBottom: "1px solid rgba(216,90,48,0.1)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center"
@@ -424,49 +424,51 @@ const PortalCliente = () => {
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,color:"rgba(255,255,255,0.5)",fontFamily:"var(--font-sans)"}}>Cargando...</div>;
 
-  const inpPortal = {width:"100%",padding:"14px 14px",border:"1px solid #1E3A7A",borderRadius:10,fontSize:15,color:"#fff",background:"#0D1830",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:"44px"};
+  const inpPortal = {width:"100%",padding:"13px 16px",border:"1px solid rgba(216,90,48,0.2)",borderRadius:6,fontSize:14,color:"#E8EEFF",background:"rgba(13,20,35,0.4)",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:"44px",transition:"all 0.3s",letterSpacing:0.3};
 
-  return <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)"}}>
+  return <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)",background:"#05080F"}}>
     {/* HEADER */}
-    <div style={{background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 4px 24px rgba(0,0,0,0.4)"}}>
-      <div style={{maxWidth:480,margin:"0 auto",padding:"18px 20px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+    <div style={{background:"rgba(5,8,15,0.6)",backdropFilter:"blur(20px)",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
+      <div style={{maxWidth:480,margin:"0 auto",padding:"20px 24px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:40,objectFit:"contain"}}/>
+            <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain"}}/>
             <div>
-              <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>{cfg.nombre_club}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginTop:1}}>Tavapy · Alto Paraná</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#E8EEFF",letterSpacing:1.5,textTransform:"uppercase"}}>{cfg.nombre_club}</div>
+              <div style={{fontSize:10,color:"#6677AA",letterSpacing:1,marginTop:2}}>Tavapy · Alto Paraná</div>
             </div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.55)"}}>{gs(cfg.tarifa_base)}/hora</div>
-            <div style={{fontSize:11,color:BR.coral,fontWeight:500,marginTop:2}}>Pico: {gs(cfg.tarifa_pico)}</div>
+            <div style={{fontSize:13,color:"#9AAAD4",fontWeight:600}}>{gs(cfg.tarifa_base)}</div>
+            <div style={{fontSize:11,color:"#D85A30",marginTop:2}}>Pico: {gs(cfg.tarifa_pico)}</div>
           </div>
         </div>
-        <div style={{marginTop:14,padding:"10px 14px",background:"rgba(255,255,255,0.05)",borderRadius:10,border:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>📱</span>
+        <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{padding:"12px 16px",background:"rgba(216,90,48,0.1)",borderRadius:6,border:"1px solid rgba(216,90,48,0.2)",display:"flex",alignItems:"center",gap:10,textDecoration:"none",transition:"all 0.3s"}}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.15)";e.currentTarget.style.borderColor="rgba(216,90,48,0.3)"}}
+          onMouseLeave={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.2)"}}>
+          <span style={{fontSize:16}}>💬</span>
           <div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>¿Consultas? Escribinos</div>
-            <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{fontSize:13,color:"#25D366",fontWeight:500,textDecoration:"none"}}>WhatsApp DEXON PADEL →</a>
+            <div style={{fontSize:11,color:"#9AAAD4"}}>¿Dudas?</div>
+            <div style={{fontSize:12,color:"#25D366",fontWeight:600}}>Escribinos por WhatsApp</div>
           </div>
-        </div>
+        </a>
       </div>
     </div>
 
-    <div style={{maxWidth:isMobile?"100%":480,margin:"0 auto",padding:isMobile?"16px 12px":"20px 16px"}}>
+    <div style={{maxWidth:isMobile?"100%":480,margin:"0 auto",padding:isMobile?"24px 16px":"32px 24px"}}>
       {paso==="lista"&&<>
         {/* Selector fecha */}
-        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"16px 18px",marginBottom:12}}>
-          <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>¿Qué día querés jugar?</label>
+        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"20px 20px",marginBottom:20}}>
+          <label style={{fontSize:11,color:"#9AAAD4",fontWeight:700,display:"block",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>¿Qué día querés jugar?</label>
           <SelectorFecha value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
         </div>
 
         {/* Clima */}
-        {climaFecha&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"14px 18px",marginBottom:12,display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",gap:isMobile?12:16}}>
-          <div style={{fontSize:38,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
+        {climaFecha&&<div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"16px 20px",marginBottom:20,display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",gap:isMobile?12:16}}>
+          <div style={{fontSize:44,flexShrink:0,lineHeight:1}}>{climaIcon(climaFecha.code)}</div>
           <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:600,color:TX.p}}>Pronóstico — Tavapy</div>
-            <div style={{fontSize:13,color:TX.s,marginTop:3,lineHeight:1.5}}>{climaFecha.max}° máx · {climaFecha.min}° mín · {climaFecha.lluvia}% lluvia</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#E8EEFF"}}>Pronóstico — Tavapy</div>
+            <div style={{fontSize:12,color:"#9AAAD4",marginTop:4,lineHeight:1.6}}>{climaFecha.max}° máx · {climaFecha.min}° mín · {climaFecha.lluvia}% lluvia</div>
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:isMobile?"flex-start":"flex-end",width:isMobile?"100%":"auto"}}>
             {climaFecha.lluvia>=60&&<Badge type="info">🌧 Lluvia</Badge>}
@@ -475,18 +477,18 @@ const PortalCliente = () => {
         </div>}
 
         {/* Horarios */}
-        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",overflow:"hidden",marginBottom:12}}>
-          <div style={{padding:"14px 18px",borderBottom:"1px solid #1E3070"}}>
-            <div style={{fontSize:14,fontWeight:600,color:TX.p}}>Horarios disponibles</div>
-            <div style={{fontSize:12,color:TX.s,marginTop:2}}>{libres.length} de {horasArr.length} turnos libres</div>
+        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",overflow:"hidden",marginBottom:20}}>
+          <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#E8EEFF"}}>Horarios disponibles</div>
+            <div style={{fontSize:12,color:"#9AAAD4",marginTop:4}}>{libres.length} de {horasArr.length} turnos libres</div>
           </div>
           {libres.length===0&&<div style={{padding:"28px",textAlign:"center",color:TX.t,fontSize:13}}>No hay horarios disponibles para este día.</div>}
           {libres.map(h=>{
             const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
             const selec=slotsSel.includes(h);
-            return <div key={h} onClick={()=>toggleSlot(h)} style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",padding:isMobile?"12px 14px":"14px 18px",borderBottom:"1px solid #1A2B5A",cursor:"pointer",background:selec?"#1A3570":"#111E40",gap:isMobile?8:0}}>
+            return <div key={h} onClick={()=>toggleSlot(h)} style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",padding:isMobile?"12px 14px":"14px 18px",borderBottom:"1px solid rgba(216,90,48,0.1)",cursor:"pointer",background:selec?"#1A3570":"#111E40",gap:isMobile?8:0}}>
               <div style={{display:"flex",alignItems:"center",gap:12,width:isMobile?"100%":"auto"}}>
-                <div style={{width:44,height:44,borderRadius:12,background:selec?BR.blueM:isPico?"rgba(216,90,48,0.2)":"#0D1830",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BR.coral:TX.s,flexShrink:0}}>
+                <div style={{width:44,height:44,borderRadius:12,background:selec?BR.blueM:isPico?"rgba(216,90,48,0.2)":"rgba(13,20,35,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BR.coral:TX.s,flexShrink:0}}>
                   {h}
                 </div>
                 <div style={{flex:1}}>
@@ -502,8 +504,8 @@ const PortalCliente = () => {
           })}
         </div>
 
-        {ocupados.length>0&&<div style={{background:"#0D1830",borderRadius:14,border:"1px solid #1A2B5A",overflow:"hidden",marginBottom:16}}>
-          <div style={{padding:"12px 18px",borderBottom:"1px solid #1A2B5A"}}>
+        {ocupados.length>0&&<div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,border:"1px solid rgba(216,90,48,0.1)",overflow:"hidden",marginBottom:16}}>
+          <div style={{padding:"12px 18px",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
             <div style={{fontSize:13,fontWeight:500,color:TX.t}}>No disponibles</div>
           </div>
           {ocupados.map(h=><div key={h} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 18px",borderBottom:"1px solid #0F1830",opacity:0.5}}>
@@ -513,13 +515,13 @@ const PortalCliente = () => {
         </div>}
 
         {slotsSel.length>0&&<>
-          <div style={{background:"#111E40",borderRadius:12,padding:"12px 16px",marginBottom:12,border:"1px solid #2A3F7A"}}>
+          <div style={{background:"rgba(13,20,35,0.3)",borderRadius:12,padding:"12px 16px",marginBottom:12,border:"1px solid #2A3F7A"}}>
             <div style={{fontSize:12,color:TX.s,marginBottom:4}}>Seleccionados · {slotsSel.length}hs</div>
             <div style={{fontSize:14,fontWeight:600,color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" · ")} hs</div>
             <div style={{fontSize:13,color:BR.coral,marginTop:4,fontWeight:500}}>Total: {gs(totalSel)}</div>
             <div style={{fontSize:11,color:TX.t,marginTop:4}}>Tocá horas consecutivas para extender tu turno</div>
           </div>
-          <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+          <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px 20px",background:"#D85A30",color:"#fff",border:"none",borderRadius:8,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
             Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
           </button>
         </>}
@@ -527,7 +529,7 @@ const PortalCliente = () => {
 
       {paso==="datos"&&<>
         <button onClick={()=>{setPaso("lista");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:TX.s,marginBottom:16,fontFamily:"var(--font-sans)"}}>← Volver</button>
-        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
+        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"22px"}}>
           <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Confirmá tu reserva</div>
           <div style={{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,borderRadius:12,padding:"14px 18px",marginBottom:20}}>
             <div style={{fontSize:16,fontWeight:700,color:"#fff"}}>{fmtFechaLegible(fecha)} · {slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
@@ -542,7 +544,7 @@ const PortalCliente = () => {
             <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpPortal} placeholder="Tu número"/>
           </div>
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
-          <button onClick={()=>setPaso("pago")} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+          <button onClick={()=>setPaso("pago")} disabled={saving} style={{width:"100%",padding:"14px",background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
             {saving?"Guardando...":"Ir a pagar →"}
           </button>
         </div>
@@ -550,7 +552,7 @@ const PortalCliente = () => {
 
       {paso==="pago"&&<>
         <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:TX.s,marginBottom:16,fontFamily:"var(--font-sans)"}}>← Volver</button>
-        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
+        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"22px"}}>
           <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Completá tu pago</div>
 
           {/* Resumen */}
@@ -565,7 +567,7 @@ const PortalCliente = () => {
           <div onClick={()=>setMetodoPago("transferencia")} style={{
             border:metodoPago==="transferencia"?`2px solid ${BR.coral}`:"1px solid #1E3070",
             borderRadius:12,padding:"14px 16px",marginBottom:10,cursor:"pointer",
-            background:metodoPago==="transferencia"?"#1A1530":"#0D1830",
+            background:metodoPago==="transferencia"?"#1A1530":"rgba(13,20,35,0.4)",
             transition:"all 0.15s"
           }}>
             <div style={{fontSize:14,fontWeight:600,color:TX.p,marginBottom:4}}>Transferencia bancaria</div>
@@ -575,7 +577,7 @@ const PortalCliente = () => {
           <div onClick={()=>setMetodoPago("pagopar")} style={{
             border:metodoPago==="pagopar"?`2px solid ${BR.coral}`:"1px solid #1E3070",
             borderRadius:12,padding:"14px 16px",marginBottom:18,cursor:"pointer",
-            background:metodoPago==="pagopar"?"#1A1530":"#0D1830",
+            background:metodoPago==="pagopar"?"#1A1530":"rgba(13,20,35,0.4)",
             transition:"all 0.15s"
           }}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
@@ -585,7 +587,7 @@ const PortalCliente = () => {
             <div style={{fontSize:12,color:TX.s,marginBottom:8}}>Tarjeta · PIX · Tigo Money · Personal · QR</div>
             <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
               {["Visa","Master","PIX","Tigo","Personal","Zimple"].map(t=>(
-                <span key={t} style={{fontSize:10,padding:"2px 6px",background:"#0D1830",border:"1px solid #1E3070",borderRadius:5,color:TX.s}}>{t}</span>
+                <span key={t} style={{fontSize:10,padding:"2px 6px",background:"rgba(13,20,35,0.4)",border:"1px solid rgba(216,90,48,0.15)",borderRadius:5,color:TX.s}}>{t}</span>
               ))}
             </div>
           </div>
@@ -593,7 +595,7 @@ const PortalCliente = () => {
           {/* Datos según método */}
           {metodoPago==="transferencia" && (
             <>
-              <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
+              <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid rgba(216,90,48,0.1)"}}>
                 <div style={{fontSize:13,color:TX.p,lineHeight:1.8}}>
                   <div style={{marginBottom:6}}><span style={{color:TX.s}}>Banco:</span> <strong>UENO</strong></div>
                   <div style={{marginBottom:6}}><span style={{color:TX.s}}>Alias:</span> <strong style={{fontSize:14,letterSpacing:1,color:BR.coral}}>80168039-5</strong></div>
@@ -612,7 +614,7 @@ const PortalCliente = () => {
 
           {/* Datos requeridos por Pagopar (solo cuando se elige pago online) */}
           {metodoPago==="pagopar" && (
-            <div style={{background:"#0D1830",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
+            <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid rgba(216,90,48,0.1)"}}>
               <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad <span style={{color:BR.coral}}>*</span></label>
               <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpPortal} placeholder="Número de CI (sin puntos)"/>
               <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>Requerido por la pasarela de pago para verificación.</div>
@@ -706,7 +708,7 @@ const PortalCliente = () => {
               }
             }} disabled={saving||!form.documento.trim()} style={{
               width:"100%",padding:"14px",
-              background: !form.documento.trim() ? "#1A2B5A" : `linear-gradient(135deg,${BR.coral},${BR.coralD})`,
+              background: !form.documento.trim() ? "rgba(216,90,48,0.1)" : `linear-gradient(135deg,${BR.coral},${BR.coralD})`,
               color: !form.documento.trim() ? "#5A6B8C" : "#fff",
               border:"none",borderRadius:12,fontSize:15,fontWeight:600,
               cursor: (!form.documento.trim()||saving) ? "not-allowed" : "pointer",
@@ -720,11 +722,11 @@ const PortalCliente = () => {
         </div>
       </>}
 
-      {paso==="confirmado"&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"36px 24px",textAlign:"center"}}>
+      {paso==="confirmado"&&<div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"36px 24px",textAlign:"center"}}>
         <div style={{width:72,height:72,borderRadius:"50%",background:"#1A3570",border:"2px solid #2A5F9F",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"}}>⏳</div>
         <div style={{fontSize:22,fontWeight:700,color:TX.p,marginBottom:8}}>Pago enviado</div>
         <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>Hemos recibido tu comprobante. Tu reserva para <strong style={{color:TX.p}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong> está pendiente de confirmación.</div>
-        <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A"}}>
+        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:"16px",marginBottom:20,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)"}}>
           <div style={{fontSize:13,color:TX.s,lineHeight:2.2}}>
             <div>📍 {cfg.nombre_club} — Tavapy, Alto Paraná</div>
             <div>💰 {gs(totalSel)} · {slotsSel.length} hora{slotsSel.length>1?"s":""} · Pago pendiente de verificación</div>
@@ -734,7 +736,7 @@ const PortalCliente = () => {
           <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>✓ Próximo paso</div>
           <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibirás una confirmación por WhatsApp una vez que verifiquemos tu pago.</div>
         </div>
-        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
           Volver al inicio
         </button>
       </div>}
@@ -795,7 +797,7 @@ function LandingPage({ onAdmin }) {
     featureIcon: { fontSize: 36, marginBottom: 20 },
     featureTitle: { fontSize: 17, fontWeight: 700, marginBottom: 12, color: "#E8EEFF" },
     featureText: { fontSize: 15, color: "#9AAAD4", lineHeight: 1.8 },
-    mapBox: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 8, overflow: "hidden" },
+    mapBox: { background: "rgba(13,20,35,0.5)", border: "1px solid #1E3070", borderRadius: 8, overflow: "hidden" },
     mapFrame: { width: "100%", height: isMobile ? 280 : 380, border: "none", display: "block" },
     mapInfo: { padding: "24px 28px" },
     mapInfoRow: { display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 },
@@ -803,7 +805,7 @@ function LandingPage({ onAdmin }) {
     mapInfoText: { fontSize: 14, color: "#9AAAD4", lineHeight: 1.6 },
     mapInfoLabel: { fontWeight: 700, color: "#E8EEFF", display: "block", marginBottom: 2 },
     contactGrid: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24, alignItems: "start" },
-    contactCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 8, padding: "32px 28px" },
+    contactCard: { background: "rgba(13,20,35,0.5)", border: "1px solid #1E3070", borderRadius: 8, padding: "32px 28px" },
     waBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "13px 28px", background: "#25D366", border: "none", borderRadius: 6, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", marginTop: 24, lineHeight: 1, whiteSpace: "nowrap", letterSpacing: 0.5 },
     scheduleRow: { display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid rgba(216,90,48,0.1)", fontSize: 14 },
     scheduleDay: { color: "#9AAAD4" },
@@ -815,7 +817,7 @@ function LandingPage({ onAdmin }) {
     footerLink: { fontSize: 12, color: "#9AAAD4", cursor: "pointer", letterSpacing: 0.5, transition: "color 0.3s" },
     footerCopy: { fontSize: 12, color: "#6677AA", letterSpacing: 0.3 },
     mobileMenu: { position: "fixed", top: 64, left: 0, right: 0, background: "#0A1428", borderBottom: "1px solid #1E3070", zIndex: 99, padding: "16px 24px", display: "flex", flexDirection: "column", gap: 4 },
-    mobileLink: { padding: "12px 0", fontSize: 16, fontWeight: 500, color: "#9AAAD4", cursor: "pointer", borderBottom: "1px solid #0F1C3F" },
+    mobileLink: { padding: "12px 0", fontSize: 16, fontWeight: 500, color: "#9AAAD4", cursor: "pointer", borderBottom: "1px solid rgba(13,20,35,0.5)" },
   };
 
   return (
@@ -1109,7 +1111,7 @@ const ResultadoPago = () => {
   }, []);
 
   const wrap = {minHeight:"100vh",background:BR.dark,color:TX.p,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",padding:20};
-  const card = {background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"36px 24px",textAlign:"center",maxWidth:420,width:"100%"};
+  const card = {background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"36px 24px",textAlign:"center",maxWidth:420,width:"100%"};
   const icon = {width:72,height:72,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"};
 
   if (estado === "verificando") return (
@@ -1127,12 +1129,12 @@ const ResultadoPago = () => {
       <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>
         Tu reserva está confirmada. Te esperamos en <strong style={{color:TX.p}}>DEXON Padel</strong>.
       </div>
-      <div style={{background:"#0D1830",borderRadius:12,padding:16,marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A",fontSize:13,color:TX.s,lineHeight:2}}>
+      <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:16,marginBottom:20,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)",fontSize:13,color:TX.s,lineHeight:2}}>
         <div>💰 Monto: <strong style={{color:TX.p}}>{gs(parseFloat(datos.monto))}</strong></div>
         <div>💳 Método: <strong style={{color:TX.p}}>{datos.forma_pago}</strong></div>
         <div>🧾 Comprobante: <strong style={{color:TX.p}}>{datos.numero_pedido}</strong></div>
       </div>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver al portal
       </button>
     </div></div>
@@ -1146,13 +1148,13 @@ const ResultadoPago = () => {
         Tu pago aún no fue confirmado. Si elegiste boca de cobranza, acercate al local indicado.
       </div>
       {datos?.mensaje_resultado_pago && (
-        <div style={{background:"#0D1830",borderRadius:12,padding:14,marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A",fontSize:13,color:TX.s,lineHeight:1.6}}
+        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:14,marginBottom:20,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)",fontSize:13,color:TX.s,lineHeight:1.6}}
           dangerouslySetInnerHTML={{__html: datos.mensaje_resultado_pago.descripcion}}/>
       )}
-      <button onClick={()=>window.location.reload()} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",marginBottom:8,fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.reload()} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",marginBottom:8,fontFamily:"var(--font-sans)"}}>
         Verificar de nuevo
       </button>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver al portal
       </button>
     </div></div>
@@ -1163,7 +1165,7 @@ const ResultadoPago = () => {
       <div style={{...icon,background:"#3A1010",border:"2px solid #A32D2D"}}>×</div>
       <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:"#F58282"}}>Pago cancelado</div>
       <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>El pago fue cancelado. Podés intentar nuevamente.</div>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver a reservar
       </button>
     </div></div>
@@ -1177,7 +1179,7 @@ const ResultadoPago = () => {
       <button onClick={()=>window.open(`https://wa.me/${ADMIN_TEL}`,"_blank")} style={{width:"100%",padding:14,background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",marginBottom:10,fontFamily:"var(--font-sans)"}}>
         📱 Contactar por WhatsApp
       </button>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver al portal
       </button>
     </div></div>
@@ -1411,7 +1413,7 @@ export default function App() {
       {clima&&<div style={{...card,marginBottom:16}}>
         <div style={{fontWeight:500,fontSize:13,marginBottom:12,color:TX.s}}>Pronóstico — Alto Paraná</div>
         <div style={{display:"flex",gap:8,overflowX:"auto"}}>
-          {clima.map((d,i)=>{const esH=d.fecha===h;const ll=d.lluvia>=60;return<div key={i} style={{flex:1,minWidth:70,textAlign:"center",padding:"10px 8px",borderRadius:10,background:esH?"#1A3570":ll?"#0A1A3A":"#0D1830",border:esH?`1px solid ${BR.coral}`:"1px solid #1A2B5A"}}>
+          {clima.map((d,i)=>{const esH=d.fecha===h;const ll=d.lluvia>=60;return<div key={i} style={{flex:1,minWidth:70,textAlign:"center",padding:"10px 8px",borderRadius:10,background:esH?"#1A3570":ll?"#0A1A3A":"rgba(13,20,35,0.4)",border:esH?`1px solid ${BR.coral}`:"1px solid rgba(216,90,48,0.1)"}}>
             <div style={{fontSize:11,color:TX.s,marginBottom:4}}>{esH?"Hoy":DIAS[new Date(d.fecha+"T12:00:00").getDay()]}</div>
             <div style={{fontSize:22,marginBottom:4}}>{climaIcon(d.code)}</div>
             <div style={{fontSize:14,fontWeight:500,color:TX.p}}>{d.max}°</div>
@@ -1427,7 +1429,7 @@ export default function App() {
       <div style={card}>
         <div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Turnos de hoy</div>
         {tHoy.length===0?<Empty t="Sin turnos para hoy"/>:<div style={{display:"grid",gap:8}}>
-          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"#0D1830",border:"1px solid #1A2B5A",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
+          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"rgba(13,20,35,0.4)",border:"1px solid rgba(216,90,48,0.1)",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
             <div style={{fontSize:16,fontWeight:500,color:BR.coral,minWidth:44}}>{t.hora}:00</div>
             <Avatar nombre={c?.nombre} size={36}/>
             <div style={{flex:1,minWidth:0}}><div style={{fontWeight:500,fontSize:13,color:TX.p}}>{c?.nombre||"?"}</div><div style={{fontSize:11,color:TX.s,marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}{ins&&<span>· {ins.nombre}</span>}{t.sena>0&&<span style={{color:BR.ok}}>· Seña: {gs(t.sena)}</span>}</div></div>
@@ -1453,7 +1455,7 @@ export default function App() {
         <span style={{fontSize:12,color:TX.s,background:"#1E3070",padding:"4px 10px",borderRadius:6}}>{pendientes.length} pendiente{pendientes.length!==1?"s":""}</span>
       </div>
       {pendientes.length===0?<Empty t="Sin reservas pendientes"/>:<div style={{display:"grid",gap:8}}>
-        {pendientes.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);const fechaStr=fmtFechaLegible(t.fecha);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,background:"#0D1830",border:"1px solid #2A5F9F",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
+        {pendientes.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);const fechaStr=fmtFechaLegible(t.fecha);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,background:"rgba(13,20,35,0.4)",border:"1px solid #2A5F9F",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",minWidth:50,gap:2}}>
             <div style={{fontSize:12,color:TX.s}}>📅</div>
             <div style={{fontSize:13,fontWeight:600,color:BR.coral}}>{fechaStr.split(" ")[0]}</div>
@@ -1509,15 +1511,15 @@ export default function App() {
         </div>
       </div>
       <div style={{overflowX:"auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:`52px repeat(7,1fr)`,gap:1,background:"#1A2B5A",borderRadius:10,overflow:"hidden",minWidth:600}}>
-          <div style={{background:"#0D1830"}}/>
-          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?"#1A3570":"#0D1830",padding:"10px 4px",textAlign:"center"}}>
+        <div style={{display:"grid",gridTemplateColumns:`52px repeat(7,1fr)`,gap:1,background:"rgba(216,90,48,0.1)",borderRadius:10,overflow:"hidden",minWidth:600}}>
+          <div style={{background:"rgba(13,20,35,0.4)"}}/>
+          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?"#1A3570":"rgba(13,20,35,0.4)",padding:"10px 4px",textAlign:"center"}}>
             <div style={{fontSize:11,fontWeight:500,color:isH?BR.coral:TX.s}}>{DIAS[d.getDay()]}</div>
             <div style={{fontSize:16,fontWeight:500,color:isH?BR.coral:TX.p,margin:"2px 0"}}>{d.getDate()}</div>
             {cnt>0?<div style={{fontSize:10,color:BR.coral,fontWeight:500}}>{cnt}t</div>:<div style={{height:14}}/>}
           </div>;})}
           {horas.map(h=><>
-            <div key={`t${h}`} style={{background:"#0D1830",padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:11,color:TX.t,minHeight:40}}>{h}:00</div>
+            <div key={`t${h}`} style={{background:"rgba(13,20,35,0.4)",padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:11,color:TX.t,minHeight:40}}>{h}:00</div>
             {dias.map((d,di)=>{const fs=fmtD(d);const t=all.find(t=>t.fecha===fs&&t.hora===h&&t.estado!=="cancelado");const c=t?cById(t.cliente_id):null;const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;return<div key={`${h}-${di}`} onClick={()=>t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:h,tipo:"ocasional"})} style={{background:t?(t.tipo==="abono"?"#1A0A3A":t.tipo==="clase"?"#0A1A3A":"#3A1A0A"):(isPico?"rgba(216,90,48,0.08)":"#111E40"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",minHeight:40}}>
               {t&&<span style={{fontSize:11,fontWeight:500,color:t.tipo==="abono"?"#B8A0F5":t.tipo==="clase"?"#7EAAFF":"#F5A882",background:t.tipo==="abono"?"#2A1050":t.tipo==="clase"?"#0A1A5A":"#5A2A0A",borderRadius:5,padding:"2px 7px",maxWidth:"92%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c?.nombre?.split(" ")[0]||"?"}</span>}
             </div>;})}
@@ -1611,7 +1613,7 @@ export default function App() {
       </div>
       
       {/* Filtros */}
-      <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"14px 18px",marginBottom:14}}>
+      <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"14px 18px",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"flex-end"}}>
           <div>
             <label style={lbl}>Desde</label>
@@ -1635,13 +1637,13 @@ export default function App() {
       
       <div style={{overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse",borderRadius:10,overflow:"hidden"}}>
-          <thead><tr>{["Fecha","Descripción","Categoría","Monto",""].map((h,i)=><th key={i} style={{textAlign:i>=3?"right":"left",padding:"10px 14px",fontSize:12,fontWeight:500,color:TX.s,borderBottom:"1px solid #1E3070",background:"#0D1830"}}>{h}</th>)}</tr></thead>
-          <tbody>{cajaFiltrada.map(m=><tr key={m.id} style={{background:"#111E40"}}>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",color:TX.s}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",color:TX.p}}>{m.descripcion}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A"}}><Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge></td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",textAlign:"right",fontWeight:500,color:m.tipo==="ingreso"?"#7ADDA8":"#F58282"}}>{m.tipo==="egreso"?"- ":""}{gs(m.monto)}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",textAlign:"right"}}><Btn sm v="danger" onClick={()=>setDlg({type:"eliminarMov",id:m.id,desc:m.descripcion})}>×</Btn></td>
+          <thead><tr>{["Fecha","Descripción","Categoría","Monto",""].map((h,i)=><th key={i} style={{textAlign:i>=3?"right":"left",padding:"10px 14px",fontSize:12,fontWeight:500,color:TX.s,borderBottom:"1px solid rgba(216,90,48,0.1)",background:"rgba(13,20,35,0.4)"}}>{h}</th>)}</tr></thead>
+          <tbody>{cajaFiltrada.map(m=><tr key={m.id} style={{background:"rgba(13,20,35,0.3)"}}>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",color:TX.s}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",color:TX.p}}>{m.descripcion}</td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)"}}><Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge></td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",textAlign:"right",fontWeight:500,color:m.tipo==="ingreso"?"#7ADDA8":"#F58282"}}>{m.tipo==="egreso"?"- ":""}{gs(m.monto)}</td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",textAlign:"right"}}><Btn sm v="danger" onClick={()=>setDlg({type:"eliminarMov",id:m.id,desc:m.descripcion})}>×</Btn></td>
           </tr>)}</tbody>
         </table>
       </div>
@@ -1687,14 +1689,14 @@ export default function App() {
         <div style={{fontWeight:500,marginBottom:16,fontSize:14,color:TX.p}}>Ingresos últimos 7 días</div>
         <div style={{display:"flex",alignItems:"flex-end",gap:6,height:100}}>
           {porDia.map((d,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-            <div style={{width:"100%",background:d.v>0?BR.coral:"#1A2B5A",borderRadius:"4px 4px 0 0",height:Math.max(d.v/maxV*80,4)}}/>
+            <div style={{width:"100%",background:d.v>0?BR.coral:"rgba(216,90,48,0.1)",borderRadius:"4px 4px 0 0",height:Math.max(d.v/maxV*80,4)}}/>
             <div style={{fontSize:10,color:TX.t}}>{d.f.slice(8)}/{d.f.slice(5,7)}</div>
           </div>)}
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
-        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Horarios pico</div>{hPico.map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #1A2B5A"}}><span style={{fontSize:13,minWidth:48,color:TX.p}}>{x.h}:00</span><div style={{flex:1,height:6,background:"#1A2B5A",borderRadius:3,overflow:"hidden"}}><div style={{width:`${x.n/maxH*100}%`,height:"100%",background:BR.coral,borderRadius:3}}/></div><span style={{fontSize:12,color:TX.s,minWidth:16}}>{x.n}</span></div>)}</div>
-        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Top clientes</div>{topC.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #1A2B5A"}}><Avatar nombre={c.nombre} size={28}/><span style={{flex:1,fontSize:13,color:TX.p}}>{c.nombre}</span><Badge type="info">{c.n} turnos</Badge></div>)}</div>
+        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Horarios pico</div>{hPico.map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid rgba(216,90,48,0.1)"}}><span style={{fontSize:13,minWidth:48,color:TX.p}}>{x.h}:00</span><div style={{flex:1,height:6,background:"rgba(216,90,48,0.1)",borderRadius:3,overflow:"hidden"}}><div style={{width:`${x.n/maxH*100}%`,height:"100%",background:BR.coral,borderRadius:3}}/></div><span style={{fontSize:12,color:TX.s,minWidth:16}}>{x.n}</span></div>)}</div>
+        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Top clientes</div>{topC.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid rgba(216,90,48,0.1)"}}><Avatar nombre={c.nombre} size={28}/><span style={{flex:1,fontSize:13,color:TX.p}}>{c.nombre}</span><Badge type="info">{c.n} turnos</Badge></div>)}</div>
       </div>
     </div>;
   };
@@ -1785,7 +1787,7 @@ export default function App() {
         {DIAS_FULL.map((dia,i)=>{
           const horarios = cfg.horarios_por_dia?JSON.parse(cfg.horarios_por_dia||"{}"):{}||{};
           const h = horarios[i]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
-          return <div key={i} style={{padding:10,background:"#0D1830",borderRadius:8,borderLeft:`3px solid ${BR.coral}`,fontSize:12}}>
+          return <div key={i} style={{padding:10,background:"rgba(13,20,35,0.4)",borderRadius:8,borderLeft:`3px solid ${BR.coral}`,fontSize:12}}>
             <div style={{fontWeight:500,color:TX.p,marginBottom:4}}>{dia}</div>
             <div style={{color:TX.s}}>{h.inicio}:00 - {h.fin}:00</div>
           </div>;
@@ -1793,8 +1795,8 @@ export default function App() {
       </div>
     </div>
     
-    {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:500,marginBottom:12,fontSize:14,color:TX.p}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><span style={{fontWeight:500,color:TX.p}}>{i.nombre}</span><span style={{color:TX.s}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
-    <div style={{...card,marginBottom:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
+    {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:500,marginBottom:12,fontSize:14,color:TX.p}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgba(216,90,48,0.1)",fontSize:13}}><span style={{fontWeight:500,color:TX.p}}>{i.nombre}</span><span style={{color:TX.s}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
+    <div style={{...card,marginBottom:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(216,90,48,0.1)",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
 
     <ConfigWA/>
   </div>;
@@ -1947,15 +1949,15 @@ export default function App() {
       const ts=new Date(m.created_at).toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit"});
       return <div style={{maxWidth:"78%",alignSelf:sal?"flex-end":"flex-start"}}>
         {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
-          ?<div style={{background:sal?"#1A3A1A":"#0D1830",borderRadius:12,padding:"8px 12px"}}>
+          ?<div style={{background:sal?"#1A3A1A":"rgba(13,20,35,0.4)",borderRadius:12,padding:"8px 12px"}}>
               <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36}}/>
             </div>
           :m.tipo==="image"&&m.media_id
-          ?<div style={{background:sal?"#1A3A1A":"#0D1830",borderRadius:12,overflow:"hidden"}}>
+          ?<div style={{background:sal?"#1A3A1A":"rgba(13,20,35,0.4)",borderRadius:12,overflow:"hidden"}}>
               <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="" style={{maxWidth:220,maxHeight:200,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
               {m.mensaje&&!["[Imagen]","[Imagen enviada]"].includes(m.mensaje)&&<div style={{fontSize:12,color:TX.s,padding:"4px 10px 8px"}}>{m.mensaje}</div>}
             </div>
-          :<div style={{background:sal?"#1A3A1A":"#0D1830",borderRadius:12,padding:"8px 12px",fontSize:13,color:TX.p,lineHeight:1.5}}>{m.mensaje}</div>
+          :<div style={{background:sal?"#1A3A1A":"rgba(13,20,35,0.4)",borderRadius:12,padding:"8px 12px",fontSize:13,color:TX.p,lineHeight:1.5}}>{m.mensaje}</div>
         }
         <div style={{fontSize:10,color:TX.t,marginTop:2,textAlign:sal?"right":"left",padding:"0 4px"}}>{sal?"Vos · ":""}{ts}</div>
       </div>;
@@ -1975,13 +1977,13 @@ export default function App() {
             :<div style={{fontSize:11,color:TX.t}}>{conv.de}</div>}
         </div>
         <Btn sm v="ghost" onClick={()=>cargar(true)}>↻</Btn>
-        {clienteVinc&&<button onClick={()=>setVerReservas(v=>!v)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:verReservas?"#1A2F6B":"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>📅 Reservas</button>}
+        {clienteVinc&&<button onClick={()=>setVerReservas(v=>!v)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:verReservas?"#1A2F6B":"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>📅 Reservas</button>}
         {!confirmElim
           ?<button onClick={()=>setConfirmElim(true)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:BR.danger,border:`1px solid ${BR.danger}`,fontFamily:"var(--font-sans)"}}>Eliminar</button>
           :<div style={{display:"flex",gap:6,alignItems:"center"}}>
             <span style={{fontSize:12,color:TX.s}}>¿Eliminar todo?</span>
             <button onClick={eliminarConversacion} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:BR.danger,color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600}}>Sí</button>
-            <button onClick={()=>setConfirmElim(false)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>No</button>
+            <button onClick={()=>setConfirmElim(false)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>No</button>
           </div>
         }
       </div>
@@ -1992,7 +1994,7 @@ export default function App() {
           <div style={{fontSize:12,fontWeight:600,color:TX.s,marginBottom:8}}>Últimas reservas de {clienteVinc.nombre}</div>
           {resCliente.length===0
             ?<div style={{fontSize:12,color:TX.t}}>Sin reservas</div>
-            :resCliente.map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #1A2B5A"}}>
+            :resCliente.map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
                 <span style={{color:TX.p}}>{t.fecha} {t.hora}:00hs</span>
                 <span style={{color:t.estado==="reservado"?"#5ABDA8":t.estado==="cancelado"?BR.danger:TX.s}}>{t.estado}</span>
               </div>)
@@ -2011,12 +2013,12 @@ export default function App() {
       </div>}
 
       <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
-        {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setTexto(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>30?p.slice(0,29)+"…":p}</button>)}
+        {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setTexto(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>30?p.slice(0,29)+"…":p}</button>)}
       </div>
 
       <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
         <input type="file" accept="image/*" ref={fileRef} style={{display:"none"}} onChange={onImagen}/>
-        <button onClick={()=>fileRef.current?.click()} style={{padding:"9px 11px",borderRadius:8,background:"#0F1C3F",border:"1px solid #2A3F6B",cursor:"pointer",fontSize:16,color:TX.s,flexShrink:0}} title="Adjuntar imagen">🖼</button>
+        <button onClick={()=>fileRef.current?.click()} style={{padding:"9px 11px",borderRadius:8,background:"rgba(13,20,35,0.5)",border:"1px solid #2A3F6B",cursor:"pointer",fontSize:16,color:TX.s,flexShrink:0}} title="Adjuntar imagen">🖼</button>
         <textarea
           value={texto}
           onChange={e=>setTexto(e.target.value)}
@@ -2058,7 +2060,7 @@ export default function App() {
           <div style={{fontSize:11,color:TX.t,marginTop:4}}>Solo funciona si el destinatario te escribió en las últimas 24hs, o si tenés un template aprobado.</div>
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setNcMsg(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>28?p.slice(0,27)+"…":p}</button>)}
+          {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setNcMsg(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>28?p.slice(0,27)+"…":p}</button>)}
         </div>
         <button onClick={iniciarConversacion} disabled={ncEnviando||(!ncTel.trim()&&!ncCliente)||!ncMsg.trim()}
           style={{padding:"10px",borderRadius:8,fontSize:14,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,opacity:(ncEnviando||(!ncTel.trim()&&!ncCliente)||!ncMsg.trim())?0.5:1}}>
@@ -2119,7 +2121,7 @@ export default function App() {
     </div>;
   };
 
-  const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"#0F1C3F",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
+  const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"rgba(13,20,35,0.5)",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
 
   return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":940,margin:"0 auto",background:"#081020",minHeight:"100vh",paddingTop:isMobile?68:0}}>
     <div style={{position:isMobile?"fixed":"relative",top:0,left:0,right:0,zIndex:1000,background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 2px 16px rgba(0,0,0,0.4)",paddingTop:isMobile?"max(8px, env(safe-area-inset-top))":"0"}}>
@@ -2149,7 +2151,7 @@ export default function App() {
       <R2 isMobile={isMobile}><Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/><FG label="Hora"><select style={inp} value={form.hora??""} onChange={sf("hora")}>{getHorasForDay(form.fecha?new Date(form.fecha+"T00:00:00").getDay():new Date().getDay()).map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}</select></FG></R2>
       <Sel label="Tipo" value={form.tipo||"ocasional"} onChange={sf("tipo")}><option value="ocasional">Ocasional</option><option value="clase">Clase con instructor</option><option value="bloqueado">Bloquear horario</option></Sel>
       {form.tipo==="clase"&&<><Sel label="Instructor" value={form.instructor_id||""} onChange={sf("instructor_id")}><option value="">Sin instructor</option>{instructores.map(i=><option key={i.id} value={i.id}>{i.nombre}</option>)}</Sel><Inp label="Precio clase (Gs)" type="number" value={form.precio_clase||""} onChange={sf("precio_clase")}/></>}
-      {form.tipo==="ocasional"&&<><div style={{background:"#0D1830",borderRadius:8,padding:"10px 12px",fontSize:13,marginBottom:14,color:TX.s}}>Precio: <strong style={{color:TX.p}}>{gs(precioTurno(Number(form.hora||cfg.hora_inicio)))}</strong>{Number(form.hora)>=cfg.hora_pico_inicio&&Number(form.hora)<cfg.hora_pico_fin&&<span style={{color:BR.coral}}> (pico)</span>}</div><Inp label="Seña (Gs) — opcional" type="number" value={form.sena||""} onChange={sf("sena")}/></>}
+      {form.tipo==="ocasional"&&<><div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"10px 12px",fontSize:13,marginBottom:14,color:TX.s}}>Precio: <strong style={{color:TX.p}}>{gs(precioTurno(Number(form.hora||cfg.hora_inicio)))}</strong>{Number(form.hora)>=cfg.hora_pico_inicio&&Number(form.hora)<cfg.hora_pico_fin&&<span style={{color:BR.coral}}> (pico)</span>}</div><Inp label="Seña (Gs) — opcional" type="number" value={form.sena||""} onChange={sf("sena")}/></>}
       <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarTurno} disabled={saving}>{saving?"Guardando...":"Guardar reserva"}</Btn></div>
     </Modal>
@@ -2318,7 +2320,7 @@ export default function App() {
             }
           } catch(e){}
           
-          return <div key={i} style={{marginBottom:14,padding:12,background:"#0D1830",borderRadius:8,border:`1px solid #1E3070`}}>
+          return <div key={i} style={{marginBottom:14,padding:12,background:"rgba(13,20,35,0.4)",borderRadius:8,border:`1px solid #1E3070`}}>
             <div style={{fontSize:13,fontWeight:500,color:TX.p,marginBottom:8}}>{dia}</div>
             <R2 isMobile={isMobile}>
               <FG label="Inicio">
@@ -2382,10 +2384,10 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
 
     {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
-      <div style={{backgroundColor:"#111E40",borderRadius:14,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid #1E3070"}}>
+      <div style={{backgroundColor:"#111E40",borderRadius:8,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid rgba(216,90,48,0.15)"}}>
         <div style={{fontSize:15,fontWeight:500,marginBottom:8,color:TX.p}}>✅ Reserva guardada</div>
         <div style={{fontSize:13,color:TX.s,marginBottom:12}}>¿Enviás confirmación a {dlg.cliente.nombre}?</div>
-        <div style={{background:"#0D1830",borderRadius:8,padding:"10px 12px",fontSize:12,color:TX.s,marginBottom:16,lineHeight:1.6}}>{dlg.msg}</div>
+        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"10px 12px",fontSize:12,color:TX.s,marginBottom:16,lineHeight:1.6}}>{dlg.msg}</div>
         <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
           <Btn onClick={()=>setDlg(null)}>Omitir</Btn>
           <Btn v="success" onClick={()=>{enviarWsp(dlg.cliente.telefono,dlg.msg);setDlg(null);}}>Enviar WhatsApp</Btn>
