@@ -571,7 +571,7 @@ const PortalCliente = () => {
             transition:"all 0.15s"
           }}>
             <div style={{fontSize:14,fontWeight:600,color:TX.p,marginBottom:4}}>Transferencia bancaria</div>
-            <div style={{fontSize:12,color:TX.s}}>UENO · Enviás comprobante por WhatsApp</div>
+            <div style={{fontSize:12,color:TX.s}}>UENO · Te contactamos para confirmar el pago</div>
           </div>
 
           <div onClick={()=>setMetodoPago("pagopar")} style={{
@@ -602,11 +602,11 @@ const PortalCliente = () => {
                   <div><span style={{color:TX.s}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
                 </div>
               </div>
-              <div style={{background:"#0D2E1A",borderRadius:12,padding:"12px 14px",marginBottom:18,border:"1px solid #1A5A30"}}>
-                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.6}}>
-                  1. Hacé la transferencia al alias <strong>80168039-5</strong><br/>
-                  2. Tocá el botón verde<br/>
-                  3. Enviá la foto del comprobante por WhatsApp
+              <div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"12px 14px",marginBottom:18,border:"1px solid rgba(216,90,48,0.15)"}}>
+                <div style={{fontSize:12,color:"#9AAAD4",lineHeight:1.8}}>
+                  1. Hacé la transferencia al alias <strong style={{color:"#E8EEFF"}}>80168039-5</strong><br/>
+                  2. Confirmá la reserva con el botón de abajo<br/>
+                  3. Te contactamos por WhatsApp para verificar el pago
                 </div>
               </div>
             </>
@@ -637,41 +637,15 @@ const PortalCliente = () => {
                 else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
                 else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
 
+                const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
                 for(const h of slotsSel){
                   await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota,metodo_pago:"transferencia"},SUPA_KEY);
                 }
-
-                const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
-                const msgWsp = encodeURIComponent(
-                  `🏀 *COMPROBANTE DE PAGO*\n\n` +
-                  `Nombre: *${form.nombre}*\n` +
-                  `Teléfono: *${form.telefono}*\n\n` +
-                  `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
-                  `⏰ Horarios: *${horasStr}hs*\n` +
-                  `💰 Total: *${gs(totalSel)}*\n\n` +
-                  `Adjunto: Foto de la transferencia al alias 80168039-5`
-                );
-                window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
-
-                // Notificación WhatsApp automática al cliente y admin (fire & forget)
-                fetch("/api/whatsapp/enviar",{
-                  method:"POST",
-                  headers:{"Content-Type":"application/json"},
-                  body:JSON.stringify({
-                    tipo:"transferencia_pendiente",
-                    nombre:form.nombre.trim(),
-                    telefono:form.telefono.trim(),
-                    fecha:fmtFechaLegible(fecha),
-                    horarios:horasStr+"hs",
-                    monto:gs(totalSel),
-                  })
-                }).catch(()=>{});
-
                 setPaso("confirmado");
               } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
               setSaving(false);
-            }} disabled={saving} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-              {saving?"Guardando...":"📱 Enviar comprobante por WhatsApp"}
+            }} disabled={saving} style={{width:"100%",padding:"15px 20px",background:"#D85A30",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",letterSpacing:0.5}}>
+              {saving?"Guardando...":"Confirmar reserva →"}
             </button>
           ) : (
             <button onClick={async ()=>{
@@ -722,22 +696,23 @@ const PortalCliente = () => {
         </div>
       </>}
 
-      {paso==="confirmado"&&<div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"36px 24px",textAlign:"center"}}>
-        <div style={{width:72,height:72,borderRadius:"50%",background:"#1A3570",border:"2px solid #2A5F9F",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"}}>⏳</div>
-        <div style={{fontSize:22,fontWeight:700,color:TX.p,marginBottom:8}}>Pago enviado</div>
-        <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>Hemos recibido tu comprobante. Tu reserva para <strong style={{color:TX.p}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong> está pendiente de confirmación.</div>
-        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:"16px",marginBottom:20,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)"}}>
-          <div style={{fontSize:13,color:TX.s,lineHeight:2.2}}>
+      {paso==="confirmado"&&<div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"40px 28px",textAlign:"center"}}>
+        <div style={{width:64,height:64,borderRadius:"50%",background:"rgba(216,90,48,0.15)",border:"1px solid rgba(216,90,48,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 24px"}}>✓</div>
+        <div style={{fontSize:22,fontWeight:700,color:"#E8EEFF",marginBottom:12,letterSpacing:-0.5}}>¡Reserva confirmada!</div>
+        <div style={{fontSize:14,color:"#9AAAD4",marginBottom:28,lineHeight:1.8}}>
+          Tu reserva para el <strong style={{color:"#E8EEFF"}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:"#E8EEFF"}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong> está registrada.<br/>
+          Te contactaremos por WhatsApp para coordinar el pago.
+        </div>
+        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"16px 20px",marginBottom:28,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)"}}>
+          <div style={{fontSize:13,color:"#9AAAD4",lineHeight:2}}>
             <div>📍 {cfg.nombre_club} — Tavapy, Alto Paraná</div>
-            <div>💰 {gs(totalSel)} · {slotsSel.length} hora{slotsSel.length>1?"s":""} · Pago pendiente de verificación</div>
+            <div>💰 {gs(totalSel)} · {slotsSel.length} hora{slotsSel.length>1?"s":""}</div>
+            <div>🏦 Transferencia al alias <strong style={{color:"#D85A30"}}>80168039-5</strong></div>
           </div>
         </div>
-        <div style={{background:"#0D2A1A",borderRadius:12,padding:"14px 16px",marginBottom:20,border:"1px solid #1A5A30",textAlign:"left"}}>
-          <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>✓ Próximo paso</div>
-          <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibirás una confirmación por WhatsApp una vez que verifiquemos tu pago.</div>
-        </div>
-        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-          Volver al inicio
+        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});}}
+          style={{width:"100%",padding:"13px",background:"transparent",color:"#9AAAD4",border:"1px solid rgba(216,90,48,0.2)",borderRadius:8,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+          Hacer otra reserva
         </button>
       </div>}
     </div>
