@@ -3,8 +3,8 @@
 // GET  → verificación del webhook
 // POST → mensajes entrantes (texto, audio, imagen, documento, etc.)
 //
-// SQL — agregar columna media_id a la tabla existente:
-//   alter table whatsapp_mensajes add column if not exists media_id text;
+// SQL: alter table whatsapp_mensajes add column if not exists media_id text;
+//      alter table whatsapp_mensajes add column if not exists direccion text default 'entrante';
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -34,7 +34,6 @@ export default async function handler(req, res) {
   const metaId = message.id;
   const nombre = value?.contacts?.[0]?.profile?.name || de;
 
-  // Extraer texto y media_id según el tipo de mensaje
   let texto   = null;
   let mediaId = null;
 
@@ -74,12 +73,30 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
     const { error } = await sb.from("whatsapp_mensajes").upsert(
-      { de, nombre, mensaje: texto, tipo, meta_id: metaId, media_id: mediaId, leido: false },
+      { de, nombre, mensaje: texto, tipo, meta_id: metaId, media_id: mediaId, leido: false, direccion: "entrante" },
       { onConflict: "meta_id", ignoreDuplicates: true }
     );
     if (error) console.error("[whatsapp-wh] Supabase error:", error);
   } catch (e) {
     console.error("[whatsapp-wh] Error inesperado:", e);
+  }
+
+  // Notificar al admin por WhatsApp (fire & forget)
+  const ADMIN  = process.env.WHATSAPP_ADMIN_NOTIFY || "595981086046";
+  const TOKEN  = process.env.WHATSAPP_TOKEN;
+  const PH_ID  = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (TOKEN && PH_ID && de !== ADMIN) {
+    const preview = texto && texto.length > 60 ? texto.slice(0, 60) + "…" : texto;
+    fetch(`https://graph.facebook.com/v19.0/${PH_ID}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: ADMIN,
+        type: "text",
+        text: { body: `📩 Mensaje de ${nombre}:\n${preview}` },
+      }),
+    }).catch(e => console.error("[whatsapp-wh] Error notificando admin:", e));
   }
 
   return res.status(200).json({ ok: true });

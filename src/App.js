@@ -1708,6 +1708,13 @@ export default function App() {
     const [imagenPrevia,setImagenPrevia]=useState(null);
     const [subiendoImg,setSubiendoImg]=useState(false);
     const [confirmElim,setConfirmElim]=useState(false);
+    const [busqueda,setBusqueda]=useState("");
+    const [verReservas,setVerReservas]=useState(false);
+    const [nuevaConv,setNuevaConv]=useState(false);
+    const [ncTel,setNcTel]=useState("");
+    const [ncCliente,setNcCliente]=useState("");
+    const [ncMsg,setNcMsg]=useState("");
+    const [ncEnviando,setNcEnviando]=useState(false);
     const hiloRef=useRef(null);
     const fileRef=useRef(null);
 
@@ -1793,6 +1800,27 @@ export default function App() {
       else alert("Error al eliminar");
     };
 
+    const iniciarConversacion=async()=>{
+      const tel=ncCliente
+        ? (clientes.find(c=>c.id===Number(ncCliente))?.telefono||"")
+        : ncTel;
+      if(!tel.trim()||!ncMsg.trim())return;
+      setNcEnviando(true);
+      try{
+        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:tel.trim(),mensaje:ncMsg.trim()})});
+        const d=await r.json();
+        if(!r.ok)throw new Error(d.error||"Error enviando");
+        setNuevaConv(false);setNcTel("");setNcCliente("");setNcMsg("");
+        await cargar(true);
+        // Abrir la conversación recién iniciada
+        let t=tel.replace(/\D/g,"");
+        if(t.startsWith("0"))t="595"+t.slice(1);
+        if(!t.startsWith("595"))t="595"+t;
+        setWaContacto(t);
+      }catch(e){alert("Error: "+e.message);}
+      finally{setNcEnviando(false);}
+    };
+
     const onImagen=(e)=>{
       const file=e.target.files?.[0];
       if(!file)return;
@@ -1840,6 +1868,7 @@ export default function App() {
             :<div style={{fontSize:11,color:TX.t}}>{conv.de}</div>}
         </div>
         <Btn sm v="ghost" onClick={()=>cargar(true)}>↻</Btn>
+        {clienteVinc&&<button onClick={()=>setVerReservas(v=>!v)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:verReservas?"#1A2F6B":"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>📅 Reservas</button>}
         {!confirmElim
           ?<button onClick={()=>setConfirmElim(true)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:BR.danger,border:`1px solid ${BR.danger}`,fontFamily:"var(--font-sans)"}}>Eliminar</button>
           :<div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -1849,6 +1878,20 @@ export default function App() {
           </div>
         }
       </div>
+
+      {verReservas&&clienteVinc&&(()=>{
+        const resCliente=turnos.filter(t=>t.cliente_id===clienteVinc.id).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,5);
+        return <div style={{...card,marginBottom:10,padding:"10px 14px"}}>
+          <div style={{fontSize:12,fontWeight:600,color:TX.s,marginBottom:8}}>Últimas reservas de {clienteVinc.nombre}</div>
+          {resCliente.length===0
+            ?<div style={{fontSize:12,color:TX.t}}>Sin reservas</div>
+            :resCliente.map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #1A2B5A"}}>
+                <span style={{color:TX.p}}>{t.fecha} {t.hora}:00hs</span>
+                <span style={{color:t.estado==="reservado"?"#5ABDA8":t.estado==="cancelado"?BR.danger:TX.s}}>{t.estado}</span>
+              </div>)
+          }
+        </div>;
+      })()}
 
       <div ref={hiloRef} style={{...card,padding:12,minHeight:200,maxHeight:380,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
         {conv.msgs.map(m=><Burbuja key={m.id} m={m}/>)}
@@ -1884,21 +1927,66 @@ export default function App() {
     </div>;
 
     // ── Vista lista de contactos ──────────────────────────────────────────────
+    // Modal nueva conversación
+    if(nuevaConv)return <div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+        <button onClick={()=>setNuevaConv(false)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:20,padding:"0 4px",lineHeight:1}}>←</button>
+        <span style={{fontSize:15,fontWeight:600,color:TX.p}}>Nueva conversación</span>
+      </div>
+      <div style={{...card,display:"flex",flexDirection:"column",gap:12}}>
+        <div>
+          <label style={lbl}>Cliente existente</label>
+          <select value={ncCliente} onChange={e=>{setNcCliente(e.target.value);setNcTel("");}} style={{...inp}}>
+            <option value="">Seleccioná un cliente...</option>
+            {clientes.filter(c=>c.telefono).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(c=><option key={c.id} value={c.id}>{c.nombre} — {c.telefono}</option>)}
+          </select>
+        </div>
+        {!ncCliente&&<div>
+          <label style={lbl}>O ingresá un número manualmente</label>
+          <input value={ncTel} onChange={e=>setNcTel(e.target.value)} placeholder="ej: 0981123456" style={inp}/>
+        </div>}
+        <div>
+          <label style={lbl}>Mensaje</label>
+          <textarea value={ncMsg} onChange={e=>setNcMsg(e.target.value)} rows={3} placeholder="Escribí el mensaje..." style={{...inp,resize:"vertical"}}/>
+          <div style={{fontSize:11,color:TX.t,marginTop:4}}>Solo funciona si el destinatario te escribió en las últimas 24hs, o si tenés un template aprobado.</div>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setNcMsg(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>28?p.slice(0,27)+"…":p}</button>)}
+        </div>
+        <button onClick={iniciarConversacion} disabled={ncEnviando||(!ncTel.trim()&&!ncCliente)||!ncMsg.trim()}
+          style={{padding:"10px",borderRadius:8,fontSize:14,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,opacity:(ncEnviando||(!ncTel.trim()&&!ncCliente)||!ncMsg.trim())?0.5:1}}>
+          {ncEnviando?"Enviando...":"Enviar"}
+        </button>
+      </div>
+    </div>;
+
+    const contactosFiltrados=busqueda.trim()
+      ?contactos.filter(c=>{
+          const q=busqueda.toLowerCase();
+          const cli=clienteDeContacto(c.de);
+          return (cli?.nombre||"").toLowerCase().includes(q)||(c.nombre||"").toLowerCase().includes(q)||c.de.includes(q);
+        })
+      :contactos;
+
     return <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <div>
           <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Conversaciones</span>
           {totalNoLeidos>0&&<span style={{marginLeft:8,background:BR.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{totalNoLeidos}</span>}
         </div>
-        <Btn sm v="ghost" onClick={()=>cargar(false)}>Actualizar</Btn>
+        <div style={{display:"flex",gap:6}}>
+          <Btn sm v="primary" onClick={()=>setNuevaConv(true)}>+ Nueva</Btn>
+          <Btn sm v="ghost" onClick={()=>cargar(false)}>↻</Btn>
+        </div>
       </div>
-      {contactos.length===0
+      <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar por nombre o número..." style={{...inp,marginBottom:10}}/>
+      {contactosFiltrados.length===0
         ?<div style={{...card,textAlign:"center",padding:40}}>
             <div style={{fontSize:32,marginBottom:10}}>💬</div>
-            <div style={{color:TX.s,fontSize:14}}>No hay mensajes aún</div>
+            <div style={{color:TX.s,fontSize:14}}>{busqueda?"Sin resultados":"No hay mensajes aún"}</div>
           </div>
         :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-          {contactos.map(c=>{
+          {contactosFiltrados.map(c=>{
             const ultimo=c.msgs[c.msgs.length-1];
             const ts=new Date(ultimo.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
             const cli=clienteDeContacto(c.de);
