@@ -29,23 +29,13 @@ export default async function handler(req, res) {
   const PH_ID  = process.env.WHATSAPP_PHONE_NUMBER_ID;
   if (!TOKEN || !PH_ID) return res.status(200).json({ ok: false, msg: "Variables WA no configuradas" });
 
-  // Calcular la hora objetivo: ahora + 3hs
-  const ahora     = new Date();
-  const horaObj   = ahora.getHours() + 3;
-  const fechaHoy  = ahora.toISOString().slice(0, 10);
+  // Buscar todos los turnos de hoy que no tengan recordatorio enviado
+  const fechaHoy = new Date().toISOString().slice(0, 10);
 
-  // Si la hora objetivo supera el día, buscar en el día siguiente
-  const fechaBuscar = horaObj >= 24
-    ? new Date(ahora.getTime() + 86400000).toISOString().slice(0, 10)
-    : fechaHoy;
-  const horaBuscar  = horaObj >= 24 ? horaObj - 24 : horaObj;
-
-  // Buscar turnos reservados en esa franja que no tengan recordatorio enviado
   const { data: turnosPendientes, error } = await sb
     .from("turnos")
     .select("id, hora, fecha, precio, cliente_id, clientes(nombre, telefono)")
-    .eq("fecha", fechaBuscar)
-    .eq("hora", horaBuscar)
+    .eq("fecha", fechaHoy)
     .eq("estado", "reservado")
     .eq("recordatorio_wa", false);
 
