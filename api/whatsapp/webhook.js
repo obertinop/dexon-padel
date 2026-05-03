@@ -15,7 +15,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 async function enviarWA(phoneId, token, to, texto) {
-  return fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+  const r = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -24,7 +24,12 @@ async function enviarWA(phoneId, token, to, texto) {
       type: "text",
       text: { body: texto },
     }),
-  }).catch(e => console.error("[webhook] Error enviando WA:", e));
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    console.error("[webhook] Error Meta API:", JSON.stringify(err));
+  }
+  return r;
 }
 
 export default async function handler(req, res) {
@@ -85,18 +90,25 @@ export default async function handler(req, res) {
   const PH_ID  = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
   if (TOKEN && PH_ID) {
+    const tareas = [];
+
     // Bienvenida automática (solo si es el primer mensaje de este número)
     if (cfg.wa_bienvenida_activo && cfg.wa_bienvenida_texto) {
-      const { count } = await sb
+      const { count, error: errCount } = await sb
         .from("whatsapp_mensajes")
         .select("id", { count: "exact", head: true })
         .eq("de", de)
         .eq("direccion", "entrante")
         .neq("meta_id", metaId);
 
-      if (count === 0) {
-        enviarWA(PH_ID, TOKEN, de, cfg.wa_bienvenida_texto);
-        console.log(`[webhook] Bienvenida enviada a ${de}`);
+      if (errCount) console.error("[webhook] Error contando mensajes:", errCount);
+
+      if (!errCount && (count === 0 || count === null)) {
+        tareas.push(
+          enviarWA(PH_ID, TOKEN, de, cfg.wa_bienvenida_texto)
+            .then(() => console.log(`[webhook] Bienvenida enviada a ${de}`))
+            .catch(e => console.error("[webhook] Error bienvenida:", e))
+        );
       }
     }
 
@@ -104,8 +116,14 @@ export default async function handler(req, res) {
     const adminTel = cfg.wa_admin_tel || process.env.WHATSAPP_ADMIN_NOTIFY || "595981086046";
     if (de !== adminTel) {
       const preview = texto && texto.length > 60 ? texto.slice(0, 60) + "…" : texto;
-      enviarWA(PH_ID, TOKEN, adminTel, `📩 Mensaje de ${nombre}:\n${preview}`);
+      tareas.push(
+        enviarWA(PH_ID, TOKEN, adminTel, `📩 Mensaje de ${nombre}:\n${preview}`)
+          .catch(e => console.error("[webhook] Error notif admin:", e))
+      );
     }
+
+    // Esperar que todos los envíos completen antes de cerrar la función
+    await Promise.all(tareas);
   }
 
   return res.status(200).json({ ok: true });
