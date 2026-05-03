@@ -1,6 +1,8 @@
 // /api/whatsapp/enviar.js
 // Endpoint interno para enviar mensajes de WhatsApp vía Meta Cloud API.
 // Llamado desde webhook.js (pago confirmado) y desde el frontend (transferencia).
+import { createClient } from "@supabase/supabase-js";
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -71,28 +73,37 @@ export default async function handler(req, res) {
     resultados.push({ destino: "cliente", tel: telCliente, ...r });
   }
 
-  // ── Notificación al ADMIN (texto libre vía notificar-admin) ────────────
-  const metodo = tipo === "pago_confirmado"
-    ? `Pagopar - ${forma_pago || "online"}`
-    : "Transferencia bancaria";
-
-  const textoAdmin =
-    `📋 Nueva reserva\n\n` +
-    `👤 ${nombre}\n` +
-    `📞 ${telefono}\n` +
-    `📅 ${fecha || "-"} a las ${horarios || "-"}\n` +
-    `💰 ${monto || "-"}\n` +
-    `💳 ${metodo}`;
-
+  // ── Notificación al ADMIN (texto libre, lee teléfono desde config) ─────
   try {
-    const base = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
-    const rAdmin = await fetch(`${base}/api/whatsapp/notificar-admin`, {
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const { data: cfgRows } = await sb.from("config").select("wa_admin_tel").limit(1);
+    const adminTel = cfgRows?.[0]?.wa_admin_tel || process.env.WHATSAPP_ADMIN_NOTIFY || "595981086046";
+
+    const metodo = tipo === "pago_confirmado"
+      ? `Pagopar - ${forma_pago || "online"}`
+      : "Transferencia bancaria";
+
+    const textoAdmin =
+      `📋 Nueva reserva\n\n` +
+      `👤 ${nombre}\n` +
+      `📞 ${telefono}\n` +
+      `📅 ${fecha || "-"} a las ${horarios || "-"}\n` +
+      `💰 ${monto || "-"}\n` +
+      `💳 ${metodo}`;
+
+    const rAdmin = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto: textoAdmin }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: adminTel,
+        type: "text",
+        text: { body: textoAdmin },
+      }),
     });
     const dataAdmin = await rAdmin.json();
-    resultados.push({ destino: "admin", ok: rAdmin.ok, error: dataAdmin?.error });
+    if (!rAdmin.ok) console.error("[enviar] Error notif admin:", JSON.stringify(dataAdmin));
+    resultados.push({ destino: "admin", tel: adminTel, ok: rAdmin.ok, error: dataAdmin?.error?.message });
   } catch (e) {
     console.error("[enviar] Error notificando admin:", e.message);
     resultados.push({ destino: "admin", ok: false, error: e.message });
