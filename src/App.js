@@ -867,47 +867,35 @@ function LandingPage({ onAdmin }) {
         <div style={st.heroContent}>
           <span style={st.heroBadge}>🎾 Tavapy · Alto Paraná · Paraguay</span>
           <h1 style={st.heroTitle}>
-            Jugá cuando<br /><span style={st.heroSpan}>quieras, reservá</span><br />en segundos
+            El pádel de<br /><span style={st.heroSpan}>Tavapy</span>
           </h1>
           <p style={st.heroSub}>
-            El primer club de pádel de Tavapy. Cancha profesional, reserva online 24/7 y planes mensuales para los que juegan seguido.
+            Reservá tu cancha online, 24/7.
           </p>
           <div style={st.heroButtons}>
             <button style={st.btnHeroMain} onClick={() => window.location.href = "/reservar"}>
-              Reservar cancha →
+              Reservar →
             </button>
             <button style={st.btnHeroSec} onClick={() => scrollTo("precios")}>
-              Ver planes →
+              Ver precios
             </button>
-          </div>
-        </div>
-        {/* Stats bar */}
-        <div style={{ position:"relative", zIndex:1, display:"flex", gap: isMobile ? 24 : 48, marginTop: 56, flexWrap:"wrap", justifyContent:"center" }}>
-          <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize: isMobile ? 28 : 36, fontWeight:900, color:"#D85A30", lineHeight:1 }}>24/7</div>
-            <div style={{ fontSize:12, color:"#9AAAD4", marginTop:4, letterSpacing:0.5 }}>Reserva online</div>
           </div>
         </div>
       </section>
 
-      {/* QUIÉNES SOMOS */}
+      {/* NOSOTROS */}
       <section id="nosotros" style={{ background: "#0A1428" }}>
         <div style={st.section}>
-          <div style={st.divider} />
-          <h2 style={st.sectionTitle}>Quiénes somos</h2>
-          <p style={st.sectionSub}>
-            DEXON PADEL es el primer club de pádel de Tavapy, Alto Paraná. Nació con la misión de acercar este deporte a la comunidad local, con una cancha profesional, ambiente familiar y atención personalizada.
-          </p>
           <div style={st.grid3}>
             {[
-              { icon: "🏆", title: "Calidad profesional", text: "Cancha construida con materiales de primer nivel, iluminación LED y superficie reglamentaria para el mejor juego." },
-              { icon: "👨‍👩‍👧", title: "Ambiente familiar", text: "Un espacio pensado para todos: principiantes, aficionados y jugadores avanzados. Venís con quien quieras." },
-              { icon: "📅", title: "Reservas simples", text: "Sistema de reservas online disponible las 24 horas. Elegí tu horario, confirmá por WhatsApp y listo." },
+              { icon: "🏆", title: "Cancha profesional", text: "Superficie reglamentaria e iluminación LED." },
+              { icon: "👨‍👩‍👧", title: "Para todos", text: "Principiantes, aficionados y avanzados." },
+              { icon: "📅", title: "Reserva online", text: "Elegí tu horario desde donde estés, 24/7." },
             ].map((f, i) => (
-              <div key={i} style={st.featureCard}>
-                <div style={st.featureIcon}>{f.icon}</div>
-                <div style={st.featureTitle}>{f.title}</div>
-                <div style={st.featureText}>{f.text}</div>
+              <div key={i} style={{ ...st.featureCard, textAlign:"center", padding:"28px 20px" }}>
+                <div style={{ fontSize:30, marginBottom:12 }}>{f.icon}</div>
+                <div style={{ fontSize:15, fontWeight:700, color:TX.p, marginBottom:6 }}>{f.title}</div>
+                <div style={{ fontSize:13, color:"#9AAAD4", lineHeight:1.6 }}>{f.text}</div>
               </div>
             ))}
           </div>
@@ -919,20 +907,10 @@ function LandingPage({ onAdmin }) {
         <div style={st.section}>
           <div style={st.divider} />
           <h2 style={st.sectionTitle}>La cancha</h2>
-          <p style={st.sectionSub}>Todo lo que necesitás para jugar al pádel en un solo lugar.</p>
-          <div style={st.grid2}>
-            {[
-              { icon: "💡", title: "Iluminación LED", text: "Iluminación profesional para jugar de día o de noche sin inconvenientes." },
-              { icon: "🎾", title: "Superficie reglamentaria", text: "Piso de césped sintético de alta calidad, homologado para competencia." },
-              { icon: "🅿️", title: "Estacionamiento", text: "Amplio espacio para estacionar sin preocupaciones." },
-              { icon: "🚿", title: "Vestuarios", text: "Instalaciones limpias y cómodas para cambiarte antes y después del partido." },
-            ].map((f, i) => (
-              <div key={i} style={{ ...st.featureCard, display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <span style={{ fontSize: 28, flexShrink: 0 }}>{f.icon}</span>
-                <div>
-                  <div style={st.featureTitle}>{f.title}</div>
-                  <div style={st.featureText}>{f.text}</div>
-                </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginTop:16 }}>
+            {["💡 Iluminación LED","🎾 Superficie reglamentaria","🅿️ Estacionamiento","🚿 Vestuarios"].map((item,i)=>(
+              <div key={i} style={{ background:"#0F1C3F", border:"1px solid #1E3070", borderRadius:40, padding:"10px 20px", fontSize:14, color:"#9AAAD4" }}>
+                {item}
               </div>
             ))}
           </div>
@@ -944,63 +922,37 @@ function LandingPage({ onAdmin }) {
         <div style={st.section}>
           <div style={st.divider} />
           <h2 style={st.sectionTitle}>Precios</h2>
-          <p style={st.sectionSub}>Elegí cómo querés jugar. Si jugás seguido, el abono mensual te conviene mucho más.</p>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20, alignItems:"start" }}>
-
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:16, marginTop:32 }}>
             {/* Turno suelto */}
             <div style={{ ...st.featureCard, padding:"32px 28px" }}>
-              <div style={{ fontSize:13, fontWeight:600, color:"#9AAAD4", letterSpacing:1, textTransform:"uppercase", marginBottom:12 }}>Turno suelto</div>
-              <div style={{ fontSize: isMobile ? 36 : 44, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:4 }}>
-                {gs(landingCfg.tarifa_base)}
+              <div style={{ fontSize:12, fontWeight:600, color:"#9AAAD4", letterSpacing:1.5, textTransform:"uppercase", marginBottom:16 }}>Turno suelto</div>
+              <div style={{ fontSize:42, fontWeight:900, color:"#E8EEFF", lineHeight:1 }}>{gs(landingCfg.tarifa_base)}</div>
+              <div style={{ fontSize:13, color:"#9AAAD4", marginTop:6, marginBottom:6 }}>por hora</div>
+              <div style={{ fontSize:13, color:"#6677AA", marginBottom:32 }}>
+                Horario pico ({landingCfg.hora_pico_inicio}–{landingCfg.hora_pico_fin}hs): {gs(landingCfg.tarifa_pico)}
               </div>
-              <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:24 }}>por hora · precio normal</div>
-              <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:6 }}>
-                ⏰ Horario pico ({landingCfg.hora_pico_inicio}:00–{landingCfg.hora_pico_fin}:00): <strong style={{color:"#E8EEFF"}}>{gs(landingCfg.tarifa_pico)}/hs</strong>
-              </div>
-              <div style={{ borderTop:"1px solid #1E3070", margin:"20px 0" }} />
-              {["Reservá por hora","Confirmación inmediata","Sin compromiso"].map((f,i)=>(
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, fontSize:14, color:"#9AAAD4" }}>
-                  <span style={{ color:"#D85A30", fontWeight:700 }}>✓</span> {f}
-                </div>
-              ))}
               <button onClick={() => window.location.href="/reservar"}
-                style={{ width:"100%", marginTop:20, padding:"13px", border:"1.5px solid #D85A30", borderRadius:12, background:"transparent", color:"#D85A30", fontSize:14, fontWeight:700, cursor:"pointer" }}>
-                Reservar turno →
+                style={{ width:"100%", padding:"13px", border:"1.5px solid #D85A30", borderRadius:10, background:"transparent", color:"#D85A30", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                Reservar →
               </button>
             </div>
-
             {/* Abono mensual */}
             <div style={{ ...st.featureCard, padding:"32px 28px", border:"2px solid #D85A30", position:"relative", overflow:"hidden" }}>
-              {/* Badge más popular */}
-              <div style={{ position:"absolute", top:0, right:0, background:"#D85A30", color:"#fff", fontSize:11, fontWeight:700, padding:"6px 16px", borderBottomLeftRadius:12, letterSpacing:1 }}>
-                ★ MÁS POPULAR
-              </div>
-              <div style={{ fontSize:13, fontWeight:600, color:"#D85A30", letterSpacing:1, textTransform:"uppercase", marginBottom:12 }}>Abono mensual</div>
-              {planes.length > 0 ? (
-                <>
-                  <div style={{ fontSize: isMobile ? 36 : 44, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:4 }}>
-                    {gs(planes[0].precio)}
-                  </div>
-                  <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:8 }}>por mes · {planes[0].horas_semana}hs/semana</div>
-                  <div style={{ display:"inline-block", background:"rgba(216,90,48,0.15)", border:"1px solid rgba(216,90,48,0.3)", borderRadius:20, fontSize:12, color:"#D85A30", fontWeight:700, padding:"4px 12px", marginBottom:20 }}>
-                    Ahorrás {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)} al mes
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: isMobile ? 36 : 44, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:4 }}>Consultanos</div>
-                  <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:28 }}>planes a medida</div>
-                </>
-              )}
-              <div style={{ borderTop:"1px solid #2A3F6B", margin:"20px 0" }} />
-              {["Horas fijas por semana","Prioridad en reserva","Precio bloqueado todo el mes","Factura mensual única"].map((f,i)=>(
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, fontSize:14, color:"#9AAAD4" }}>
-                  <span style={{ color:"#D85A30", fontWeight:700 }}>✓</span> {f}
+              <div style={{ position:"absolute", top:0, right:0, background:"#D85A30", color:"#fff", fontSize:10, fontWeight:700, padding:"5px 14px", borderBottomLeftRadius:10, letterSpacing:1 }}>MENSUAL</div>
+              <div style={{ fontSize:12, fontWeight:600, color:"#D85A30", letterSpacing:1.5, textTransform:"uppercase", marginBottom:16 }}>Abono mensual</div>
+              {planes.length > 0 ? (<>
+                <div style={{ fontSize:42, fontWeight:900, color:"#E8EEFF", lineHeight:1 }}>{gs(planes[0].precio)}</div>
+                <div style={{ fontSize:13, color:"#9AAAD4", marginTop:6, marginBottom:6 }}>/mes · {planes[0].horas_semana}hs por semana</div>
+                <div style={{ fontSize:13, color:"#D85A30", fontWeight:600, marginBottom:32 }}>
+                  Ahorrás {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)} al mes
                 </div>
-              ))}
+              </>) : (<>
+                <div style={{ fontSize:32, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:6 }}>A medida</div>
+                <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:32 }}>Consultanos por WhatsApp</div>
+              </>)}
               <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
-                style={{ width:"100%", padding:"14px", border:"none", borderRadius:12, background:"#D85A30", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 6px 20px rgba(216,90,48,0.35)" }}>
-                Quiero mi abono →
+                style={{ width:"100%", padding:"13px", border:"none", borderRadius:10, background:"#D85A30", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                Consultar abono →
               </button>
             </div>
           </div>
@@ -1012,7 +964,6 @@ function LandingPage({ onAdmin }) {
         <div style={st.section}>
           <div style={st.divider} />
           <h2 style={st.sectionTitle}>Dónde estamos</h2>
-          <p style={st.sectionSub}>Encontranos en Tavapy, Alto Paraná. Fácil acceso desde Ciudad del Este y alrededores.</p>
           <div style={st.mapBox}>
             <iframe
               title="Ubicación DEXON PADEL"
@@ -1021,30 +972,12 @@ function LandingPage({ onAdmin }) {
               allowFullScreen=""
               loading="lazy"
             />
-            <div style={st.mapInfo}>
-              <div style={st.mapInfoRow}>
-                <span style={st.mapInfoIcon}>📍</span>
-                <div style={st.mapInfoText}>
-                  <span style={st.mapInfoLabel}>Dirección</span>
-                  Tavapy, Alto Paraná, Paraguay
-                </div>
-              </div>
-              <div style={st.mapInfoRow}>
-                <span style={st.mapInfoIcon}>🕐</span>
-                <div style={st.mapInfoText}>
-                  <span style={st.mapInfoLabel}>Horarios</span>
-                  Lunes a Viernes: 18:00 – 24:00 · Sábados y Domingos: 10:00 – 24:00
-                </div>
-              </div>
-              <div style={st.mapInfoRow}>
-                <span style={st.mapInfoIcon}>📞</span>
-                <div style={st.mapInfoText}>
-                  <span style={st.mapInfoLabel}>Teléfono / WhatsApp</span>
-                  <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{ color: "#25D366", textDecoration: "none", fontWeight: 600 }}>
-                    +595 994 952 201
-                  </a>
-                </div>
-              </div>
+            <div style={{ padding:"20px 24px", display:"flex", flexWrap:"wrap", gap:24 }}>
+              <div style={{ fontSize:14, color:"#9AAAD4" }}>📍 Tavapy, Alto Paraná, Paraguay</div>
+              <div style={{ fontSize:14, color:"#9AAAD4" }}>🕐 Lun–Vie 18–24hs · Sáb–Dom 10–24hs</div>
+              <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{ fontSize:14, color:"#25D366", textDecoration:"none", fontWeight:600 }}>
+                📞 +595 994 952 201
+              </a>
             </div>
           </div>
         </div>
@@ -1055,57 +988,24 @@ function LandingPage({ onAdmin }) {
         <div style={st.section}>
           <div style={st.divider} />
           <h2 style={st.sectionTitle}>Contacto</h2>
-          <p style={st.sectionSub}>¿Tenés dudas o querés coordinar algo especial? Escribinos y te respondemos rápido.</p>
-          <div style={st.contactGrid}>
-            <div style={st.contactCard}>
-              <div style={{ fontSize: 28, marginBottom: 16 }}>💬</div>
-              <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>WhatsApp</div>
-              <div style={{ fontSize: 14, color: "#9AAAD4", lineHeight: 1.7, marginBottom: 4 }}>
-                La forma más rápida de contactarnos. Respondemos en minutos.
+          <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:16, marginTop:32 }}>
+            <a href={`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20PADEL%2C%20quería%20consultar...`} target="_blank" rel="noreferrer" style={{ flex:1, ...st.featureCard, display:"flex", alignItems:"center", gap:16, textDecoration:"none", padding:"24px" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#25D366" style={{flexShrink:0}}>
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+              </svg>
+              <div>
+                <div style={{ fontSize:15, fontWeight:700, color:"#E8EEFF", marginBottom:2 }}>WhatsApp</div>
+                <div style={{ fontSize:13, color:"#9AAAD4" }}>Respondemos en minutos</div>
               </div>
-              <div style={{ fontSize: 14, color: "#9AAAD4" }}>Consultas · Reservas · Información general</div>
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <a href={`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20PADEL%2C%20quería%20consultar...`} target="_blank" rel="noreferrer" style={st.waBtn}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                  </svg>
-                  Escribir por WhatsApp
-                </a>
+            </a>
+            <button onClick={() => window.location.href="/reservar"}
+              style={{ flex:1, ...st.featureCard, display:"flex", alignItems:"center", gap:16, border:"2px solid #D85A30", background:"transparent", cursor:"pointer", padding:"24px", textAlign:"left" }}>
+              <span style={{ fontSize:28, flexShrink:0 }}>📅</span>
+              <div>
+                <div style={{ fontSize:15, fontWeight:700, color:"#E8EEFF", marginBottom:2 }}>Reservar cancha</div>
+                <div style={{ fontSize:13, color:"#9AAAD4" }}>Online · Confirmación inmediata</div>
               </div>
-            </div>
-            <div style={st.contactCard}>
-              <div style={{ fontSize: 28, marginBottom: 16 }}>🕐</div>
-              <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>Horarios de atención</div>
-              {[
-                { dia: "Lunes a Viernes", hrs: "18:00 – 24:00" },
-                { dia: "Sábados", hrs: "10:00 – 24:00" },
-                { dia: "Domingos", hrs: "10:00 – 24:00" },
-              ].map((h, i) => (
-                <div key={i} style={st.scheduleRow}>
-                  <span style={st.scheduleDay}>{h.dia}</span>
-                  <span style={st.scheduleHrs}>{h.hrs}</span>
-                </div>
-              ))}
-              <button
-                style={{
-                  width: "100%",
-                  marginTop: 20,
-                  padding: "14px 20px",
-                  border: "none",
-                  borderRadius: 12,
-                  background: "#D85A30",
-                  color: "#fff",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxSizing: "border-box",
-                  display: "block",
-                }}
-                onClick={() => window.location.href = "/reservar"}
-              >
-                Reservar cancha →
-              </button>
-            </div>
+            </button>
           </div>
         </div>
       </section>
