@@ -779,9 +779,9 @@ function LandingPage({ onAdmin }) {
     heroAccent: { position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,90,48,0.12) 0%, transparent 70%)", zIndex: 0 },
     heroContent: { position: "relative", zIndex: 1, maxWidth: 700 },
     heroBadge: { display: "inline-block", padding: "6px 16px", background: "rgba(216,90,48,0.15)", border: "1px solid rgba(216,90,48,0.3)", borderRadius: 20, fontSize: 12, color: "#D85A30", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 24 },
-    heroTitle: { fontSize: isMobile ? 38 : 64, fontWeight: 900, lineHeight: 1.05, margin: "0 0 20px", letterSpacing: -1 },
+    heroTitle: { fontSize: isMobile ? 52 : 96, fontWeight: 900, lineHeight: 0.95, margin: "0 0 20px", letterSpacing: -2 },
     heroSpan: { color: "#D85A30" },
-    heroSub: { fontSize: isMobile ? 16 : 20, color: "#9AAAD4", lineHeight: 1.6, marginBottom: 40, maxWidth: 520, margin: "0 auto 40px" },
+    heroSub: { fontSize: isMobile ? 18 : 24, color: "#D85A30", lineHeight: 1.4, marginBottom: 40, maxWidth: 560, margin: "0 auto 40px", fontWeight: 700 },
     heroButtons: { display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" },
     btnHeroMain: { padding: isMobile ? "14px 28px" : "16px 36px", border: "none", borderRadius: 12, background: "#D85A30", color: "#fff", fontSize: isMobile ? 15 : 17, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(216,90,48,0.35)" },
     btnHeroSec: { padding: isMobile ? "14px 28px" : "16px 36px", border: "1.5px solid #2A3F6B", borderRadius: 12, background: "transparent", color: "#E8EEFF", fontSize: isMobile ? 15 : 17, fontWeight: 600, cursor: "pointer" },
@@ -861,41 +861,40 @@ function LandingPage({ onAdmin }) {
       )}
 
       {/* HERO */}
-      <section style={st.hero}>
+      <section style={{...st.hero, paddingTop: isMobile ? 140 : 160, paddingBottom: isMobile ? 80 : 120}}>
         <div style={st.heroBg} />
-        <div style={st.heroAccent} />
+        <div style={{...st.heroAccent, width:800, height:800}} />
         <div style={st.heroContent}>
-          <span style={st.heroBadge}>🎾 Tavapy · Alto Paraná · Paraguay</span>
-          <h1 style={st.heroTitle}>
-            El pádel de<br /><span style={st.heroSpan}>Tavapy</span>
+          <h1 style={{...st.heroTitle, color:"#E8EEFF", marginBottom:16}}>
+            PÁDEL<br /><span style={{color:"#D85A30"}}>SIN LÍMITES</span>
           </h1>
           <p style={st.heroSub}>
-            Reservá tu cancha online, 24/7.
+            Reservá ahora. Juega cuando quieras. 24/7 online.
           </p>
-          <div style={st.heroButtons}>
-            <button style={st.btnHeroMain} onClick={() => window.location.href = "/reservar"}>
-              Reservar →
+          <div style={{...st.heroButtons, gap:12, marginTop:20}}>
+            <button style={{...st.btnHeroMain, paddingLeft:40, paddingRight:40, fontSize:18}} onClick={() => window.location.href = "/reservar"}>
+              🎾 RESERVAR AHORA
             </button>
-            <button style={st.btnHeroSec} onClick={() => scrollTo("precios")}>
-              Ver precios
+            <button style={{...st.btnHeroSec, paddingLeft:40, paddingRight:40, fontSize:18}} onClick={() => scrollTo("precios")}>
+              VER PLANES
             </button>
           </div>
         </div>
       </section>
 
       {/* NOSOTROS */}
-      <section id="nosotros" style={{ background: "#0A1428" }}>
-        <div style={st.section}>
-          <div style={st.grid3}>
+      <section id="nosotros" style={{ background: "linear-gradient(135deg, #D85A30 0%, #993C1D 100%)", padding: isMobile ? "80px 24px" : "100px 40px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap:32 }}>
             {[
-              { icon: "🏆", title: "Cancha profesional", text: "Superficie reglamentaria e iluminación LED." },
-              { icon: "👨‍👩‍👧", title: "Para todos", text: "Principiantes, aficionados y avanzados." },
-              { icon: "📅", title: "Reserva online", text: "Elegí tu horario desde donde estés, 24/7." },
+              { icon: "🏆", title: "CANCHA PRO", text: "Superficie reglamentaria" },
+              { icon: "⚡", title: "RESERVA INSTANT", text: "Online 24/7 · Sin esperas" },
+              { icon: "🎯", title: "PARA TODOS", text: "Todos los niveles bienvenidos" },
             ].map((f, i) => (
-              <div key={i} style={{ ...st.featureCard, textAlign:"center", padding:"28px 20px" }}>
-                <div style={{ fontSize:30, marginBottom:12 }}>{f.icon}</div>
-                <div style={{ fontSize:15, fontWeight:700, color:TX.p, marginBottom:6 }}>{f.title}</div>
-                <div style={{ fontSize:13, color:"#9AAAD4", lineHeight:1.6 }}>{f.text}</div>
+              <div key={i} style={{ textAlign:"center" }}>
+                <div style={{ fontSize:52, marginBottom:16, display:"inline-block" }}>{f.icon}</div>
+                <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginBottom:8, letterSpacing:1 }}>{f.title}</div>
+                <div style={{ fontSize:15, color:"rgba(255,255,255,0.85)", lineHeight:1.6 }}>{f.text}</div>
               </div>
             ))}
           </div>
@@ -903,14 +902,21 @@ function LandingPage({ onAdmin }) {
       </section>
 
       {/* LA CANCHA */}
-      <section id="cancha">
-        <div style={st.section}>
-          <div style={st.divider} />
-          <h2 style={st.sectionTitle}>La cancha</h2>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginTop:16 }}>
-            {["💡 Iluminación LED","🎾 Superficie reglamentaria","🅿️ Estacionamiento","🚿 Vestuarios"].map((item,i)=>(
-              <div key={i} style={{ background:"#0F1C3F", border:"1px solid #1E3070", borderRadius:40, padding:"10px 20px", fontSize:14, color:"#9AAAD4" }}>
-                {item}
+      <section id="cancha" style={{ background:"#08101F", padding: isMobile ? "80px 24px" : "100px 40px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <h2 style={{...st.sectionTitle, marginBottom:48, textAlign:"center"}}>EQUIPAMIENTO</h2>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap:20 }}>
+            {[
+              {icon:"💡", text:"ILUMINACIÓN<br/>LED PRO"},
+              {icon:"🎾", text:"SUPERFICIE<br/>REGLAMENTARIA"},
+              {icon:"🅿️", text:"ESTACIONA-<br/>MIENTO"},
+              {icon:"🚿", text:"VESTUARIOS<br/>PREMIUM"}
+            ].map((item,i)=>(
+              <div key={i} style={{ background:"linear-gradient(135deg, #1A2F6B 0%, #0F1C3F 100%)", border:"2px solid #D85A30", borderRadius:16, padding:"32px 20px", textAlign:"center", cursor:"pointer", transition:"all 0.3s", transform:"scale(1)" }}
+                onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"}
+                onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
+                <div style={{ fontSize:40, marginBottom:12 }}>{item.icon}</div>
+                <div style={{ fontSize:14, fontWeight:800, color:"#E8EEFF", lineHeight:1.4, letterSpacing:0.5 }} dangerouslySetInnerHTML={{__html:item.text}} />
               </div>
             ))}
           </div>
@@ -918,93 +924,96 @@ function LandingPage({ onAdmin }) {
       </section>
 
       {/* PRECIOS */}
-      <section id="precios" style={{ background: "#0A1428" }}>
-        <div style={st.section}>
-          <div style={st.divider} />
-          <h2 style={st.sectionTitle}>Precios</h2>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:16, marginTop:32 }}>
+      <section id="precios" style={{ background: "linear-gradient(180deg, #0A1428 0%, #08101F 100%)", padding: isMobile ? "80px 24px" : "100px 40px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <h2 style={{...st.sectionTitle, marginBottom:48, textAlign:"center"}}>PLANES</h2>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:24 }}>
             {/* Turno suelto */}
-            <div style={{ ...st.featureCard, padding:"32px 28px" }}>
-              <div style={{ fontSize:12, fontWeight:600, color:"#9AAAD4", letterSpacing:1.5, textTransform:"uppercase", marginBottom:16 }}>Turno suelto</div>
-              <div style={{ fontSize:42, fontWeight:900, color:"#E8EEFF", lineHeight:1 }}>{gs(landingCfg.tarifa_base)}</div>
-              <div style={{ fontSize:13, color:"#9AAAD4", marginTop:6, marginBottom:6 }}>por hora</div>
-              <div style={{ fontSize:13, color:"#6677AA", marginBottom:32 }}>
-                Horario pico ({landingCfg.hora_pico_inicio}–{landingCfg.hora_pico_fin}hs): {gs(landingCfg.tarifa_pico)}
+            <div style={{ background:"linear-gradient(135deg, #0F1C3F 0%, #1A2F6B 100%)", border:"1px solid #1E3070", borderRadius:20, padding:40, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:-40, right:-40, width:150, height:150, background:"rgba(216,90,48,0.08)", borderRadius:"50%" }} />
+              <div style={{ fontSize:14, fontWeight:900, color:"#9AAAD4", letterSpacing:2, textTransform:"uppercase", marginBottom:20 }}>Turno suelto</div>
+              <div style={{ fontSize:56, fontWeight:900, color:"#D85A30", lineHeight:1, marginBottom:8 }}>{gs(landingCfg.tarifa_base)}</div>
+              <div style={{ fontSize:15, color:"#9AAAD4", marginBottom:28 }}>por hora</div>
+              <div style={{ background:"rgba(216,90,48,0.1)", border:"1px solid rgba(216,90,48,0.2)", borderRadius:12, padding:"14px 16px", marginBottom:28, fontSize:14, color:"#D85A30", fontWeight:700 }}>
+                🔥 PICO ({landingCfg.hora_pico_inicio}–{landingCfg.hora_pico_fin}hs): {gs(landingCfg.tarifa_pico)}
               </div>
               <button onClick={() => window.location.href="/reservar"}
-                style={{ width:"100%", padding:"13px", border:"1.5px solid #D85A30", borderRadius:10, background:"transparent", color:"#D85A30", fontSize:14, fontWeight:700, cursor:"pointer" }}>
-                Reservar →
+                style={{ width:"100%", padding:"16px", border:"2px solid #D85A30", borderRadius:12, background:"transparent", color:"#D85A30", fontSize:15, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
+                Reservar Ahora
               </button>
             </div>
             {/* Abono mensual */}
-            <div style={{ ...st.featureCard, padding:"32px 28px", border:"2px solid #D85A30", position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:0, right:0, background:"#D85A30", color:"#fff", fontSize:10, fontWeight:700, padding:"5px 14px", borderBottomLeftRadius:10, letterSpacing:1 }}>MENSUAL</div>
-              <div style={{ fontSize:12, fontWeight:600, color:"#D85A30", letterSpacing:1.5, textTransform:"uppercase", marginBottom:16 }}>Abono mensual</div>
+            <div style={{ background:"linear-gradient(135deg, #D85A30 0%, #993C1D 100%)", borderRadius:20, padding:40, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:-40, right:-40, width:200, height:200, background:"rgba(255,255,255,0.08)", borderRadius:"50%" }} />
+              <div style={{ fontSize:14, fontWeight:900, color:"rgba(255,255,255,0.7)", letterSpacing:2, textTransform:"uppercase", marginBottom:20, position:"relative", zIndex:1 }}>⭐ Abono mensual</div>
               {planes.length > 0 ? (<>
-                <div style={{ fontSize:42, fontWeight:900, color:"#E8EEFF", lineHeight:1 }}>{gs(planes[0].precio)}</div>
-                <div style={{ fontSize:13, color:"#9AAAD4", marginTop:6, marginBottom:6 }}>/mes · {planes[0].horas_semana}hs por semana</div>
-                <div style={{ fontSize:13, color:"#D85A30", fontWeight:600, marginBottom:32 }}>
-                  Ahorrás {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)} al mes
+                <div style={{ fontSize:56, fontWeight:900, color:"#fff", lineHeight:1, marginBottom:8, position:"relative", zIndex:1 }}>{gs(planes[0].precio)}</div>
+                <div style={{ fontSize:15, color:"rgba(255,255,255,0.9)", marginBottom:8, position:"relative", zIndex:1 }}>/mes</div>
+                <div style={{ fontSize:14, color:"rgba(255,255,255,0.8)", marginBottom:28, position:"relative", zIndex:1, fontWeight:700 }}>{planes[0].horas_semana} hs/semana</div>
+                <div style={{ background:"rgba(255,255,255,0.15)", border:"2px solid rgba(255,255,255,0.3)", borderRadius:12, padding:"14px 16px", marginBottom:28, fontSize:14, color:"#fff", fontWeight:700, position:"relative", zIndex:1 }}>
+                  💰 AHORRÁS {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)}/mes
                 </div>
               </>) : (<>
-                <div style={{ fontSize:32, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:6 }}>A medida</div>
-                <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:32 }}>Consultanos por WhatsApp</div>
+                <div style={{ fontSize:42, fontWeight:900, color:"#fff", lineHeight:1, marginBottom:8, position:"relative", zIndex:1 }}>A medida</div>
+                <div style={{ fontSize:15, color:"rgba(255,255,255,0.9)", marginBottom:28, position:"relative", zIndex:1 }}>Planes personalizados</div>
               </>)}
               <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
-                style={{ width:"100%", padding:"13px", border:"none", borderRadius:10, background:"#D85A30", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>
-                Consultar abono →
+                style={{ width:"100%", padding:"16px", border:"2px solid rgba(255,255,255,0.3)", borderRadius:12, background:"rgba(255,255,255,0.1)", color:"#fff", fontSize:15, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", position:"relative", zIndex:1 }}>
+                Quiero Mi Abono
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* UBICACIÓN */}
-      <section id="ubicacion" style={{ background: "#08101F" }}>
-        <div style={st.section}>
-          <div style={st.divider} />
-          <h2 style={st.sectionTitle}>Dónde estamos</h2>
-          <div style={st.mapBox}>
-            <iframe
-              title="Ubicación DEXON PADEL"
-              style={st.mapFrame}
-              src="https://maps.google.com/maps?q=Tavapy,+Alto+Paraná,+Paraguay&output=embed&z=14"
-              allowFullScreen=""
-              loading="lazy"
-            />
-            <div style={{ padding:"20px 24px", display:"flex", flexWrap:"wrap", gap:24 }}>
-              <div style={{ fontSize:14, color:"#9AAAD4" }}>📍 Tavapy, Alto Paraná, Paraguay</div>
-              <div style={{ fontSize:14, color:"#9AAAD4" }}>🕐 Lun–Vie 18–24hs · Sáb–Dom 10–24hs</div>
-              <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{ fontSize:14, color:"#25D366", textDecoration:"none", fontWeight:600 }}>
-                📞 +595 994 952 201
+      {/* UBICACIÓN + CONTACTO */}
+      <section id="ubicacion" style={{ background:"linear-gradient(135deg, #D85A30 0%, #993C1D 100%)", padding: isMobile ? "80px 24px" : "100px 40px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:40, alignItems:"center" }}>
+            <div>
+              <h2 style={{ fontSize: isMobile ? 38 : 56, fontWeight:900, color:"#fff", marginBottom:20, lineHeight:1.1 }}>
+                ¿DÓNDE<br />ESTAMOS?
+              </h2>
+              <div style={{ fontSize:16, color:"rgba(255,255,255,0.9)", lineHeight:1.8, marginBottom:32 }}>
+                <div style={{ marginBottom:12 }}>📍 Tavapy, Alto Paraná, Paraguay</div>
+                <div style={{ marginBottom:12 }}>🕐 Lun–Vie: 18–24hs</div>
+                <div>Sáb–Dom: 10–24hs</div>
+              </div>
+              <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer"
+                style={{ display:"inline-block", padding:"14px 32px", background:"rgba(255,255,255,0.2)", border:"2px solid rgba(255,255,255,0.4)", borderRadius:12, color:"#fff", fontSize:15, fontWeight:900, textDecoration:"none", letterSpacing:1, textTransform:"uppercase", cursor:"pointer" }}>
+                📞 Llamar Ahora
               </a>
+            </div>
+            <div style={{height: isMobile ? 300 : 400, borderRadius:20, overflow:"hidden", border:"3px solid rgba(255,255,255,0.1)"}}>
+              <iframe
+                title="Ubicación DEXON PADEL"
+                style={{ width:"100%", height:"100%", border:"none" }}
+                src="https://maps.google.com/maps?q=Tavapy,+Alto+Paraná,+Paraguay&output=embed&z=14"
+                allowFullScreen=""
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* CONTACTO */}
-      <section id="contacto">
-        <div style={st.section}>
-          <div style={st.divider} />
-          <h2 style={st.sectionTitle}>Contacto</h2>
-          <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:16, marginTop:32 }}>
-            <a href={`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20PADEL%2C%20quería%20consultar...`} target="_blank" rel="noreferrer" style={{ flex:1, ...st.featureCard, display:"flex", alignItems:"center", gap:16, textDecoration:"none", padding:"24px" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="#25D366" style={{flexShrink:0}}>
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-              </svg>
-              <div>
-                <div style={{ fontSize:15, fontWeight:700, color:"#E8EEFF", marginBottom:2 }}>WhatsApp</div>
-                <div style={{ fontSize:13, color:"#9AAAD4" }}>Respondemos en minutos</div>
-              </div>
-            </a>
+      {/* CTA FINAL */}
+      <section id="contacto" style={{ background:"#08101F", padding: isMobile ? "80px 24px" : "100px 40px", textAlign:"center" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <h2 style={{ fontSize: isMobile ? 42 : 64, fontWeight:900, color:"#E8EEFF", marginBottom:24, lineHeight:1.1 }}>
+            ¿LISTO PARA<br /><span style={{color:"#D85A30"}}>JUGAR?</span>
+          </h2>
+          <p style={{ fontSize:18, color:"#9AAAD4", marginBottom:40, lineHeight:1.6 }}>
+            Reservá tu cancha ahora o consulta nuestros planes mensuales
+          </p>
+          <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:16, justifyContent:"center" }}>
             <button onClick={() => window.location.href="/reservar"}
-              style={{ flex:1, ...st.featureCard, display:"flex", alignItems:"center", gap:16, border:"2px solid #D85A30", background:"transparent", cursor:"pointer", padding:"24px", textAlign:"left" }}>
-              <span style={{ fontSize:28, flexShrink:0 }}>📅</span>
-              <div>
-                <div style={{ fontSize:15, fontWeight:700, color:"#E8EEFF", marginBottom:2 }}>Reservar cancha</div>
-                <div style={{ fontSize:13, color:"#9AAAD4" }}>Online · Confirmación inmediata</div>
-              </div>
+              style={{ padding:"18px 40px", background:"#D85A30", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", boxShadow:"0 10px 30px rgba(216,90,48,0.4)" }}>
+              🎾 Reservar Turno
+            </button>
+            <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
+              style={{ padding:"18px 40px", background:"transparent", color:"#D85A30", border:"2px solid #D85A30", borderRadius:12, fontSize:16, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
+              💬 Consultar Abono
             </button>
           </div>
         </div>
