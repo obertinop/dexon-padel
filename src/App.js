@@ -641,6 +641,18 @@ const PortalCliente = () => {
                 for(const h of slotsSel){
                   await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota,metodo_pago:"transferencia"},SUPA_KEY);
                 }
+                fetch("/api/whatsapp/enviar",{
+                  method:"POST",
+                  headers:{"Content-Type":"application/json"},
+                  body:JSON.stringify({
+                    tipo:"transferencia_pendiente",
+                    nombre:form.nombre.trim(),
+                    telefono:form.telefono.trim(),
+                    fecha:fmtFechaLegible(fecha),
+                    horarios:horasStr+"hs",
+                    monto:gs(totalSel),
+                  })
+                }).catch(()=>{});
                 setPaso("confirmado");
               } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
               setSaving(false);
