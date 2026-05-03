@@ -1224,12 +1224,19 @@ export default function App() {
     return()=>{clearTimeout(timer);evs.forEach(e=>window.removeEventListener(e,reset));};
   },[session]);
 
-  // Auto-refresh cada 10 segundos
+  // Auto-refresh cada 10 segundos — pausa si estás en el tab WA para no interrumpir conversación
+  const tabRef = useRef(tab);
+  useEffect(()=>{ tabRef.current = tab; },[tab]);
   useEffect(()=>{
     if(!tk) return;
-    const interval = setInterval(()=>{load();},10*1000);
+    const interval = setInterval(()=>{ if(tabRef.current !== "whatsapp") load(); },10*1000);
     return ()=>clearInterval(interval);
   },[tk,load]);
+
+  // Estado WA hoisted aquí para que sobreviva el auto-refresh del padre
+  const [waContacto, setWaContacto] = useState(null);
+  const [waMsgs,     setWaMsgs]     = useState([]);
+  const [waLoaded,   setWaLoaded]   = useState(false);
 
 
   const doLogout = async()=>{
@@ -1695,42 +1702,52 @@ export default function App() {
   ];
 
   const WhatsApp=()=>{
-    const [msgs,setMsgs]=useState([]);
-    const [loading,setLoading]=useState(true);
-    const [contactoSel,setContactoSel]=useState(null);
+    // Estado hoisted al padre (waContacto, waMsgs, waLoaded) — sobrevive al auto-refresh
     const [texto,setTexto]=useState("");
     const [enviando,setEnviando]=useState(false);
     const [imagenPrevia,setImagenPrevia]=useState(null);
     const [subiendoImg,setSubiendoImg]=useState(false);
+    const [confirmElim,setConfirmElim]=useState(false);
+    const hiloRef=useRef(null);
     const fileRef=useRef(null);
 
-    const cargar=useCallback(async()=>{
-      setLoading(true);
+    const cargar=useCallback(async(silencioso=false)=>{
+      if(!silencioso)setWaLoaded(false);
       try{
-        const r=await fetch("/api/whatsapp/mensajes?limit=300");
-        if(r.ok)setMsgs(await r.json());
+        const r=await fetch("/api/whatsapp/mensajes?limit=500");
+        if(r.ok)setWaMsgs(await r.json());
       }catch{}
-      finally{setLoading(false);}
+      finally{setWaLoaded(true);}
     },[]);
 
-    useEffect(()=>{cargar();},[cargar]);
+    // Carga inicial y polling cada 30s (sin perder el contacto seleccionado)
+    useEffect(()=>{
+      if(!waLoaded)cargar();
+      const iv=setInterval(()=>cargar(true),30*1000);
+      return ()=>clearInterval(iv);
+    },[cargar,waLoaded]);
 
-    // Agrupar por contacto
+    // Auto-scroll al fondo cuando llegan mensajes nuevos
+    useEffect(()=>{
+      if(hiloRef.current)hiloRef.current.scrollTop=hiloRef.current.scrollHeight;
+    },[waMsgs,waContacto]);
+
+    // Agrupar por contacto — nombre sólo de mensajes entrantes para no corromperse con "DEXON"
     const contactos=useMemo(()=>{
       const map={};
-      msgs.forEach(m=>{
-        if(!map[m.de])map[m.de]={de:m.de,nombre:m.nombre,msgs:[],noLeidos:0};
+      [...waMsgs].sort((a,b)=>a.created_at.localeCompare(b.created_at)).forEach(m=>{
+        if(!map[m.de])map[m.de]={de:m.de,nombre:null,msgs:[],noLeidos:0};
         map[m.de].msgs.push(m);
-        if(!m.leido)map[m.de].noLeidos++;
+        if(m.direccion!=="saliente"&&m.nombre&&m.nombre!=="DEXON")map[m.de].nombre=m.nombre;
+        if(!m.leido&&m.direccion!=="saliente")map[m.de].noLeidos++;
       });
       return Object.values(map).sort((a,b)=>{
         const la=a.msgs[a.msgs.length-1]?.created_at||"";
         const lb=b.msgs[b.msgs.length-1]?.created_at||"";
         return lb.localeCompare(la);
       });
-    },[msgs]);
+    },[waMsgs]);
 
-    // Vincular con clientes por teléfono
     const clienteDeContacto=(de)=>{
       const tel=(de||"").replace(/\D/g,"");
       return clientes.find(c=>{
@@ -1740,21 +1757,20 @@ export default function App() {
     };
 
     const marcarLeidos=(de)=>{
-      const ids=msgs.filter(m=>m.de===de&&!m.leido).map(m=>m.id);
+      const ids=waMsgs.filter(m=>m.de===de&&!m.leido&&m.direccion!=="saliente").map(m=>m.id);
       if(!ids.length)return;
       fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
-      setMsgs(p=>p.map(m=>m.de===de?{...m,leido:true}:m));
+      setWaMsgs(p=>p.map(m=>m.de===de?{...m,leido:true}:m));
     };
 
-    const seleccionar=(de)=>{setContactoSel(de);setTexto("");setImagenPrevia(null);marcarLeidos(de);};
+    const seleccionar=(de)=>{setWaContacto(de);setTexto("");setImagenPrevia(null);setConfirmElim(false);marcarLeidos(de);};
 
     const enviar=async()=>{
       if((!texto.trim()&&!imagenPrevia)||enviando)return;
       setEnviando(true);
       try{
-        let body={telefono:contactoSel,mensaje:texto.trim()||imagenPrevia?.caption||""};
+        let body={telefono:waContacto,mensaje:texto.trim()||""};
         if(imagenPrevia){
-          // Subir imagen primero
           setSubiendoImg(true);
           const upRes=await fetch("/api/whatsapp/subir-media",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:imagenPrevia.base64,mime:imagenPrevia.mime})});
           const upData=await upRes.json();
@@ -1766,85 +1782,88 @@ export default function App() {
         const data=await r.json();
         if(!r.ok)throw new Error(data.error||"Error enviando");
         setTexto("");setImagenPrevia(null);
-        // Recargar para mostrar el mensaje saliente guardado
-        await cargar();
+        await cargar(true);
       }catch(e){alert("Error: "+e.message);}
       finally{setEnviando(false);setSubiendoImg(false);}
     };
 
-    const onImagen=async(e)=>{
+    const eliminarConversacion=async()=>{
+      const r=await fetch("/api/whatsapp/mensajes",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({de:waContacto})});
+      if(r.ok){setWaContacto(null);setConfirmElim(false);await cargar(true);}
+      else alert("Error al eliminar");
+    };
+
+    const onImagen=(e)=>{
       const file=e.target.files?.[0];
       if(!file)return;
-      if(file.size>4*1024*1024){alert("La imagen no puede superar 4MB");return;}
+      if(file.size>5*1024*1024){alert("La imagen no puede superar 5MB");return;}
       const reader=new FileReader();
-      reader.onload=ev=>{
-        const base64=ev.target.result.split(",")[1];
-        setImagenPrevia({base64,mime:file.type,preview:ev.target.result,nombre:file.name});
-      };
+      reader.onload=ev=>setImagenPrevia({base64:ev.target.result.split(",")[1],mime:file.type,preview:ev.target.result,nombre:file.name});
       reader.readAsDataURL(file);
       e.target.value="";
     };
 
-    const conv=contactos.find(c=>c.de===contactoSel);
-    const clienteVinc=contactoSel?clienteDeContacto(contactoSel):null;
-    const totalNoLeidos=msgs.filter(m=>!m.leido).length;
+    const conv=contactos.find(c=>c.de===waContacto);
+    const clienteVinc=waContacto?clienteDeContacto(waContacto):null;
+    const totalNoLeidos=contactos.reduce((a,c)=>a+c.noLeidos,0);
 
-    const MsgBurbuja=({m})=>{
-      const saliente=m.direccion==="saliente";
+    const Burbuja=({m})=>{
+      const sal=m.direccion==="saliente";
       const ts=new Date(m.created_at).toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit"});
-      const bgBurbuja=saliente?"#1A3A1A":"#0D1830";
-      return <div style={{maxWidth:"78%",alignSelf:saliente?"flex-end":"flex-start"}}>
+      return <div style={{maxWidth:"78%",alignSelf:sal?"flex-end":"flex-start"}}>
         {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
-          ?<div style={{background:bgBurbuja,borderRadius:12,padding:"8px 12px"}}>
+          ?<div style={{background:sal?"#1A3A1A":"#0D1830",borderRadius:12,padding:"8px 12px"}}>
               <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36}}/>
             </div>
           :m.tipo==="image"&&m.media_id
-          ?<div style={{background:bgBurbuja,borderRadius:12,overflow:"hidden"}}>
+          ?<div style={{background:sal?"#1A3A1A":"#0D1830",borderRadius:12,overflow:"hidden"}}>
               <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="" style={{maxWidth:220,maxHeight:200,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
-              {m.mensaje&&m.mensaje!=="[Imagen]"&&m.mensaje!=="[Imagen enviada]"&&<div style={{fontSize:12,color:TX.s,padding:"4px 10px 8px"}}>{m.mensaje}</div>}
+              {m.mensaje&&!["[Imagen]","[Imagen enviada]"].includes(m.mensaje)&&<div style={{fontSize:12,color:TX.s,padding:"4px 10px 8px"}}>{m.mensaje}</div>}
             </div>
-          :<div style={{background:bgBurbuja,borderRadius:12,padding:"8px 12px",fontSize:13,color:TX.p,lineHeight:1.5}}>{m.mensaje}</div>
+          :<div style={{background:sal?"#1A3A1A":"#0D1830",borderRadius:12,padding:"8px 12px",fontSize:13,color:TX.p,lineHeight:1.5}}>{m.mensaje}</div>
         }
-        <div style={{fontSize:10,color:TX.t,marginTop:2,textAlign:saliente?"right":"left",paddingRight:saliente?4:0,paddingLeft:saliente?0:4}}>{saliente?"Vos · ":""}{ts}</div>
+        <div style={{fontSize:10,color:TX.t,marginTop:2,textAlign:sal?"right":"left",padding:"0 4px"}}>{sal?"Vos · ":""}{ts}</div>
       </div>;
     };
 
-    if(loading)return <div style={{textAlign:"center",padding:60,color:TX.s,fontSize:13}}>Cargando...</div>;
+    if(!waLoaded)return <div style={{textAlign:"center",padding:60,color:TX.s,fontSize:13}}>Cargando...</div>;
 
-    // Vista conversación
-    if(contactoSel&&conv)return <div>
-      {/* Header conversación */}
+    // ── Vista conversación ────────────────────────────────────────────────────
+    if(waContacto&&conv)return <div>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-        <button onClick={()=>setContactoSel(null)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:20,padding:"0 4px",lineHeight:1}}>←</button>
+        <button onClick={()=>setWaContacto(null)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:20,padding:"0 4px",lineHeight:1}}>←</button>
         <div style={{width:38,height:38,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
         <div style={{flex:1}}>
-          <div style={{fontWeight:600,fontSize:15,color:TX.p}}>{conv.nombre||conv.de}</div>
+          <div style={{fontWeight:600,fontSize:15,color:TX.p}}>{clienteVinc?clienteVinc.nombre:(conv.nombre||conv.de)}</div>
           {clienteVinc
-            ?<div style={{fontSize:11,color:"#5ABDA8"}}>Cliente: {clienteVinc.nombre} · {clientes&&turnos.filter(t=>t.cliente_id===clienteVinc.id).length} reservas</div>
-            :<div style={{fontSize:11,color:TX.t}}>{conv.de}</div>
-          }
+            ?<div style={{fontSize:11,color:"#5ABDA8"}}>{conv.de} · {turnos.filter(t=>t.cliente_id===clienteVinc.id).length} reservas</div>
+            :<div style={{fontSize:11,color:TX.t}}>{conv.de}</div>}
         </div>
-        <Btn sm v="ghost" onClick={cargar}>↻</Btn>
+        <Btn sm v="ghost" onClick={()=>cargar(true)}>↻</Btn>
+        {!confirmElim
+          ?<button onClick={()=>setConfirmElim(true)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:BR.danger,border:`1px solid ${BR.danger}`,fontFamily:"var(--font-sans)"}}>Eliminar</button>
+          :<div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <span style={{fontSize:12,color:TX.s}}>¿Eliminar todo?</span>
+            <button onClick={eliminarConversacion} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:BR.danger,color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600}}>Sí</button>
+            <button onClick={()=>setConfirmElim(false)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>No</button>
+          </div>
+        }
       </div>
 
-      {/* Hilo de mensajes */}
-      <div style={{...card,padding:"12px",minHeight:200,maxHeight:360,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
-        {conv.msgs.map(m=><MsgBurbuja key={m.id} m={m}/>)}
+      <div ref={hiloRef} style={{...card,padding:12,minHeight:200,maxHeight:380,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+        {conv.msgs.map(m=><Burbuja key={m.id} m={m}/>)}
       </div>
 
-      {/* Preview imagen */}
       {imagenPrevia&&<div style={{...card,padding:8,marginBottom:8,display:"flex",alignItems:"center",gap:8}}>
         <img src={imagenPrevia.preview} alt="" style={{height:48,width:48,objectFit:"cover",borderRadius:6}}/>
         <div style={{flex:1,fontSize:12,color:TX.s}}>{imagenPrevia.nombre}</div>
-        <button onClick={()=>setImagenPrevia(null)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:18}}>×</button>
+        <button onClick={()=>setImagenPrevia(null)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
       </div>}
 
-      {/* Mensajes predeterminados */}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-        {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setTexto(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.slice(0,28)}…</button>)}
+      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
+        {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setTexto(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"#0F1C3F",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>30?p.slice(0,29)+"…":p}</button>)}
       </div>
 
-      {/* Input respuesta */}
       <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
         <input type="file" accept="image/*" ref={fileRef} style={{display:"none"}} onChange={onImagen}/>
         <button onClick={()=>fileRef.current?.click()} style={{padding:"9px 11px",borderRadius:8,background:"#0F1C3F",border:"1px solid #2A3F6B",cursor:"pointer",fontSize:16,color:TX.s,flexShrink:0}} title="Adjuntar imagen">🖼</button>
@@ -1857,47 +1876,45 @@ export default function App() {
           style={{...inp,resize:"none",flex:1,fontSize:13}}
           disabled={enviando}
         />
-        <button
-          onClick={enviar}
-          disabled={enviando||(!texto.trim()&&!imagenPrevia)}
-          style={{padding:"9px 16px",borderRadius:8,fontSize:13,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,flexShrink:0,opacity:(enviando||(!texto.trim()&&!imagenPrevia))?0.5:1}}
-        >
+        <button onClick={enviar} disabled={enviando||(!texto.trim()&&!imagenPrevia)}
+          style={{padding:"9px 16px",borderRadius:8,fontSize:13,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,flexShrink:0,opacity:(enviando||(!texto.trim()&&!imagenPrevia))?0.5:1}}>
           {subiendoImg?"Subiendo...":(enviando?"Enviando...":"Enviar")}
         </button>
       </div>
     </div>;
 
-    // Vista lista de contactos
+    // ── Vista lista de contactos ──────────────────────────────────────────────
     return <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div>
           <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Conversaciones</span>
-          {totalNoLeidos>0&&<span style={{marginLeft:8,background:BR.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{totalNoLeidos} nuevos</span>}
+          {totalNoLeidos>0&&<span style={{marginLeft:8,background:BR.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{totalNoLeidos}</span>}
         </div>
-        <Btn sm v="ghost" onClick={cargar}>Actualizar</Btn>
+        <Btn sm v="ghost" onClick={()=>cargar(false)}>Actualizar</Btn>
       </div>
       {contactos.length===0
         ?<div style={{...card,textAlign:"center",padding:40}}>
             <div style={{fontSize:32,marginBottom:10}}>💬</div>
-            <div style={{color:TX.s,fontSize:14}}>No hay mensajes recibidos aún</div>
-            <div style={{color:TX.t,fontSize:12,marginTop:8}}>Los mensajes que envíen los clientes aparecerán aquí</div>
+            <div style={{color:TX.s,fontSize:14}}>No hay mensajes aún</div>
           </div>
         :<div style={{display:"flex",flexDirection:"column",gap:6}}>
           {contactos.map(c=>{
             const ultimo=c.msgs[c.msgs.length-1];
             const ts=new Date(ultimo.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
             const cli=clienteDeContacto(c.de);
-            return <div key={c.de} onClick={()=>seleccionar(c.de)} style={{...card,cursor:"pointer",display:"flex",alignItems:"center",gap:12,borderLeft:`3px solid ${c.noLeidos>0?BR.coral:"#1E3070"}`,transition:"background 0.15s"}}
+            const nombre=cli?cli.nombre:(c.nombre||c.de);
+            return <div key={c.de} onClick={()=>seleccionar(c.de)}
+              style={{...card,cursor:"pointer",display:"flex",alignItems:"center",gap:12,borderLeft:`3px solid ${c.noLeidos>0?BR.coral:"#1E3070"}`}}
               onMouseEnter={e=>e.currentTarget.style.background="#152040"}
               onMouseLeave={e=>e.currentTarget.style.background=card.background}>
               <div style={{width:40,height:40,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontWeight:600,fontSize:14,color:TX.p}}>{cli?cli.nombre:(c.nombre||c.de)}</div>
+                  <div style={{fontWeight:600,fontSize:14,color:TX.p}}>{nombre}</div>
                   <div style={{fontSize:11,color:TX.t,flexShrink:0,marginLeft:8}}>{ts}</div>
                 </div>
                 {cli&&<div style={{fontSize:11,color:"#5ABDA8",marginBottom:2}}>{c.de}</div>}
-                <div style={{fontSize:12,color:TX.s,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ultimo.mensaje}</div>
+                <div style={{fontSize:12,color:TX.s,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ultimo.direccion==="saliente"?"Vos: ":""}{ultimo.mensaje}</div>
               </div>
               {c.noLeidos>0&&<div style={{background:BR.coral,color:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0}}>{c.noLeidos}</div>}
             </div>;

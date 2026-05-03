@@ -1,6 +1,8 @@
 // /api/whatsapp/subir-media.js
 // Recibe una imagen en base64 desde el frontend, la sube a Meta y devuelve el media_id.
 // POST { data: "<base64>", mime: "image/jpeg" }
+export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
