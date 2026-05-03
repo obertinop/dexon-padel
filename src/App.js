@@ -746,6 +746,18 @@ const PortalCliente = () => {
 function LandingPage({ onAdmin }) {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [landingCfg, setLandingCfg] = useState({ tarifa_base: 80000, tarifa_pico: 100000 });
+  const [planes, setPlanes] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      db.get("config", "limit=1"),
+      db.get("planes_abono", "order=precio.asc"),
+    ]).then(([cf, pl]) => {
+      if (cf?.[0]) setLandingCfg(cf[0]);
+      if (pl) setPlanes(pl);
+    }).catch(() => {});
+  }, []);
 
   const scrollTo = (id) => {
     setMenuOpen(false);
@@ -818,6 +830,7 @@ function LandingPage({ onAdmin }) {
           <div style={st.navLinks}>
             <span style={st.navLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</span>
             <span style={st.navLink} onClick={() => scrollTo("cancha")}>La cancha</span>
+            <span style={st.navLink} onClick={() => scrollTo("precios")}>Precios</span>
             <span style={st.navLink} onClick={() => scrollTo("ubicacion")}>Ubicación</span>
             <span style={st.navLink} onClick={() => scrollTo("contacto")}>Contacto</span>
           </div>
@@ -840,6 +853,7 @@ function LandingPage({ onAdmin }) {
         <div style={st.mobileMenu}>
           <div style={st.mobileLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</div>
           <div style={st.mobileLink} onClick={() => scrollTo("cancha")}>La cancha</div>
+          <div style={st.mobileLink} onClick={() => scrollTo("precios")}>Precios</div>
           <div style={st.mobileLink} onClick={() => scrollTo("ubicacion")}>Ubicación</div>
           <div style={st.mobileLink} onClick={() => scrollTo("contacto")}>Contacto</div>
           <div style={{ ...st.mobileLink, color: "#D85A30" }} onClick={onAdmin}>Administración</div>
@@ -853,19 +867,32 @@ function LandingPage({ onAdmin }) {
         <div style={st.heroContent}>
           <span style={st.heroBadge}>🎾 Tavapy · Alto Paraná · Paraguay</span>
           <h1 style={st.heroTitle}>
-            Tu cancha de<br /><span style={st.heroSpan}>pádel en Tavapy</span>
+            Jugá cuando<br /><span style={st.heroSpan}>quieras, reservá</span><br />en segundos
           </h1>
           <p style={st.heroSub}>
-            Reservá tu turno fácil y rápido. Disfrutá del mejor pádel de la zona con instalaciones de primer nivel.
+            El primer club de pádel de Tavapy. Cancha profesional, reserva online 24/7 y planes mensuales para los que juegan seguido.
           </p>
           <div style={st.heroButtons}>
             <button style={st.btnHeroMain} onClick={() => window.location.href = "/reservar"}>
               Reservar cancha →
             </button>
-            <button style={st.btnHeroSec} onClick={() => scrollTo("nosotros")}>
-              Conocer más
+            <button style={st.btnHeroSec} onClick={() => scrollTo("precios")}>
+              Ver planes →
             </button>
           </div>
+        </div>
+        {/* Stats bar */}
+        <div style={{ position:"relative", zIndex:1, display:"flex", gap: isMobile ? 24 : 48, marginTop: 56, flexWrap:"wrap", justifyContent:"center" }}>
+          {[
+            { n:"300+", l:"Partidos jugados" },
+            { n:"50+",  l:"Socios activos" },
+            { n:"24/7", l:"Reserva online" },
+          ].map((s,i) => (
+            <div key={i} style={{ textAlign:"center" }}>
+              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight:900, color:"#D85A30", lineHeight:1 }}>{s.n}</div>
+              <div style={{ fontSize:12, color:"#9AAAD4", marginTop:4, letterSpacing:0.5 }}>{s.l}</div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -918,8 +945,80 @@ function LandingPage({ onAdmin }) {
         </div>
       </section>
 
+      {/* PRECIOS */}
+      <section id="precios" style={{ background: "#0A1428" }}>
+        <div style={st.section}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>Precios</h2>
+          <p style={st.sectionSub}>Elegí cómo querés jugar. Si jugás seguido, el abono mensual te conviene mucho más.</p>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20, alignItems:"start" }}>
+
+            {/* Turno suelto */}
+            <div style={{ ...st.featureCard, padding:"32px 28px" }}>
+              <div style={{ fontSize:13, fontWeight:600, color:"#9AAAD4", letterSpacing:1, textTransform:"uppercase", marginBottom:12 }}>Turno suelto</div>
+              <div style={{ fontSize: isMobile ? 36 : 44, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:4 }}>
+                {gs(landingCfg.tarifa_base)}
+              </div>
+              <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:24 }}>por hora · precio normal</div>
+              <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:6 }}>
+                ⏰ Horario pico ({landingCfg.hora_pico_inicio}:00–{landingCfg.hora_pico_fin}:00): <strong style={{color:"#E8EEFF"}}>{gs(landingCfg.tarifa_pico)}/hs</strong>
+              </div>
+              <div style={{ borderTop:"1px solid #1E3070", margin:"20px 0" }} />
+              {["Reservá por hora","Confirmación inmediata","Sin compromiso"].map((f,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, fontSize:14, color:"#9AAAD4" }}>
+                  <span style={{ color:"#D85A30", fontWeight:700 }}>✓</span> {f}
+                </div>
+              ))}
+              <button onClick={() => window.location.href="/reservar"}
+                style={{ width:"100%", marginTop:20, padding:"13px", border:"1.5px solid #D85A30", borderRadius:12, background:"transparent", color:"#D85A30", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                Reservar turno →
+              </button>
+            </div>
+
+            {/* Abono mensual */}
+            <div style={{ ...st.featureCard, padding:"32px 28px", border:"2px solid #D85A30", position:"relative", overflow:"hidden" }}>
+              {/* Badge más popular */}
+              <div style={{ position:"absolute", top:0, right:0, background:"#D85A30", color:"#fff", fontSize:11, fontWeight:700, padding:"6px 16px", borderBottomLeftRadius:12, letterSpacing:1 }}>
+                ★ MÁS POPULAR
+              </div>
+              <div style={{ fontSize:13, fontWeight:600, color:"#D85A30", letterSpacing:1, textTransform:"uppercase", marginBottom:12 }}>Abono mensual</div>
+              {planes.length > 0 ? (
+                <>
+                  <div style={{ fontSize: isMobile ? 36 : 44, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:4 }}>
+                    {gs(planes[0].precio)}
+                  </div>
+                  <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:8 }}>por mes · {planes[0].horas_semana}hs/semana</div>
+                  <div style={{ display:"inline-block", background:"rgba(216,90,48,0.15)", border:"1px solid rgba(216,90,48,0.3)", borderRadius:20, fontSize:12, color:"#D85A30", fontWeight:700, padding:"4px 12px", marginBottom:20 }}>
+                    Ahorrás {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)} al mes
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: isMobile ? 36 : 44, fontWeight:900, color:"#E8EEFF", lineHeight:1, marginBottom:4 }}>Consultanos</div>
+                  <div style={{ fontSize:13, color:"#9AAAD4", marginBottom:28 }}>planes a medida</div>
+                </>
+              )}
+              <div style={{ borderTop:"1px solid #2A3F6B", margin:"20px 0" }} />
+              {["Horas fijas por semana","Prioridad en reserva","Precio bloqueado todo el mes","Factura mensual única"].map((f,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, fontSize:14, color:"#9AAAD4" }}>
+                  <span style={{ color:"#D85A30", fontWeight:700 }}>✓</span> {f}
+                </div>
+              ))}
+              {/* Urgencia */}
+              <div style={{ background:"rgba(216,90,48,0.08)", border:"1px solid rgba(216,90,48,0.2)", borderRadius:10, padding:"10px 14px", marginTop:16, marginBottom:16, fontSize:13, color:"#D85A30", fontWeight:600 }}>
+                ⚡ Quedan 3 cupos disponibles este mes
+              </div>
+              <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
+                style={{ width:"100%", padding:"14px", border:"none", borderRadius:12, background:"#D85A30", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 6px 20px rgba(216,90,48,0.35)" }}>
+                Quiero mi abono →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* UBICACIÓN */}
-      <section id="ubicacion" style={{ background: "#0A1428" }}>
+      <section id="ubicacion" style={{ background: "#08101F" }}>
         <div style={st.section}>
           <div style={st.divider} />
           <h2 style={st.sectionTitle}>Dónde estamos</h2>
@@ -1021,13 +1120,28 @@ function LandingPage({ onAdmin }) {
         </div>
       </section>
 
+      {/* BOTÓN FLOTANTE MOBILE */}
+      {isMobile && (
+        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, padding:"12px 16px", background:"rgba(8,16,31,0.97)", borderTop:"1px solid #1E3070", display:"flex", gap:10 }}>
+          <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
+            style={{ flex:1, padding:"13px", border:"1.5px solid #D85A30", borderRadius:12, background:"transparent", color:"#D85A30", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            Ver abono
+          </button>
+          <button onClick={() => window.location.href="/reservar"}
+            style={{ flex:2, padding:"13px", border:"none", borderRadius:12, background:"#D85A30", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(216,90,48,0.4)" }}>
+            Reservar cancha →
+          </button>
+        </div>
+      )}
+
       {/* FOOTER */}
-      <footer style={st.footer}>
+      <footer style={{ ...st.footer, paddingBottom: isMobile ? 90 : st.footer.paddingBottom }}>
         <div style={st.footerLogo}>DEXON PADEL</div>
         <div style={st.footerSub}>Tavapy · Alto Paraná · Paraguay</div>
         <div style={st.footerLinks}>
           <span style={st.footerLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</span>
           <span style={st.footerLink} onClick={() => scrollTo("cancha")}>La cancha</span>
+          <span style={st.footerLink} onClick={() => scrollTo("precios")}>Precios</span>
           <span style={st.footerLink} onClick={() => scrollTo("ubicacion")}>Ubicación</span>
           <span style={st.footerLink} onClick={() => scrollTo("contacto")}>Contacto</span>
           <span style={{ ...st.footerLink, color: "#D85A30" }} onClick={onAdmin}>Administración</span>
