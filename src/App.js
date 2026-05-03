@@ -765,55 +765,55 @@ function LandingPage({ onAdmin }) {
   };
 
   const st = {
-    page: { fontFamily: "'Segoe UI', sans-serif", background: "#08101F", color: "#E8EEFF", minHeight: "100vh", overflowX: "hidden" },
-    nav: { position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(8,16,31,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1E3070", padding: isMobile ? "12px 20px" : "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between" },
-    logo: { height: 36, objectFit: "contain" },
-    logoText: { fontSize: 18, fontWeight: 800, color: "#E8EEFF", letterSpacing: 1 },
-    navLinks: { display: isMobile ? "none" : "flex", gap: 28, alignItems: "center" },
-    navLink: { color: "#9AAAD4", fontSize: 14, fontWeight: 500, cursor: "pointer", transition: "color 0.2s", textDecoration: "none" },
-    navBtns: { display: "flex", gap: 10, alignItems: "center" },
-    btnOutline: { padding: "8px 18px", border: "1px solid #D85A30", borderRadius: 8, background: "transparent", color: "#D85A30", fontSize: 13, fontWeight: 600, cursor: "pointer" },
-    btnSolid: { padding: "8px 18px", border: "none", borderRadius: 8, background: "#D85A30", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" },
-    hero: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", textAlign: "center", padding: isMobile ? "100px 24px 60px" : "120px 40px 80px", position: "relative", overflow: "hidden" },
-    heroBg: { position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(15,28,63,0.9) 0%, #08101F 70%)", zIndex: 0 },
-    heroAccent: { position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,90,48,0.12) 0%, transparent 70%)", zIndex: 0 },
-    heroContent: { position: "relative", zIndex: 1, maxWidth: 700 },
-    heroBadge: { display: "inline-block", padding: "6px 16px", background: "rgba(216,90,48,0.15)", border: "1px solid rgba(216,90,48,0.3)", borderRadius: 20, fontSize: 12, color: "#D85A30", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 24 },
-    heroTitle: { fontSize: isMobile ? 52 : 96, fontWeight: 900, lineHeight: 0.95, margin: "0 0 20px", letterSpacing: -2 },
+    page: { fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif", background: "#05080F", color: "#E8EEFF", minHeight: "100vh", overflowX: "hidden" },
+    nav: { position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(5,8,15,0.6)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(216,90,48,0.1)", padding: isMobile ? "16px 20px" : "18px 60px", display: "flex", alignItems: "center", justifyContent: "space-between" },
+    logo: { height: 32, objectFit: "contain" },
+    logoText: { fontSize: 16, fontWeight: 700, color: "#E8EEFF", letterSpacing: 3, textTransform: "uppercase" },
+    navLinks: { display: isMobile ? "none" : "flex", gap: 40, alignItems: "center" },
+    navLink: { color: "#9AAAD4", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "color 0.3s", textDecoration: "none", letterSpacing: 0.5 },
+    navBtns: { display: "flex", gap: 16, alignItems: "center" },
+    btnOutline: { padding: "10px 24px", border: "1px solid #D85A30", borderRadius: 6, background: "transparent", color: "#D85A30", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" },
+    btnSolid: { padding: "10px 24px", border: "none", borderRadius: 6, background: "#D85A30", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" },
+    hero: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", textAlign: "center", padding: isMobile ? "120px 24px 80px" : "140px 60px 100px", position: "relative", overflow: "hidden" },
+    heroBg: { position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(13,20,35,0.6) 0%, rgba(8,16,31,0.8) 50%, rgba(5,8,15,1) 100%)", zIndex: 0 },
+    heroAccent: { position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,90,48,0.06) 0%, transparent 70%)", zIndex: 0 },
+    heroContent: { position: "relative", zIndex: 1, maxWidth: 900 },
+    heroBadge: { display: "inline-block", padding: "8px 20px", background: "rgba(216,90,48,0.08)", border: "1px solid rgba(216,90,48,0.2)", borderRadius: 6, fontSize: 11, color: "#D85A30", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 40 },
+    heroTitle: { fontSize: isMobile ? 48 : 92, fontWeight: 700, lineHeight: 1, margin: "0 0 24px", letterSpacing: -1.5, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI'" },
     heroSpan: { color: "#D85A30" },
-    heroSub: { fontSize: isMobile ? 18 : 24, color: "#D85A30", lineHeight: 1.4, marginBottom: 40, maxWidth: 560, margin: "0 auto 40px", fontWeight: 700 },
-    heroButtons: { display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" },
-    btnHeroMain: { padding: isMobile ? "14px 28px" : "16px 36px", border: "none", borderRadius: 12, background: "#D85A30", color: "#fff", fontSize: isMobile ? 15 : 17, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(216,90,48,0.35)" },
-    btnHeroSec: { padding: isMobile ? "14px 28px" : "16px 36px", border: "1.5px solid #2A3F6B", borderRadius: 12, background: "transparent", color: "#E8EEFF", fontSize: isMobile ? 15 : 17, fontWeight: 600, cursor: "pointer" },
-    section: { padding: isMobile ? "60px 24px" : "80px 40px", maxWidth: 1100, margin: "0 auto" },
-    sectionTitle: { fontSize: isMobile ? 26 : 36, fontWeight: 800, marginBottom: 12, letterSpacing: -0.5 },
-    sectionSub: { fontSize: 15, color: "#9AAAD4", marginBottom: 48, lineHeight: 1.6 },
-    divider: { width: 48, height: 4, background: "#D85A30", borderRadius: 2, marginBottom: 16 },
-    grid2: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 },
-    grid3: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 },
-    featureCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, padding: "28px 24px" },
-    featureIcon: { fontSize: 32, marginBottom: 16 },
-    featureTitle: { fontSize: 17, fontWeight: 700, marginBottom: 8, color: "#E8EEFF" },
-    featureText: { fontSize: 14, color: "#9AAAD4", lineHeight: 1.7 },
-    mapBox: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, overflow: "hidden" },
-    mapFrame: { width: "100%", height: isMobile ? 260 : 360, border: "none", display: "block" },
+    heroSub: { fontSize: isMobile ? 16 : 20, color: "#9AAAD4", lineHeight: 1.7, marginBottom: 48, maxWidth: 700, margin: "0 auto 48px", fontWeight: 400, letterSpacing: 0.3 },
+    heroButtons: { display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" },
+    btnHeroMain: { padding: isMobile ? "14px 32px" : "16px 48px", border: "none", borderRadius: 6, background: "#D85A30", color: "#fff", fontSize: isMobile ? 13 : 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 20px 50px rgba(216,90,48,0.2)", letterSpacing: 1, textTransform: "uppercase" },
+    btnHeroSec: { padding: isMobile ? "14px 32px" : "16px 48px", border: "1.5px solid rgba(216,90,48,0.4)", borderRadius: 6, background: "transparent", color: "#E8EEFF", fontSize: isMobile ? 13 : 14, fontWeight: 700, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" },
+    section: { padding: isMobile ? "100px 24px" : "120px 60px", maxWidth: 1400, margin: "0 auto" },
+    sectionTitle: { fontSize: isMobile ? 32 : 56, fontWeight: 700, marginBottom: 20, letterSpacing: -1 },
+    sectionSub: { fontSize: 16, color: "#9AAAD4", marginBottom: 64, lineHeight: 1.7, maxWidth: 700 },
+    divider: { width: 1, height: 40, background: "rgba(216,90,48,0.3)", borderRadius: 1, marginBottom: 32, margin: "0 0 32px 0" },
+    grid2: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 32 },
+    grid3: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 48 },
+    featureCard: { background: "rgba(15,28,63,0.3)", border: "1px solid rgba(216,90,48,0.15)", borderRadius: 8, padding: "32px 28px" },
+    featureIcon: { fontSize: 36, marginBottom: 20 },
+    featureTitle: { fontSize: 17, fontWeight: 700, marginBottom: 12, color: "#E8EEFF" },
+    featureText: { fontSize: 15, color: "#9AAAD4", lineHeight: 1.8 },
+    mapBox: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 8, overflow: "hidden" },
+    mapFrame: { width: "100%", height: isMobile ? 280 : 380, border: "none", display: "block" },
     mapInfo: { padding: "24px 28px" },
     mapInfoRow: { display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 },
     mapInfoIcon: { fontSize: 20, marginTop: 2, flexShrink: 0 },
     mapInfoText: { fontSize: 14, color: "#9AAAD4", lineHeight: 1.6 },
     mapInfoLabel: { fontWeight: 700, color: "#E8EEFF", display: "block", marginBottom: 2 },
-    contactGrid: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, alignItems: "start" },
-    contactCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, padding: "28px 24px" },
-    waBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 24px", background: "#25D366", border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "none", marginTop: 20, lineHeight: 1, whiteSpace: "nowrap" },
-    scheduleRow: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1E3070", fontSize: 14 },
+    contactGrid: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24, alignItems: "start" },
+    contactCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 8, padding: "32px 28px" },
+    waBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "13px 28px", background: "#25D366", border: "none", borderRadius: 6, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", marginTop: 24, lineHeight: 1, whiteSpace: "nowrap", letterSpacing: 0.5 },
+    scheduleRow: { display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid rgba(216,90,48,0.1)", fontSize: 14 },
     scheduleDay: { color: "#9AAAD4" },
     scheduleHrs: { color: "#E8EEFF", fontWeight: 600 },
-    footer: { background: "#050D1A", borderTop: "1px solid #1E3070", padding: isMobile ? "30px 24px" : "40px 40px", textAlign: "center" },
-    footerLogo: { fontSize: 20, fontWeight: 900, color: "#E8EEFF", letterSpacing: 1, marginBottom: 8 },
-    footerSub: { fontSize: 13, color: "#6677AA", marginBottom: 20 },
-    footerLinks: { display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 },
-    footerLink: { fontSize: 13, color: "#6677AA", cursor: "pointer" },
-    footerCopy: { fontSize: 12, color: "#3A4A6B" },
+    footer: { background: "rgba(5,8,15,0.5)", borderTop: "1px solid rgba(216,90,48,0.1)", padding: isMobile ? "48px 24px" : "60px 60px", textAlign: "center" },
+    footerLogo: { fontSize: 14, fontWeight: 700, color: "#E8EEFF", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" },
+    footerSub: { fontSize: 13, color: "#9AAAD4", marginBottom: 32 },
+    footerLinks: { display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 },
+    footerLink: { fontSize: 12, color: "#9AAAD4", cursor: "pointer", letterSpacing: 0.5, transition: "color 0.3s" },
+    footerCopy: { fontSize: 12, color: "#6677AA", letterSpacing: 0.3 },
     mobileMenu: { position: "fixed", top: 64, left: 0, right: 0, background: "#0A1428", borderBottom: "1px solid #1E3070", zIndex: 99, padding: "16px 24px", display: "flex", flexDirection: "column", gap: 4 },
     mobileLink: { padding: "12px 0", fontSize: 16, fontWeight: 500, color: "#9AAAD4", cursor: "pointer", borderBottom: "1px solid #0F1C3F" },
   };
@@ -861,40 +861,45 @@ function LandingPage({ onAdmin }) {
       )}
 
       {/* HERO */}
-      <section style={{...st.hero, paddingTop: isMobile ? 140 : 160, paddingBottom: isMobile ? 80 : 120}}>
+      <section style={st.hero}>
         <div style={st.heroBg} />
-        <div style={{...st.heroAccent, width:800, height:800}} />
+        <div style={st.heroAccent} />
         <div style={st.heroContent}>
-          <h1 style={{...st.heroTitle, color:"#E8EEFF", marginBottom:16}}>
-            PÁDEL<br /><span style={{color:"#D85A30"}}>SIN LÍMITES</span>
+          <span style={st.heroBadge}>EXPERIENCIA PREMIUM · TAVAPY</span>
+          <h1 style={st.heroTitle}>
+            Pádel de<br /><span style={st.heroSpan}>clase mundial</span>
           </h1>
           <p style={st.heroSub}>
-            Reservá ahora. Juega cuando quieras. 24/7 online.
+            Cancha profesional con reserva online. Abierto 24/7. Planes para jugar tanto como quieras.
           </p>
-          <div style={{...st.heroButtons, gap:12, marginTop:20}}>
-            <button style={{...st.btnHeroMain, paddingLeft:40, paddingRight:40, fontSize:18}} onClick={() => window.location.href = "/reservar"}>
-              🎾 RESERVAR AHORA
+          <div style={st.heroButtons}>
+            <button style={st.btnHeroMain} onClick={() => window.location.href = "/reservar"}>
+              Reservar Cancha
             </button>
-            <button style={{...st.btnHeroSec, paddingLeft:40, paddingRight:40, fontSize:18}} onClick={() => scrollTo("precios")}>
-              VER PLANES
+            <button style={st.btnHeroSec} onClick={() => scrollTo("precios")}>
+              Conocer Planes
             </button>
           </div>
         </div>
       </section>
 
       {/* NOSOTROS */}
-      <section id="nosotros" style={{ background: "linear-gradient(135deg, #D85A30 0%, #993C1D 100%)", padding: isMobile ? "80px 24px" : "100px 40px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap:32 }}>
+      <section id="nosotros">
+        <div style={st.section}>
+          <div style={{ marginBottom: 80 }}>
+            <h2 style={st.sectionTitle}>Por qué elegir DEXON</h2>
+            <div style={st.divider} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 60 : 80 }}>
             {[
-              { icon: "🏆", title: "CANCHA PRO", text: "Superficie reglamentaria" },
-              { icon: "⚡", title: "RESERVA INSTANT", text: "Online 24/7 · Sin esperas" },
-              { icon: "🎯", title: "PARA TODOS", text: "Todos los niveles bienvenidos" },
+              { icon: "🏆", title: "Cancha Profesional", text: "Superficie reglamentaria homologada para competencia. Iluminación LED de nivel profesional." },
+              { icon: "📅", title: "Reserva Online", text: "Disponible 24/7. Confirmación inmediata. Sin intermediarios ni llamadas." },
+              { icon: "🎯", title: "Para Todos", text: "Desde principiantes hasta jugadores avanzados. Ambiente familiar y profesional." },
             ].map((f, i) => (
-              <div key={i} style={{ textAlign:"center" }}>
-                <div style={{ fontSize:52, marginBottom:16, display:"inline-block" }}>{f.icon}</div>
-                <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginBottom:8, letterSpacing:1 }}>{f.title}</div>
-                <div style={{ fontSize:15, color:"rgba(255,255,255,0.85)", lineHeight:1.6 }}>{f.text}</div>
+              <div key={i}>
+                <div style={{ fontSize: 48, marginBottom: 24 }}>{f.icon}</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#E8EEFF", marginBottom: 12, letterSpacing: -0.5 }}>{f.title}</h3>
+                <p style={{ fontSize: 15, color: "#9AAAD4", lineHeight: 1.8 }}>{f.text}</p>
               </div>
             ))}
           </div>
@@ -902,21 +907,24 @@ function LandingPage({ onAdmin }) {
       </section>
 
       {/* LA CANCHA */}
-      <section id="cancha" style={{ background:"#08101F", padding: isMobile ? "80px 24px" : "100px 40px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <h2 style={{...st.sectionTitle, marginBottom:48, textAlign:"center"}}>EQUIPAMIENTO</h2>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap:20 }}>
+      <section id="cancha" style={{ background: "rgba(13,20,35,0.4)", paddingTop: isMobile ? "100px" : "120px", paddingBottom: isMobile ? "100px" : "120px" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: isMobile ? "0 24px" : "0 60px" }}>
+          <div style={{ marginBottom: 80 }}>
+            <h2 style={st.sectionTitle}>Instalaciones premium</h2>
+            <div style={st.divider} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: isMobile ? 24 : 32 }}>
             {[
-              {icon:"💡", text:"ILUMINACIÓN<br/>LED PRO"},
-              {icon:"🎾", text:"SUPERFICIE<br/>REGLAMENTARIA"},
-              {icon:"🅿️", text:"ESTACIONA-<br/>MIENTO"},
-              {icon:"🚿", text:"VESTUARIOS<br/>PREMIUM"}
+              {icon:"💡", label:"Iluminación LED"},
+              {icon:"🎾", label:"Superficie Reglamentaria"},
+              {icon:"🅿️", label:"Estacionamiento"},
+              {icon:"🚿", label:"Vestuarios"}
             ].map((item,i)=>(
-              <div key={i} style={{ background:"linear-gradient(135deg, #1A2F6B 0%, #0F1C3F 100%)", border:"2px solid #D85A30", borderRadius:16, padding:"32px 20px", textAlign:"center", cursor:"pointer", transition:"all 0.3s", transform:"scale(1)" }}
-                onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"}
-                onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
-                <div style={{ fontSize:40, marginBottom:12 }}>{item.icon}</div>
-                <div style={{ fontSize:14, fontWeight:800, color:"#E8EEFF", lineHeight:1.4, letterSpacing:0.5 }} dangerouslySetInnerHTML={{__html:item.text}} />
+              <div key={i} style={{ textAlign:"center", padding:"40px 24px", transition:"all 0.4s" }}
+                onMouseEnter={e=>e.currentTarget.style.opacity="0.7"}
+                onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                <div style={{ fontSize: 56, marginBottom: 20, lineHeight: 1 }}>{item.icon}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "#E8EEFF", letterSpacing: -0.3 }}>{item.label}</div>
               </div>
             ))}
           </div>
@@ -924,41 +932,48 @@ function LandingPage({ onAdmin }) {
       </section>
 
       {/* PRECIOS */}
-      <section id="precios" style={{ background: "linear-gradient(180deg, #0A1428 0%, #08101F 100%)", padding: isMobile ? "80px 24px" : "100px 40px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <h2 style={{...st.sectionTitle, marginBottom:48, textAlign:"center"}}>PLANES</h2>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:24 }}>
+      <section id="precios">
+        <div style={st.section}>
+          <div style={{ marginBottom: 80 }}>
+            <h2 style={st.sectionTitle}>Planes</h2>
+            <div style={st.divider} />
+            <p style={st.sectionSub}>Elige el plan que se adapte a tu ritmo de juego.</p>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 48 }}>
             {/* Turno suelto */}
-            <div style={{ background:"linear-gradient(135deg, #0F1C3F 0%, #1A2F6B 100%)", border:"1px solid #1E3070", borderRadius:20, padding:40, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:-40, right:-40, width:150, height:150, background:"rgba(216,90,48,0.08)", borderRadius:"50%" }} />
-              <div style={{ fontSize:14, fontWeight:900, color:"#9AAAD4", letterSpacing:2, textTransform:"uppercase", marginBottom:20 }}>Turno suelto</div>
-              <div style={{ fontSize:56, fontWeight:900, color:"#D85A30", lineHeight:1, marginBottom:8 }}>{gs(landingCfg.tarifa_base)}</div>
-              <div style={{ fontSize:15, color:"#9AAAD4", marginBottom:28 }}>por hora</div>
-              <div style={{ background:"rgba(216,90,48,0.1)", border:"1px solid rgba(216,90,48,0.2)", borderRadius:12, padding:"14px 16px", marginBottom:28, fontSize:14, color:"#D85A30", fontWeight:700 }}>
-                🔥 PICO ({landingCfg.hora_pico_inicio}–{landingCfg.hora_pico_fin}hs): {gs(landingCfg.tarifa_pico)}
+            <div style={{ padding: "60px 48px", border: "1px solid rgba(216,90,48,0.2)", borderRadius: 8, background: "rgba(13,20,35,0.3)", backdropFilter: "blur(10px)" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#9AAAD4", letterSpacing: 2, textTransform: "uppercase", marginBottom: 28 }}>Turno suelto</div>
+              <div style={{ fontSize: 64, fontWeight: 700, color: "#D85A30", lineHeight: 1, marginBottom: 8 }}>{gs(landingCfg.tarifa_base)}</div>
+              <div style={{ fontSize: 14, color: "#9AAAD4", marginBottom: 40 }}>Por hora</div>
+              <div style={{ fontSize: 13, color: "#6677AA", marginBottom: 40, lineHeight: 1.7 }}>
+                Horario pico ({landingCfg.hora_pico_inicio}–{landingCfg.hora_pico_fin}hs):<br/><strong style={{color:"#D85A30"}}>{gs(landingCfg.tarifa_pico)}</strong>
               </div>
               <button onClick={() => window.location.href="/reservar"}
-                style={{ width:"100%", padding:"16px", border:"2px solid #D85A30", borderRadius:12, background:"transparent", color:"#D85A30", fontSize:15, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
+                style={{ width:"100%", padding:"16px 32px", border:"1px solid rgba(216,90,48,0.4)", borderRadius:6, background:"transparent", color:"#D85A30", fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", transition:"all 0.3s" }}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.6)"}}
+                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(216,90,48,0.4)"}}>
                 Reservar Ahora
               </button>
             </div>
             {/* Abono mensual */}
-            <div style={{ background:"linear-gradient(135deg, #D85A30 0%, #993C1D 100%)", borderRadius:20, padding:40, position:"relative", overflow:"hidden" }}>
-              <div style={{ position:"absolute", top:-40, right:-40, width:200, height:200, background:"rgba(255,255,255,0.08)", borderRadius:"50%" }} />
-              <div style={{ fontSize:14, fontWeight:900, color:"rgba(255,255,255,0.7)", letterSpacing:2, textTransform:"uppercase", marginBottom:20, position:"relative", zIndex:1 }}>⭐ Abono mensual</div>
+            <div style={{ padding: "60px 48px", border: "2px solid #D85A30", borderRadius: 8, background: "rgba(216,90,48,0.08)", backdropFilter: "blur(10px)", position:"relative" }}>
+              <div style={{ position:"absolute", top:24, right:24, fontSize:20 }}>✨</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#D85A30", letterSpacing: 2, textTransform: "uppercase", marginBottom: 28 }}>Abono mensual</div>
               {planes.length > 0 ? (<>
-                <div style={{ fontSize:56, fontWeight:900, color:"#fff", lineHeight:1, marginBottom:8, position:"relative", zIndex:1 }}>{gs(planes[0].precio)}</div>
-                <div style={{ fontSize:15, color:"rgba(255,255,255,0.9)", marginBottom:8, position:"relative", zIndex:1 }}>/mes</div>
-                <div style={{ fontSize:14, color:"rgba(255,255,255,0.8)", marginBottom:28, position:"relative", zIndex:1, fontWeight:700 }}>{planes[0].horas_semana} hs/semana</div>
-                <div style={{ background:"rgba(255,255,255,0.15)", border:"2px solid rgba(255,255,255,0.3)", borderRadius:12, padding:"14px 16px", marginBottom:28, fontSize:14, color:"#fff", fontWeight:700, position:"relative", zIndex:1 }}>
-                  💰 AHORRÁS {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)}/mes
+                <div style={{ fontSize: 64, fontWeight: 700, color: "#E8EEFF", lineHeight: 1, marginBottom: 8 }}>{gs(planes[0].precio)}</div>
+                <div style={{ fontSize: 14, color: "#9AAAD4", marginBottom: 8 }}>/mes</div>
+                <div style={{ fontSize: 13, color: "#9AAAD4", marginBottom: 28, fontWeight: 600 }}>{planes[0].horas_semana} horas por semana</div>
+                <div style={{ fontSize: 13, color: "#D85A30", fontWeight: 700, marginBottom: 40, paddingTop: 16, borderTop: "1px solid rgba(216,90,48,0.2)" }}>
+                  Ahorrás {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)}/mes
                 </div>
               </>) : (<>
-                <div style={{ fontSize:42, fontWeight:900, color:"#fff", lineHeight:1, marginBottom:8, position:"relative", zIndex:1 }}>A medida</div>
-                <div style={{ fontSize:15, color:"rgba(255,255,255,0.9)", marginBottom:28, position:"relative", zIndex:1 }}>Planes personalizados</div>
+                <div style={{ fontSize: 48, fontWeight: 700, color: "#E8EEFF", lineHeight: 1, marginBottom: 8 }}>Personalizado</div>
+                <div style={{ fontSize: 14, color: "#9AAAD4", marginBottom: 40 }}>Consulta nuestros planes a medida</div>
               </>)}
               <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
-                style={{ width:"100%", padding:"16px", border:"2px solid rgba(255,255,255,0.3)", borderRadius:12, background:"rgba(255,255,255,0.1)", color:"#fff", fontSize:15, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", position:"relative", zIndex:1 }}>
+                style={{ width:"100%", padding:"16px 32px", border:"1px solid #D85A30", borderRadius:6, background:"#D85A30", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", transition:"all 0.3s" }}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.8)";e.currentTarget.style.boxShadow="0 12px 30px rgba(216,90,48,0.3)"}}
+                onMouseLeave={e=>{e.currentTarget.style.background="#D85A30";e.currentTarget.style.boxShadow="none"}}>
                 Quiero Mi Abono
               </button>
             </div>
@@ -966,25 +981,32 @@ function LandingPage({ onAdmin }) {
         </div>
       </section>
 
-      {/* UBICACIÓN + CONTACTO */}
-      <section id="ubicacion" style={{ background:"linear-gradient(135deg, #D85A30 0%, #993C1D 100%)", padding: isMobile ? "80px 24px" : "100px 40px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:40, alignItems:"center" }}>
+      {/* UBICACIÓN */}
+      <section id="ubicacion" style={{ background: "rgba(13,20,35,0.4)" }}>
+        <div style={st.section}>
+          <div style={{ marginBottom: 80 }}>
+            <h2 style={st.sectionTitle}>Ubicación</h2>
+            <div style={st.divider} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 60, alignItems:"center" }}>
             <div>
-              <h2 style={{ fontSize: isMobile ? 38 : 56, fontWeight:900, color:"#fff", marginBottom:20, lineHeight:1.1 }}>
-                ¿DÓNDE<br />ESTAMOS?
-              </h2>
-              <div style={{ fontSize:16, color:"rgba(255,255,255,0.9)", lineHeight:1.8, marginBottom:32 }}>
-                <div style={{ marginBottom:12 }}>📍 Tavapy, Alto Paraná, Paraguay</div>
-                <div style={{ marginBottom:12 }}>🕐 Lun–Vie: 18–24hs</div>
-                <div>Sáb–Dom: 10–24hs</div>
+              <div style={{ fontSize: 16, color: "#9AAAD4", lineHeight: 2.2, marginBottom: 48 }}>
+                <div style={{ fontWeight: 700, color: "#E8EEFF", marginBottom: 8 }}>Tavapy, Alto Paraná</div>
+                <div>Paraguay</div>
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontWeight: 700, color: "#E8EEFF", marginBottom: 8 }}>Horarios</div>
+                  <div>Lunes a Viernes · 18:00 a 24:00</div>
+                  <div>Sábados y Domingos · 10:00 a 24:00</div>
+                </div>
               </div>
               <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer"
-                style={{ display:"inline-block", padding:"14px 32px", background:"rgba(255,255,255,0.2)", border:"2px solid rgba(255,255,255,0.4)", borderRadius:12, color:"#fff", fontSize:15, fontWeight:900, textDecoration:"none", letterSpacing:1, textTransform:"uppercase", cursor:"pointer" }}>
-                📞 Llamar Ahora
+                style={{ display:"inline-block", padding:"14px 32px", background:"transparent", border:"1px solid rgba(216,90,48,0.4)", borderRadius:6, color:"#D85A30", fontSize:13, fontWeight:700, textDecoration:"none", letterSpacing:1, textTransform:"uppercase", cursor:"pointer", transition:"all 0.3s" }}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.6)"}}
+                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(216,90,48,0.4)"}}>
+                Contactar
               </a>
             </div>
-            <div style={{height: isMobile ? 300 : 400, borderRadius:20, overflow:"hidden", border:"3px solid rgba(255,255,255,0.1)"}}>
+            <div style={{height: isMobile ? 300 : 380, borderRadius:8, overflow:"hidden", border:"1px solid rgba(216,90,48,0.2)"}}>
               <iframe
                 title="Ubicación DEXON PADEL"
                 style={{ width:"100%", height:"100%", border:"none" }}
@@ -998,22 +1020,26 @@ function LandingPage({ onAdmin }) {
       </section>
 
       {/* CTA FINAL */}
-      <section id="contacto" style={{ background:"#08101F", padding: isMobile ? "80px 24px" : "100px 40px", textAlign:"center" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
-          <h2 style={{ fontSize: isMobile ? 42 : 64, fontWeight:900, color:"#E8EEFF", marginBottom:24, lineHeight:1.1 }}>
-            ¿LISTO PARA<br /><span style={{color:"#D85A30"}}>JUGAR?</span>
+      <section id="contacto" style={{ padding: isMobile ? "120px 24px" : "160px 60px", textAlign:"center" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <h2 style={{ fontSize: isMobile ? 44 : 72, fontWeight: 700, color: "#E8EEFF", marginBottom: 32, lineHeight: 1.1, letterSpacing: -1.5 }}>
+            Listo para<br /><span style={{color:"#D85A30"}}>jugar</span>
           </h2>
-          <p style={{ fontSize:18, color:"#9AAAD4", marginBottom:40, lineHeight:1.6 }}>
-            Reservá tu cancha ahora o consulta nuestros planes mensuales
+          <p style={{ fontSize: 18, color: "#9AAAD4", marginBottom: 48, lineHeight: 1.8 }}>
+            Reserva tu cancha hoy mismo o consulta sobre nuestros planes mensuales.
           </p>
-          <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:16, justifyContent:"center" }}>
+          <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap: 20, justifyContent:"center" }}>
             <button onClick={() => window.location.href="/reservar"}
-              style={{ padding:"18px 40px", background:"#D85A30", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", boxShadow:"0 10px 30px rgba(216,90,48,0.4)" }}>
-              🎾 Reservar Turno
+              style={{ padding:"16px 48px", background:"#D85A30", color:"#fff", border:"none", borderRadius:6, fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", boxShadow:"0 20px 50px rgba(216,90,48,0.15)", transition:"all 0.3s" }}
+              onMouseEnter={e=>e.currentTarget.style.boxShadow="0 24px 60px rgba(216,90,48,0.25)"}
+              onMouseLeave={e=>e.currentTarget.style.boxShadow="0 20px 50px rgba(216,90,48,0.15)"}>
+              Reservar Cancha
             </button>
             <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
-              style={{ padding:"18px 40px", background:"transparent", color:"#D85A30", border:"2px solid #D85A30", borderRadius:12, fontSize:16, fontWeight:900, cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
-              💬 Consultar Abono
+              style={{ padding:"16px 48px", background:"transparent", color:"#D85A30", border:"1px solid rgba(216,90,48,0.4)", borderRadius:6, fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", transition:"all 0.3s" }}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.6)"}}
+              onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(216,90,48,0.4)"}}>
+              Consultar Abono
             </button>
           </div>
         </div>
