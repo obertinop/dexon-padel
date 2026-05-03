@@ -14,9 +14,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Faltan datos: tipo, nombre, telefono" });
   }
 
-  const PHONE_ID    = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const TOKEN       = process.env.WHATSAPP_TOKEN;
-  const ADMIN_PHONE = process.env.WHATSAPP_ADMIN_PHONE; // ej: "595981123456"
+  const PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const TOKEN    = process.env.WHATSAPP_TOKEN;
 
   if (!PHONE_ID || !TOKEN) {
     return res.status(500).json({ error: "Variables WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_TOKEN no configuradas" });
@@ -72,29 +71,31 @@ export default async function handler(req, res) {
     resultados.push({ destino: "cliente", tel: telCliente, ...r });
   }
 
-  // ── Notificación al ADMIN ────────────────────────────────────────────────
-  if (ADMIN_PHONE) {
-    const metodo = tipo === "pago_confirmado"
-      ? `Pagopar - ${forma_pago || "online"}`
-      : "Transferencia bancaria";
+  // ── Notificación al ADMIN (texto libre vía notificar-admin) ────────────
+  const metodo = tipo === "pago_confirmado"
+    ? `Pagopar - ${forma_pago || "online"}`
+    : "Transferencia bancaria";
 
-    const templateAdmin = {
-      name: "dexon_admin_reserva",
-      language: { code: "es" },
-      components: [{
-        type: "body",
-        parameters: [
-          { type: "text", text: nombre },
-          { type: "text", text: telefono },
-          { type: "text", text: fecha || "-" },
-          { type: "text", text: horarios || "-" },
-          { type: "text", text: monto || "-" },
-          { type: "text", text: metodo },
-        ],
-      }],
-    };
-    const r = await enviarTemplate(PHONE_ID, TOKEN, ADMIN_PHONE, templateAdmin);
-    resultados.push({ destino: "admin", tel: ADMIN_PHONE, ...r });
+  const textoAdmin =
+    `📋 Nueva reserva\n\n` +
+    `👤 ${nombre}\n` +
+    `📞 ${telefono}\n` +
+    `📅 ${fecha || "-"} a las ${horarios || "-"}\n` +
+    `💰 ${monto || "-"}\n` +
+    `💳 ${metodo}`;
+
+  try {
+    const base = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+    const rAdmin = await fetch(`${base}/api/whatsapp/notificar-admin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: textoAdmin }),
+    });
+    const dataAdmin = await rAdmin.json();
+    resultados.push({ destino: "admin", ok: rAdmin.ok, error: dataAdmin?.error });
+  } catch (e) {
+    console.error("[enviar] Error notificando admin:", e.message);
+    resultados.push({ destino: "admin", ok: false, error: e.message });
   }
 
   return res.status(200).json({ ok: true, resultados });
