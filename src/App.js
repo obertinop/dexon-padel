@@ -1343,6 +1343,7 @@ export default function App() {
   const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
   const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="salida"&&item.precio_venta>0)await db.post("caja",{descripcion:`Venta - ${item.nombre} x${form.cantidad_mov}`,tipo:"ingreso",categoria:"stock",monto:item.precio_venta*Number(form.cantidad_mov),fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
   const guardarConfig = async()=>{setSaving(true);try{await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin)},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
+  const guardarConfigWA = async(campos)=>{setSaving(true);try{await db.patch("config",cfg.id,campos,tk);await load();}catch(e){alert(e.message);}setSaving(false);};
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
@@ -1689,8 +1690,75 @@ export default function App() {
     </div>
     
     {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:500,marginBottom:12,fontSize:14,color:TX.p}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><span style={{fontWeight:500,color:TX.p}}>{i.nombre}</span><span style={{color:TX.s}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
-    <div style={card}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
+    <div style={{...card,marginBottom:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
+
+    <ConfigWA/>
   </div>;
+
+  const ConfigWA=()=>{
+    const [vals,setVals]=useState({
+      wa_bienvenida_activo: cfg.wa_bienvenida_activo||false,
+      wa_bienvenida_texto:  cfg.wa_bienvenida_texto||"Hola! 👋 Gracias por escribirnos. ¿En qué podemos ayudarte?",
+      wa_admin_tel:         cfg.wa_admin_tel||"595981086046",
+      wa_recordatorio_activo:   cfg.wa_recordatorio_activo||false,
+      wa_recordatorio_template: cfg.wa_recordatorio_template||"",
+    });
+    const sv=k=>e=>setVals(p=>({...p,[k]:e.target.type==="checkbox"?e.target.checked:e.target.value}));
+    const [guardando,setGuardando]=useState(false);
+    const [ok,setOk]=useState(false);
+    const guardar=async()=>{
+      setGuardando(true);
+      await guardarConfigWA(vals);
+      setGuardando(false);setOk(true);
+      setTimeout(()=>setOk(false),2000);
+    };
+    return <div style={card}>
+      <div style={{fontWeight:500,fontSize:14,color:TX.p,marginBottom:14}}>📱 WhatsApp</div>
+
+      {/* Mensaje de bienvenida */}
+      <div style={{marginBottom:16}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
+          <input type="checkbox" checked={vals.wa_bienvenida_activo} onChange={sv("wa_bienvenida_activo")}/>
+          <span style={{fontSize:13,fontWeight:500,color:TX.p}}>Mensaje de bienvenida automático</span>
+        </label>
+        <div style={{fontSize:12,color:TX.t,marginBottom:6}}>Se envía cuando alguien te escribe por primera vez</div>
+        {vals.wa_bienvenida_activo&&<textarea
+          value={vals.wa_bienvenida_texto}
+          onChange={sv("wa_bienvenida_texto")}
+          rows={3}
+          style={{...inp,resize:"vertical",fontSize:13}}
+        />}
+      </div>
+
+      {/* Teléfono de notificación */}
+      <div style={{marginBottom:16}}>
+        <label style={lbl}>Teléfono de notificación al admin</label>
+        <input value={vals.wa_admin_tel} onChange={sv("wa_admin_tel")} placeholder="595981086046" style={{...inp,fontSize:13}}/>
+        <div style={{fontSize:11,color:TX.t,marginTop:4}}>Recibís un aviso cuando llega un mensaje nuevo</div>
+      </div>
+
+      {/* Recordatorio automático */}
+      <div style={{marginBottom:16}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
+          <input type="checkbox" checked={vals.wa_recordatorio_activo} onChange={sv("wa_recordatorio_activo")}/>
+          <span style={{fontSize:13,fontWeight:500,color:TX.p}}>Recordatorio automático 3hs antes del turno</span>
+        </label>
+        <div style={{fontSize:12,color:TX.t,marginBottom:6}}>Requiere template aprobado en Meta. Se ejecuta cada hora vía cron.</div>
+        {vals.wa_recordatorio_activo&&<div>
+          <label style={lbl}>Nombre del template en Meta</label>
+          <input value={vals.wa_recordatorio_template} onChange={sv("wa_recordatorio_template")} placeholder="ej: dexon_recordatorio_turno" style={{...inp,fontSize:13}}/>
+          <div style={{fontSize:11,color:TX.t,marginTop:4}}>
+            El template debe tener: {'{{1}}'} nombre, {'{{2}}'} fecha, {'{{3}}'} hora
+          </div>
+        </div>}
+      </div>
+
+      <button onClick={guardar} disabled={guardando}
+        style={{padding:"9px 20px",borderRadius:8,fontSize:13,cursor:"pointer",background:ok?"#1A4A1A":"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,opacity:guardando?0.6:1}}>
+        {guardando?"Guardando...":(ok?"✓ Guardado":"Guardar WhatsApp")}
+      </button>
+    </div>;
+  };
 
   const PREDEFINIDOS=[
     "Hola! 👋 ¿En qué podemos ayudarte?",
