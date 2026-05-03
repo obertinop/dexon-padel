@@ -883,16 +883,10 @@ function LandingPage({ onAdmin }) {
         </div>
         {/* Stats bar */}
         <div style={{ position:"relative", zIndex:1, display:"flex", gap: isMobile ? 24 : 48, marginTop: 56, flexWrap:"wrap", justifyContent:"center" }}>
-          {[
-            { n:"300+", l:"Partidos jugados" },
-            { n:"50+",  l:"Socios activos" },
-            { n:"24/7", l:"Reserva online" },
-          ].map((s,i) => (
-            <div key={i} style={{ textAlign:"center" }}>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight:900, color:"#D85A30", lineHeight:1 }}>{s.n}</div>
-              <div style={{ fontSize:12, color:"#9AAAD4", marginTop:4, letterSpacing:0.5 }}>{s.l}</div>
-            </div>
-          ))}
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize: isMobile ? 28 : 36, fontWeight:900, color:"#D85A30", lineHeight:1 }}>24/7</div>
+            <div style={{ fontSize:12, color:"#9AAAD4", marginTop:4, letterSpacing:0.5 }}>Reserva online</div>
+          </div>
         </div>
       </section>
 
@@ -1004,10 +998,6 @@ function LandingPage({ onAdmin }) {
                   <span style={{ color:"#D85A30", fontWeight:700 }}>✓</span> {f}
                 </div>
               ))}
-              {/* Urgencia */}
-              <div style={{ background:"rgba(216,90,48,0.08)", border:"1px solid rgba(216,90,48,0.2)", borderRadius:10, padding:"10px 14px", marginTop:16, marginBottom:16, fontSize:13, color:"#D85A30", fontWeight:600 }}>
-                ⚡ Quedan 3 cupos disponibles este mes
-              </div>
               <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
                 style={{ width:"100%", padding:"14px", border:"none", borderRadius:12, background:"#D85A30", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 6px 20px rgba(216,90,48,0.35)" }}>
                 Quiero mi abono →
