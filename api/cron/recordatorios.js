@@ -1,5 +1,5 @@
 // /api/cron/recordatorios.js
-// Cron que corre cada hora. Envía recordatorios WhatsApp a clientes con turno en ~3 horas.
+// Cron que corre cada día a las 10:00 AM. Envía recordatorios WhatsApp a clientes con turno confirmado.
 // Configurado en vercel.json. Requiere template aprobado en Meta.
 //
 // SQL:
@@ -10,7 +10,6 @@
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
-  // Vercel invoca el cron con un header especial; en dev se puede llamar manualmente
   if (req.method !== "GET" && req.method !== "POST") return res.status(405).end();
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -29,14 +28,14 @@ export default async function handler(req, res) {
   const PH_ID  = process.env.WHATSAPP_PHONE_NUMBER_ID;
   if (!TOKEN || !PH_ID) return res.status(200).json({ ok: false, msg: "Variables WA no configuradas" });
 
-  // Buscar todos los turnos de hoy que no tengan recordatorio enviado
+  // Buscar todos los turnos de hoy confirmados que no tengan recordatorio enviado
   const fechaHoy = new Date().toISOString().slice(0, 10);
 
   const { data: turnosPendientes, error } = await sb
     .from("turnos")
     .select("id, hora, fecha, precio, cliente_id, clientes(nombre, telefono)")
     .eq("fecha", fechaHoy)
-    .eq("estado", "reservado")
+    .eq("estado", "confirmado")
     .eq("recordatorio_wa", false);
 
   if (error) {
