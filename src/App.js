@@ -428,32 +428,32 @@ const PortalCliente = () => {
 
   return <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)"}}>
     {/* HEADER */}
-    <div style={{background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 4px 24px rgba(0,0,0,0.4)"}}>
-      <div style={{maxWidth:480,margin:"0 auto",padding:"18px 20px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:40,objectFit:"contain"}}/>
+    <div style={{background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:isMobile?"none":"0 4px 24px rgba(0,0,0,0.4)"}}>
+      <div style={{maxWidth:480,margin:"0 auto",padding:isMobile?"14px 12px":"18px 20px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isMobile?10:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:isMobile?10:12}}>
+            <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?32:40,objectFit:"contain"}}/>
             <div>
-              <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>{cfg.nombre_club}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginTop:1}}>Tavapy · Alto Paraná</div>
+              <div style={{fontSize:isMobile?16:18,fontWeight:700,color:"#fff"}}>{cfg.nombre_club}</div>
+              {!isMobile&&<div style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginTop:1}}>Tavapy · Alto Paraná</div>}
             </div>
           </div>
-          <div style={{textAlign:"right"}}>
+          {!isMobile&&<div style={{textAlign:"right"}}>
             <div style={{fontSize:12,color:"rgba(255,255,255,0.55)"}}>{gs(cfg.tarifa_base)}/hora</div>
             <div style={{fontSize:11,color:BR.coral,fontWeight:500,marginTop:2}}>Pico: {gs(cfg.tarifa_pico)}</div>
-          </div>
+          </div>}
         </div>
-        <div style={{marginTop:14,padding:"10px 14px",background:"rgba(255,255,255,0.05)",borderRadius:10,border:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>📱</span>
+        <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{minHeight:"44px",marginTop:isMobile?8:0,padding:isMobile?"12px 12px":"10px 14px",background:"rgba(255,255,255,0.05)",borderRadius:10,border:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",gap:isMobile?8:10,textDecoration:"none"}}>
+          <span style={{fontSize:isMobile?16:18}}>📱</span>
           <div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>¿Consultas? Escribinos</div>
-            <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{fontSize:13,color:"#25D366",fontWeight:500,textDecoration:"none"}}>WhatsApp DEXON PADEL →</a>
+            <div style={{fontSize:isMobile?11:12,color:"rgba(255,255,255,0.4)",lineHeight:1}}>Escribinos</div>
+            <div style={{fontSize:isMobile?12:13,color:"#25D366",fontWeight:500,marginTop:isMobile?2:0}}>WhatsApp</div>
           </div>
-        </div>
+        </a>
       </div>
     </div>
 
-    <div style={{maxWidth:isMobile?"100%":480,margin:"0 auto",padding:isMobile?"16px 12px":"20px 16px"}}>
+    <div style={{maxWidth:isMobile?"100%":480,margin:"0 auto",padding:isMobile?"24px 14px 16px":"24px 16px"}}>
       {paso==="lista"&&<>
         {/* Selector fecha */}
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"16px 18px",marginBottom:12}}>
@@ -1948,11 +1948,41 @@ export default function App() {
       </>}
     </Modal>
 
-    <Modal show={modal==="cliente"} onClose={closeM} title={form.id?"Editar cliente":"Nuevo cliente"}>
+    <Modal show={modal==="cliente"} onClose={closeM} title={form.id?"Editar cliente":"Nuevo cliente"} width={500}>
       <Inp label="Nombre completo" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
       <Inp label="Teléfono" type="text" value={form.telefono||""} onChange={sf("telefono")}/>
       <R2 isMobile={isMobile}><Sel label="Nivel" value={form.nivel||"intermedio"} onChange={sf("nivel")}><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></Sel></R2>
       <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
+
+      {form.id&&<>
+        <Div/>
+        <div style={{fontSize:13,fontWeight:600,color:TX.p,marginBottom:12}}>📊 Historial</div>
+        {(() => {
+          const misTurnos = turnos.filter(t => t.cliente_id === form.id);
+          const misAbonos = abonos.filter(a => a.cliente_id === form.id);
+          const confirmados = misTurnos.filter(t => t.estado === "confirmado");
+          const totalGastado = confirmados.reduce((a, t) => a + (t.precio || 0), 0);
+          return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Turnos</div><div style={{fontSize:16,fontWeight:700,color:TX.p,marginTop:4}}>{misTurnos.length}</div></div>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Confirmados</div><div style={{fontSize:16,fontWeight:700,color:"#7ADDA8",marginTop:4}}>{confirmados.length}</div></div>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Abonos</div><div style={{fontSize:16,fontWeight:700,color:BR.coral,marginTop:4}}>{misAbonos.length}</div></div>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Gastado</div><div style={{fontSize:13,fontWeight:700,color:"#7EAAFF",marginTop:4}}>{gs(totalGastado)}</div></div>
+          </div>;
+        })()}
+        {(() => {
+          const misTurnos = turnos.filter(t => t.cliente_id === form.id).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+          if (misTurnos.length === 0) return <div style={{fontSize:12,color:TX.t,textAlign:"center",padding:"12px"}}>Sin turnos</div>;
+          return <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #1E3070",borderRadius:8}}>
+            {misTurnos.slice(0, 8).map(t => (
+              <div key={t.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 10px",borderBottom:"1px solid #1E3070",fontSize:11}}>
+                <div><div style={{color:TX.p,fontWeight:500}}>{t.fecha} {t.hora}:00</div><div style={{color:TX.s,marginTop:2}}>{gs(t.precio)}</div></div>
+                <div style={{textAlign:"right"}}>{estadoBadge(t.estado)}</div>
+              </div>
+            ))}
+          </div>;
+        })()}
+      </>}
+
       <Div/><div style={{display:"flex",justifyContent:"space-between"}}>
         {form.id&&<Btn v="danger" onClick={()=>setDlg({type:"eliminarCliente",id:form.id,nombre:form.nombre})}>Eliminar</Btn>}
         <div style={{display:"flex",gap:8,marginLeft:"auto"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarCliente} disabled={saving}>{saving?"Guardando...":form.id?"Guardar cambios":"Agregar"}</Btn></div>
