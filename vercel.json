@@ -23,5 +23,11 @@
     "api/**/*.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/recordatorios",
+      "schedule": "0 10 * * *"
+    }
+  ]
 }
