@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // ── CONSTANTES GLOBALES ──
 const SUPA_URL = "https://wirsrkuxzltedqdkrdak.supabase.co";
@@ -13,7 +13,7 @@ const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov"
 // Paleta de colores
 const BR = {
   coral:"#D85A30", coralL:"#FAECE7", coralD:"#993C1D",
-  blue:"rgba(13,20,35,0.5)", blueM:"#1A2F6B", blueL:"#E6EEFF",
+  blue:"#0F1C3F", blueM:"#1A2F6B", blueL:"#E6EEFF",
   dark:"#08101F",
   ok:"#3B6D11", okL:"#EAF3DE",
   warn:"#854F0B", warnL:"#FAEEDA",
@@ -25,9 +25,9 @@ const BR = {
 const TX = { p:"#E8EEFF", s:"#9AAAD4", t:"#6677AA" };
 
 // Estilos base modo oscuro
-const inp = { padding:"8px 12px", border:"1px solid #2A3F6B", borderRadius:8, fontSize:13, width:"100%", background:"rgba(13,20,35,0.5)", color:TX.p, fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
-const card = { background:"rgba(13,20,35,0.3)", border:"1px solid rgba(216,90,48,0.15)", borderRadius:8, padding:"16px 18px" };
-const metric = { background:"rgba(13,20,35,0.4)", borderRadius:12, padding:"14px 16px", border:"1px solid rgba(216,90,48,0.1)" };
+const inp = { padding:"8px 12px", border:"1px solid #2A3F6B", borderRadius:8, fontSize:13, width:"100%", background:"#0F1C3F", color:TX.p, fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
+const card = { background:"#111E40", border:"1px solid #1E3070", borderRadius:14, padding:"16px 18px" };
+const metric = { background:"#0D1830", borderRadius:12, padding:"14px 16px", border:"1px solid #1A2B5A" };
 const lbl = { fontSize:12, color:TX.s, fontWeight:500, marginBottom:5, display:"block" };
 
 // Hook para detectar móvil
@@ -104,7 +104,7 @@ const Badge = ({type,children}) => {
   const m = {
     ok:["#0D2E1A","#7ADDA8"], warn:["#2A1A0A","#F5C07A"], danger:["#2A0A0A","#F58282"],
     info:["#0A1A3A","#7EAAFF"], coral:["#3A1A0A","#F5A882"], purple:["#1A0A3A","#B8A0F5"],
-    gray:["rgba(216,90,48,0.1)",TX.s],
+    gray:["#1A2B5A",TX.s],
   };
   const [bg,color] = m[type]||m.gray;
   return <span style={{background:bg,color,fontSize:11,padding:"3px 9px",borderRadius:100,fontWeight:500,display:"inline-block",whiteSpace:"nowrap"}}>{children}</span>;
@@ -112,12 +112,12 @@ const Badge = ({type,children}) => {
 
 const Btn = ({v="default",sm,children,...p}) => {
   const s = {
-    primary:{background:"#D85A30",color:"#fff",border:"none"},
-    ghost:{background:"rgba(216,90,48,0.1)",color:TX.p,border:"1px solid #2A3F6B"},
+    primary:{background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none"},
+    ghost:{background:"#1A2B5A",color:TX.p,border:"1px solid #2A3F6B"},
     danger:{background:"#2A0A0A",color:"#F58282",border:"1px solid #5A1010"},
     success:{background:"#0D2E1A",color:"#7ADDA8",border:"1px solid #1A5A30"},
     blue:{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,color:"#fff",border:"none"},
-    default:{background:"rgba(216,90,48,0.1)",color:TX.p,border:"1px solid #2A3F6B"},
+    default:{background:"#1A2B5A",color:TX.p,border:"1px solid #2A3F6B"},
   };
   return <button {...p} style={{padding:sm?"5px 12px":"8px 16px",borderRadius:8,fontSize:sm?12:13,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:400,...(s[v]||s.default),...p.style}}>{children}</button>;
 };
@@ -150,10 +150,10 @@ const tipoBadge = t => {
 const Modal = ({show,onClose,title,children,width=420}) => {
   if(!show) return null;
   return <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.75)",padding:"24px 16px",overflowY:"auto"}}>
-    <div style={{width:"100%",maxWidth:width,backgroundColor:"#111E40",borderRadius:8,boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid rgba(216,90,48,0.15)",flexShrink:0}}>
-      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid rgba(216,90,48,0.1)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{width:"100%",maxWidth:width,backgroundColor:"#111E40",borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid #1E3070",flexShrink:0}}>
+      <div style={{padding:"18px 20px 14px",borderBottom:"1px solid #1E3070",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontSize:16,fontWeight:500,color:TX.p}}>{title}</span>
-        <button onClick={onClose} style={{border:"none",background:"rgba(216,90,48,0.1)",cursor:"pointer",fontSize:16,color:TX.s,padding:"5px 9px",borderRadius:6}}>×</button>
+        <button onClick={onClose} style={{border:"none",background:"#1A2B5A",cursor:"pointer",fontSize:16,color:TX.s,padding:"5px 9px",borderRadius:6}}>×</button>
       </div>
       <div style={{padding:20}}>{children}</div>
     </div>
@@ -164,7 +164,7 @@ const Modal = ({show,onClose,title,children,width=420}) => {
 const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="danger"}) => {
   if(!show) return null;
   return <div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
-    <div style={{backgroundColor:"#111E40",borderRadius:8,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid rgba(216,90,48,0.15)"}}>
+    <div style={{backgroundColor:"#111E40",borderRadius:14,padding:"24px",width:340,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid #1E3070"}}>
       <div style={{fontSize:15,fontWeight:500,marginBottom:8,color:TX.p}}>{title}</div>
       <div style={{fontSize:13,color:TX.s,marginBottom:20}}>{msg}</div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
@@ -209,7 +209,7 @@ const Login = ({onLogin}) => {
         <label style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:500,display:"block",marginBottom:6}}>Contraseña</label>
         <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,fontSize:14,color:"#fff",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}} placeholder="••••••••"/>
       </div>
-      <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"13px",background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={doLogin} disabled={loading} style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         {loading?"Ingresando...":"Ingresar"}
       </button>
     </div>
@@ -249,11 +249,11 @@ const SelectorFecha = ({value, onChange, min}) => {
         style={{
           width: "100%",
           padding: "14px 14px",
-          border: "1px solid rgba(216,90,48,0.2)",
+          border: "1px solid #1E3A7A",
           borderRadius: 10,
           fontSize: 15,
           color: "#fff",
-          background: "rgba(13,20,35,0.4)",
+          background: "#0D1830",
           fontFamily: "var(--font-sans)",
           outline: "none",
           boxSizing: "border-box",
@@ -298,7 +298,7 @@ const SelectorFecha = ({value, onChange, min}) => {
                   fontSize: 14,
                   cursor: "pointer",
                   textAlign: "left",
-                  borderBottom: "1px solid rgba(216,90,48,0.1)",
+                  borderBottom: "1px solid #1A2B5A",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center"
@@ -424,51 +424,49 @@ const PortalCliente = () => {
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,color:"rgba(255,255,255,0.5)",fontFamily:"var(--font-sans)"}}>Cargando...</div>;
 
-  const inpPortal = {width:"100%",padding:"13px 16px",border:"1px solid rgba(216,90,48,0.2)",borderRadius:6,fontSize:14,color:"#E8EEFF",background:"rgba(13,20,35,0.4)",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:"44px",transition:"all 0.3s",letterSpacing:0.3};
+  const inpPortal = {width:"100%",padding:"14px 14px",border:"1px solid #1E3A7A",borderRadius:10,fontSize:15,color:"#fff",background:"#0D1830",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:"44px"};
 
-  return <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)",background:"#05080F"}}>
+  return <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)"}}>
     {/* HEADER */}
-    <div style={{background:"rgba(5,8,15,0.6)",backdropFilter:"blur(20px)",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
-      <div style={{maxWidth:480,margin:"0 auto",padding:"20px 24px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain"}}/>
+    <div style={{background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:isMobile?"none":"0 4px 24px rgba(0,0,0,0.4)"}}>
+      <div style={{maxWidth:480,margin:"0 auto",padding:isMobile?"14px 12px":"18px 20px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isMobile?10:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:isMobile?10:12}}>
+            <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?32:40,objectFit:"contain"}}/>
             <div>
-              <div style={{fontSize:14,fontWeight:700,color:"#E8EEFF",letterSpacing:1.5,textTransform:"uppercase"}}>{cfg.nombre_club}</div>
-              <div style={{fontSize:10,color:"#6677AA",letterSpacing:1,marginTop:2}}>Tavapy · Alto Paraná</div>
+              <div style={{fontSize:isMobile?16:18,fontWeight:700,color:"#fff"}}>{cfg.nombre_club}</div>
+              {!isMobile&&<div style={{fontSize:10,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginTop:1}}>Tavapy · Alto Paraná</div>}
             </div>
           </div>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontSize:13,color:"#9AAAD4",fontWeight:600}}>{gs(cfg.tarifa_base)}</div>
-            <div style={{fontSize:11,color:"#D85A30",marginTop:2}}>Pico: {gs(cfg.tarifa_pico)}</div>
-          </div>
+          {!isMobile&&<div style={{textAlign:"right"}}>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.55)"}}>{gs(cfg.tarifa_base)}/hora</div>
+            <div style={{fontSize:11,color:BR.coral,fontWeight:500,marginTop:2}}>Pico: {gs(cfg.tarifa_pico)}</div>
+          </div>}
         </div>
-        <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{padding:"12px 16px",background:"rgba(216,90,48,0.1)",borderRadius:6,border:"1px solid rgba(216,90,48,0.2)",display:"flex",alignItems:"center",gap:10,textDecoration:"none",transition:"all 0.3s"}}
-          onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.15)";e.currentTarget.style.borderColor="rgba(216,90,48,0.3)"}}
-          onMouseLeave={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.2)"}}>
-          <span style={{fontSize:16}}>💬</span>
+        <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{minHeight:"44px",marginTop:isMobile?8:0,padding:isMobile?"12px 12px":"10px 14px",background:"rgba(255,255,255,0.05)",borderRadius:10,border:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",gap:isMobile?8:10,textDecoration:"none"}}>
+          <span style={{fontSize:isMobile?16:18}}>📱</span>
           <div>
-            <div style={{fontSize:11,color:"#9AAAD4"}}>¿Dudas?</div>
-            <div style={{fontSize:12,color:"#25D366",fontWeight:600}}>Escribinos por WhatsApp</div>
+            <div style={{fontSize:isMobile?11:12,color:"rgba(255,255,255,0.4)",lineHeight:1}}>Escribinos</div>
+            <div style={{fontSize:isMobile?12:13,color:"#25D366",fontWeight:500,marginTop:isMobile?2:0}}>WhatsApp</div>
           </div>
         </a>
       </div>
     </div>
 
-    <div style={{maxWidth:isMobile?"100%":480,margin:"0 auto",padding:isMobile?"24px 16px":"32px 24px"}}>
+    <div style={{maxWidth:isMobile?"100%":480,margin:"0 auto",padding:isMobile?"24px 14px 16px":"24px 16px"}}>
       {paso==="lista"&&<>
         {/* Selector fecha */}
-        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"20px 20px",marginBottom:20}}>
-          <label style={{fontSize:11,color:"#9AAAD4",fontWeight:700,display:"block",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>¿Qué día querés jugar?</label>
+        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"16px 18px",marginBottom:12}}>
+          <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>¿Qué día querés jugar?</label>
           <SelectorFecha value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
         </div>
 
         {/* Clima */}
-        {climaFecha&&<div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"16px 20px",marginBottom:20,display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",gap:isMobile?12:16}}>
-          <div style={{fontSize:44,flexShrink:0,lineHeight:1}}>{climaIcon(climaFecha.code)}</div>
+        {climaFecha&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"14px 18px",marginBottom:12,display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",gap:isMobile?12:16}}>
+          <div style={{fontSize:38,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
           <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#E8EEFF"}}>Pronóstico — Tavapy</div>
-            <div style={{fontSize:12,color:"#9AAAD4",marginTop:4,lineHeight:1.6}}>{climaFecha.max}° máx · {climaFecha.min}° mín · {climaFecha.lluvia}% lluvia</div>
+            <div style={{fontSize:14,fontWeight:600,color:TX.p}}>Pronóstico — Tavapy</div>
+            <div style={{fontSize:13,color:TX.s,marginTop:3,lineHeight:1.5}}>{climaFecha.max}° máx · {climaFecha.min}° mín · {climaFecha.lluvia}% lluvia</div>
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:isMobile?"flex-start":"flex-end",width:isMobile?"100%":"auto"}}>
             {climaFecha.lluvia>=60&&<Badge type="info">🌧 Lluvia</Badge>}
@@ -477,18 +475,18 @@ const PortalCliente = () => {
         </div>}
 
         {/* Horarios */}
-        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",overflow:"hidden",marginBottom:20}}>
-          <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#E8EEFF"}}>Horarios disponibles</div>
-            <div style={{fontSize:12,color:"#9AAAD4",marginTop:4}}>{libres.length} de {horasArr.length} turnos libres</div>
+        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",overflow:"hidden",marginBottom:12}}>
+          <div style={{padding:"14px 18px",borderBottom:"1px solid #1E3070"}}>
+            <div style={{fontSize:14,fontWeight:600,color:TX.p}}>Horarios disponibles</div>
+            <div style={{fontSize:12,color:TX.s,marginTop:2}}>{libres.length} de {horasArr.length} turnos libres</div>
           </div>
           {libres.length===0&&<div style={{padding:"28px",textAlign:"center",color:TX.t,fontSize:13}}>No hay horarios disponibles para este día.</div>}
           {libres.map(h=>{
             const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
             const selec=slotsSel.includes(h);
-            return <div key={h} onClick={()=>toggleSlot(h)} style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",padding:isMobile?"12px 14px":"14px 18px",borderBottom:"1px solid rgba(216,90,48,0.1)",cursor:"pointer",background:selec?"#1A3570":"#111E40",gap:isMobile?8:0}}>
+            return <div key={h} onClick={()=>toggleSlot(h)} style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",padding:isMobile?"12px 14px":"14px 18px",borderBottom:"1px solid #1A2B5A",cursor:"pointer",background:selec?"#1A3570":"#111E40",gap:isMobile?8:0}}>
               <div style={{display:"flex",alignItems:"center",gap:12,width:isMobile?"100%":"auto"}}>
-                <div style={{width:44,height:44,borderRadius:12,background:selec?BR.blueM:isPico?"rgba(216,90,48,0.2)":"rgba(13,20,35,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BR.coral:TX.s,flexShrink:0}}>
+                <div style={{width:44,height:44,borderRadius:12,background:selec?BR.blueM:isPico?"rgba(216,90,48,0.2)":"#0D1830",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BR.coral:TX.s,flexShrink:0}}>
                   {h}
                 </div>
                 <div style={{flex:1}}>
@@ -504,8 +502,8 @@ const PortalCliente = () => {
           })}
         </div>
 
-        {ocupados.length>0&&<div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,border:"1px solid rgba(216,90,48,0.1)",overflow:"hidden",marginBottom:16}}>
-          <div style={{padding:"12px 18px",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
+        {ocupados.length>0&&<div style={{background:"#0D1830",borderRadius:14,border:"1px solid #1A2B5A",overflow:"hidden",marginBottom:16}}>
+          <div style={{padding:"12px 18px",borderBottom:"1px solid #1A2B5A"}}>
             <div style={{fontSize:13,fontWeight:500,color:TX.t}}>No disponibles</div>
           </div>
           {ocupados.map(h=><div key={h} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 18px",borderBottom:"1px solid #0F1830",opacity:0.5}}>
@@ -515,13 +513,13 @@ const PortalCliente = () => {
         </div>}
 
         {slotsSel.length>0&&<>
-          <div style={{background:"rgba(13,20,35,0.3)",borderRadius:12,padding:"12px 16px",marginBottom:12,border:"1px solid #2A3F7A"}}>
+          <div style={{background:"#111E40",borderRadius:12,padding:"12px 16px",marginBottom:12,border:"1px solid #2A3F7A"}}>
             <div style={{fontSize:12,color:TX.s,marginBottom:4}}>Seleccionados · {slotsSel.length}hs</div>
             <div style={{fontSize:14,fontWeight:600,color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" · ")} hs</div>
             <div style={{fontSize:13,color:BR.coral,marginTop:4,fontWeight:500}}>Total: {gs(totalSel)}</div>
             <div style={{fontSize:11,color:TX.t,marginTop:4}}>Tocá horas consecutivas para extender tu turno</div>
           </div>
-          <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px 20px",background:"#D85A30",color:"#fff",border:"none",borderRadius:8,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+          <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
             Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
           </button>
         </>}
@@ -529,7 +527,7 @@ const PortalCliente = () => {
 
       {paso==="datos"&&<>
         <button onClick={()=>{setPaso("lista");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:TX.s,marginBottom:16,fontFamily:"var(--font-sans)"}}>← Volver</button>
-        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"22px"}}>
+        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
           <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Confirmá tu reserva</div>
           <div style={{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,borderRadius:12,padding:"14px 18px",marginBottom:20}}>
             <div style={{fontSize:16,fontWeight:700,color:"#fff"}}>{fmtFechaLegible(fecha)} · {slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
@@ -544,7 +542,7 @@ const PortalCliente = () => {
             <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpPortal} placeholder="Tu número"/>
           </div>
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
-          <button onClick={()=>setPaso("pago")} disabled={saving} style={{width:"100%",padding:"14px",background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+          <button onClick={()=>setPaso("pago")} disabled={saving} style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
             {saving?"Guardando...":"Ir a pagar →"}
           </button>
         </div>
@@ -552,7 +550,7 @@ const PortalCliente = () => {
 
       {paso==="pago"&&<>
         <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:TX.s,marginBottom:16,fontFamily:"var(--font-sans)"}}>← Volver</button>
-        <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"22px"}}>
+        <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
           <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Completá tu pago</div>
 
           {/* Resumen */}
@@ -567,17 +565,17 @@ const PortalCliente = () => {
           <div onClick={()=>setMetodoPago("transferencia")} style={{
             border:metodoPago==="transferencia"?`2px solid ${BR.coral}`:"1px solid #1E3070",
             borderRadius:12,padding:"14px 16px",marginBottom:10,cursor:"pointer",
-            background:metodoPago==="transferencia"?"#1A1530":"rgba(13,20,35,0.4)",
+            background:metodoPago==="transferencia"?"#1A1530":"#0D1830",
             transition:"all 0.15s"
           }}>
             <div style={{fontSize:14,fontWeight:600,color:TX.p,marginBottom:4}}>Transferencia bancaria</div>
-            <div style={{fontSize:12,color:TX.s}}>UENO · Te contactamos para confirmar el pago</div>
+            <div style={{fontSize:12,color:TX.s}}>UENO · Enviás comprobante por WhatsApp</div>
           </div>
 
           <div onClick={()=>setMetodoPago("pagopar")} style={{
             border:metodoPago==="pagopar"?`2px solid ${BR.coral}`:"1px solid #1E3070",
             borderRadius:12,padding:"14px 16px",marginBottom:18,cursor:"pointer",
-            background:metodoPago==="pagopar"?"#1A1530":"rgba(13,20,35,0.4)",
+            background:metodoPago==="pagopar"?"#1A1530":"#0D1830",
             transition:"all 0.15s"
           }}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
@@ -587,7 +585,7 @@ const PortalCliente = () => {
             <div style={{fontSize:12,color:TX.s,marginBottom:8}}>Tarjeta · PIX · Tigo Money · Personal · QR</div>
             <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
               {["Visa","Master","PIX","Tigo","Personal","Zimple"].map(t=>(
-                <span key={t} style={{fontSize:10,padding:"2px 6px",background:"rgba(13,20,35,0.4)",border:"1px solid rgba(216,90,48,0.15)",borderRadius:5,color:TX.s}}>{t}</span>
+                <span key={t} style={{fontSize:10,padding:"2px 6px",background:"#0D1830",border:"1px solid #1E3070",borderRadius:5,color:TX.s}}>{t}</span>
               ))}
             </div>
           </div>
@@ -595,18 +593,18 @@ const PortalCliente = () => {
           {/* Datos según método */}
           {metodoPago==="transferencia" && (
             <>
-              <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid rgba(216,90,48,0.1)"}}>
+              <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
                 <div style={{fontSize:13,color:TX.p,lineHeight:1.8}}>
                   <div style={{marginBottom:6}}><span style={{color:TX.s}}>Banco:</span> <strong>UENO</strong></div>
                   <div style={{marginBottom:6}}><span style={{color:TX.s}}>Alias:</span> <strong style={{fontSize:14,letterSpacing:1,color:BR.coral}}>80168039-5</strong></div>
                   <div><span style={{color:TX.s}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
                 </div>
               </div>
-              <div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"12px 14px",marginBottom:18,border:"1px solid rgba(216,90,48,0.15)"}}>
-                <div style={{fontSize:12,color:"#9AAAD4",lineHeight:1.8}}>
-                  1. Hacé la transferencia al alias <strong style={{color:"#E8EEFF"}}>80168039-5</strong><br/>
-                  2. Confirmá la reserva con el botón de abajo<br/>
-                  3. Te contactamos por WhatsApp para verificar el pago
+              <div style={{background:"#0D2E1A",borderRadius:12,padding:"12px 14px",marginBottom:18,border:"1px solid #1A5A30"}}>
+                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.6}}>
+                  1. Hacé la transferencia al alias <strong>80168039-5</strong><br/>
+                  2. Tocá el botón verde<br/>
+                  3. Enviá la foto del comprobante por WhatsApp
                 </div>
               </div>
             </>
@@ -614,7 +612,7 @@ const PortalCliente = () => {
 
           {/* Datos requeridos por Pagopar (solo cuando se elige pago online) */}
           {metodoPago==="pagopar" && (
-            <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid rgba(216,90,48,0.1)"}}>
+            <div style={{background:"#0D1830",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
               <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad <span style={{color:BR.coral}}>*</span></label>
               <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpPortal} placeholder="Número de CI (sin puntos)"/>
               <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>Requerido por la pasarela de pago para verificación.</div>
@@ -637,10 +635,23 @@ const PortalCliente = () => {
                 else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
                 else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
 
-                const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
                 for(const h of slotsSel){
                   await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioH(h),sena:0,saldo:precioH(h),notas:nota,metodo_pago:"transferencia"},SUPA_KEY);
                 }
+
+                const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
+                const msgWsp = encodeURIComponent(
+                  `🏀 *COMPROBANTE DE PAGO*\n\n` +
+                  `Nombre: *${form.nombre}*\n` +
+                  `Teléfono: *${form.telefono}*\n\n` +
+                  `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
+                  `⏰ Horarios: *${horasStr}hs*\n` +
+                  `💰 Total: *${gs(totalSel)}*\n\n` +
+                  `Adjunto: Foto de la transferencia al alias 80168039-5`
+                );
+                window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
+
+                // Notificación WhatsApp automática al cliente y admin (fire & forget)
                 fetch("/api/whatsapp/enviar",{
                   method:"POST",
                   headers:{"Content-Type":"application/json"},
@@ -653,11 +664,12 @@ const PortalCliente = () => {
                     monto:gs(totalSel),
                   })
                 }).catch(()=>{});
+
                 setPaso("confirmado");
               } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
               setSaving(false);
-            }} disabled={saving} style={{width:"100%",padding:"15px 20px",background:"#D85A30",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",letterSpacing:0.5}}>
-              {saving?"Guardando...":"Confirmar reserva →"}
+            }} disabled={saving} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+              {saving?"Guardando...":"📱 Enviar comprobante por WhatsApp"}
             </button>
           ) : (
             <button onClick={async ()=>{
@@ -694,7 +706,7 @@ const PortalCliente = () => {
               }
             }} disabled={saving||!form.documento.trim()} style={{
               width:"100%",padding:"14px",
-              background: !form.documento.trim() ? "rgba(216,90,48,0.1)" : `linear-gradient(135deg,${BR.coral},${BR.coralD})`,
+              background: !form.documento.trim() ? "#1A2B5A" : `linear-gradient(135deg,${BR.coral},${BR.coralD})`,
               color: !form.documento.trim() ? "#5A6B8C" : "#fff",
               border:"none",borderRadius:12,fontSize:15,fontWeight:600,
               cursor: (!form.documento.trim()||saving) ? "not-allowed" : "pointer",
@@ -708,23 +720,22 @@ const PortalCliente = () => {
         </div>
       </>}
 
-      {paso==="confirmado"&&<div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"40px 28px",textAlign:"center"}}>
-        <div style={{width:64,height:64,borderRadius:"50%",background:"rgba(216,90,48,0.15)",border:"1px solid rgba(216,90,48,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 24px"}}>✓</div>
-        <div style={{fontSize:22,fontWeight:700,color:"#E8EEFF",marginBottom:12,letterSpacing:-0.5}}>¡Reserva confirmada!</div>
-        <div style={{fontSize:14,color:"#9AAAD4",marginBottom:28,lineHeight:1.8}}>
-          Tu reserva para el <strong style={{color:"#E8EEFF"}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:"#E8EEFF"}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong> está registrada.<br/>
-          Te contactaremos por WhatsApp para coordinar el pago.
-        </div>
-        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"16px 20px",marginBottom:28,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)"}}>
-          <div style={{fontSize:13,color:"#9AAAD4",lineHeight:2}}>
+      {paso==="confirmado"&&<div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"36px 24px",textAlign:"center"}}>
+        <div style={{width:72,height:72,borderRadius:"50%",background:"#1A3570",border:"2px solid #2A5F9F",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"}}>⏳</div>
+        <div style={{fontSize:22,fontWeight:700,color:TX.p,marginBottom:8}}>Pago enviado</div>
+        <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>Hemos recibido tu comprobante. Tu reserva para <strong style={{color:TX.p}}>{fmtFechaLegible(fecha)}</strong> a las <strong style={{color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</strong> está pendiente de confirmación.</div>
+        <div style={{background:"#0D1830",borderRadius:12,padding:"16px",marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A"}}>
+          <div style={{fontSize:13,color:TX.s,lineHeight:2.2}}>
             <div>📍 {cfg.nombre_club} — Tavapy, Alto Paraná</div>
-            <div>💰 {gs(totalSel)} · {slotsSel.length} hora{slotsSel.length>1?"s":""}</div>
-            <div>🏦 Transferencia al alias <strong style={{color:"#D85A30"}}>80168039-5</strong></div>
+            <div>💰 {gs(totalSel)} · {slotsSel.length} hora{slotsSel.length>1?"s":""} · Pago pendiente de verificación</div>
           </div>
         </div>
-        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});}}
-          style={{width:"100%",padding:"13px",background:"transparent",color:"#9AAAD4",border:"1px solid rgba(216,90,48,0.2)",borderRadius:8,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-          Hacer otra reserva
+        <div style={{background:"#0D2A1A",borderRadius:12,padding:"14px 16px",marginBottom:20,border:"1px solid #1A5A30",textAlign:"left"}}>
+          <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>✓ Próximo paso</div>
+          <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibirás una confirmación por WhatsApp una vez que verifiquemos tu pago.</div>
+        </div>
+        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""}); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+          Volver al inicio
         </button>
       </div>}
     </div>
@@ -735,18 +746,6 @@ const PortalCliente = () => {
 function LandingPage({ onAdmin }) {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [landingCfg, setLandingCfg] = useState({ tarifa_base: 80000, tarifa_pico: 100000 });
-  const [planes, setPlanes] = useState([]);
-
-  useEffect(() => {
-    Promise.all([
-      db.get("config", "limit=1"),
-      db.get("planes_abono", "order=precio.asc"),
-    ]).then(([cf, pl]) => {
-      if (cf?.[0]) setLandingCfg(cf[0]);
-      if (pl) setPlanes(pl);
-    }).catch(() => {});
-  }, []);
 
   const scrollTo = (id) => {
     setMenuOpen(false);
@@ -754,57 +753,57 @@ function LandingPage({ onAdmin }) {
   };
 
   const st = {
-    page: { fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif", background: "#05080F", color: "#E8EEFF", minHeight: "100vh", overflowX: "hidden" },
-    nav: { position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(5,8,15,0.6)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(216,90,48,0.1)", padding: isMobile ? "16px 20px" : "18px 60px", display: "flex", alignItems: "center", justifyContent: "space-between" },
-    logo: { height: 32, objectFit: "contain" },
-    logoText: { fontSize: 16, fontWeight: 700, color: "#E8EEFF", letterSpacing: 3, textTransform: "uppercase" },
-    navLinks: { display: isMobile ? "none" : "flex", gap: 40, alignItems: "center" },
-    navLink: { color: "#9AAAD4", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "color 0.3s", textDecoration: "none", letterSpacing: 0.5 },
-    navBtns: { display: "flex", gap: 16, alignItems: "center" },
-    btnOutline: { padding: "10px 24px", border: "1px solid #D85A30", borderRadius: 6, background: "transparent", color: "#D85A30", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" },
-    btnSolid: { padding: "10px 24px", border: "none", borderRadius: 6, background: "#D85A30", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" },
-    hero: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", textAlign: "center", padding: isMobile ? "120px 24px 80px" : "140px 60px 100px", position: "relative", overflow: "hidden" },
-    heroBg: { position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(13,20,35,0.6) 0%, rgba(8,16,31,0.8) 50%, rgba(5,8,15,1) 100%)", zIndex: 0 },
-    heroAccent: { position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,90,48,0.06) 0%, transparent 70%)", zIndex: 0 },
-    heroContent: { position: "relative", zIndex: 1, maxWidth: 900 },
-    heroBadge: { display: "inline-block", padding: "8px 20px", background: "rgba(216,90,48,0.08)", border: "1px solid rgba(216,90,48,0.2)", borderRadius: 6, fontSize: 11, color: "#D85A30", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 40 },
-    heroTitle: { fontSize: isMobile ? 48 : 92, fontWeight: 700, lineHeight: 1, margin: "0 0 24px", letterSpacing: -1.5, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI'" },
+    page: { fontFamily: "'Segoe UI', sans-serif", background: "#08101F", color: "#E8EEFF", minHeight: "100vh", overflowX: "hidden" },
+    nav: { position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(8,16,31,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1E3070", padding: isMobile ? "12px 20px" : "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between" },
+    logo: { height: 36, objectFit: "contain" },
+    logoText: { fontSize: 18, fontWeight: 800, color: "#E8EEFF", letterSpacing: 1 },
+    navLinks: { display: isMobile ? "none" : "flex", gap: 28, alignItems: "center" },
+    navLink: { color: "#9AAAD4", fontSize: 14, fontWeight: 500, cursor: "pointer", transition: "color 0.2s", textDecoration: "none" },
+    navBtns: { display: "flex", gap: 10, alignItems: "center" },
+    btnOutline: { padding: "8px 18px", border: "1px solid #D85A30", borderRadius: 8, background: "transparent", color: "#D85A30", fontSize: 13, fontWeight: 600, cursor: "pointer" },
+    btnSolid: { padding: "8px 18px", border: "none", borderRadius: 8, background: "#D85A30", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+    hero: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", textAlign: "center", padding: isMobile ? "100px 24px 60px" : "120px 40px 80px", position: "relative", overflow: "hidden" },
+    heroBg: { position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(15,28,63,0.9) 0%, #08101F 70%)", zIndex: 0 },
+    heroAccent: { position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,90,48,0.12) 0%, transparent 70%)", zIndex: 0 },
+    heroContent: { position: "relative", zIndex: 1, maxWidth: 700 },
+    heroBadge: { display: "inline-block", padding: "6px 16px", background: "rgba(216,90,48,0.15)", border: "1px solid rgba(216,90,48,0.3)", borderRadius: 20, fontSize: 12, color: "#D85A30", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 24 },
+    heroTitle: { fontSize: isMobile ? 38 : 64, fontWeight: 900, lineHeight: 1.05, margin: "0 0 20px", letterSpacing: -1 },
     heroSpan: { color: "#D85A30" },
-    heroSub: { fontSize: isMobile ? 16 : 20, color: "#9AAAD4", lineHeight: 1.7, marginBottom: 48, maxWidth: 700, margin: "0 auto 48px", fontWeight: 400, letterSpacing: 0.3 },
-    heroButtons: { display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" },
-    btnHeroMain: { padding: isMobile ? "14px 32px" : "16px 48px", border: "none", borderRadius: 6, background: "#D85A30", color: "#fff", fontSize: isMobile ? 13 : 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 20px 50px rgba(216,90,48,0.2)", letterSpacing: 1, textTransform: "uppercase" },
-    btnHeroSec: { padding: isMobile ? "14px 32px" : "16px 48px", border: "1.5px solid rgba(216,90,48,0.4)", borderRadius: 6, background: "transparent", color: "#E8EEFF", fontSize: isMobile ? 13 : 14, fontWeight: 700, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" },
-    section: { padding: isMobile ? "100px 24px" : "120px 60px", maxWidth: 1400, margin: "0 auto" },
-    sectionTitle: { fontSize: isMobile ? 32 : 56, fontWeight: 700, marginBottom: 20, letterSpacing: -1 },
-    sectionSub: { fontSize: 16, color: "#9AAAD4", marginBottom: 64, lineHeight: 1.7, maxWidth: 700 },
-    divider: { width: 1, height: 40, background: "rgba(216,90,48,0.3)", borderRadius: 1, marginBottom: 32, margin: "0 0 32px 0" },
-    grid2: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 32 },
-    grid3: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 48 },
-    featureCard: { background: "rgba(15,28,63,0.3)", border: "1px solid rgba(216,90,48,0.15)", borderRadius: 8, padding: "32px 28px" },
-    featureIcon: { fontSize: 36, marginBottom: 20 },
-    featureTitle: { fontSize: 17, fontWeight: 700, marginBottom: 12, color: "#E8EEFF" },
-    featureText: { fontSize: 15, color: "#9AAAD4", lineHeight: 1.8 },
-    mapBox: { background: "rgba(13,20,35,0.5)", border: "1px solid #1E3070", borderRadius: 8, overflow: "hidden" },
-    mapFrame: { width: "100%", height: isMobile ? 280 : 380, border: "none", display: "block" },
+    heroSub: { fontSize: isMobile ? 16 : 20, color: "#9AAAD4", lineHeight: 1.6, marginBottom: 40, maxWidth: 520, margin: "0 auto 40px" },
+    heroButtons: { display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" },
+    btnHeroMain: { padding: isMobile ? "14px 28px" : "16px 36px", border: "none", borderRadius: 12, background: "#D85A30", color: "#fff", fontSize: isMobile ? 15 : 17, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(216,90,48,0.35)" },
+    btnHeroSec: { padding: isMobile ? "14px 28px" : "16px 36px", border: "1.5px solid #2A3F6B", borderRadius: 12, background: "transparent", color: "#E8EEFF", fontSize: isMobile ? 15 : 17, fontWeight: 600, cursor: "pointer" },
+    section: { padding: isMobile ? "60px 24px" : "80px 40px", maxWidth: 1100, margin: "0 auto" },
+    sectionTitle: { fontSize: isMobile ? 26 : 36, fontWeight: 800, marginBottom: 12, letterSpacing: -0.5 },
+    sectionSub: { fontSize: 15, color: "#9AAAD4", marginBottom: 48, lineHeight: 1.6 },
+    divider: { width: 48, height: 4, background: "#D85A30", borderRadius: 2, marginBottom: 16 },
+    grid2: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 },
+    grid3: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 },
+    featureCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, padding: "28px 24px" },
+    featureIcon: { fontSize: 32, marginBottom: 16 },
+    featureTitle: { fontSize: 17, fontWeight: 700, marginBottom: 8, color: "#E8EEFF" },
+    featureText: { fontSize: 14, color: "#9AAAD4", lineHeight: 1.7 },
+    mapBox: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, overflow: "hidden" },
+    mapFrame: { width: "100%", height: isMobile ? 260 : 360, border: "none", display: "block" },
     mapInfo: { padding: "24px 28px" },
     mapInfoRow: { display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 },
     mapInfoIcon: { fontSize: 20, marginTop: 2, flexShrink: 0 },
     mapInfoText: { fontSize: 14, color: "#9AAAD4", lineHeight: 1.6 },
     mapInfoLabel: { fontWeight: 700, color: "#E8EEFF", display: "block", marginBottom: 2 },
-    contactGrid: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24, alignItems: "start" },
-    contactCard: { background: "rgba(13,20,35,0.5)", border: "1px solid #1E3070", borderRadius: 8, padding: "32px 28px" },
-    waBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "13px 28px", background: "#25D366", border: "none", borderRadius: 6, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", marginTop: 24, lineHeight: 1, whiteSpace: "nowrap", letterSpacing: 0.5 },
-    scheduleRow: { display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid rgba(216,90,48,0.1)", fontSize: 14 },
+    contactGrid: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, alignItems: "start" },
+    contactCard: { background: "#0F1C3F", border: "1px solid #1E3070", borderRadius: 16, padding: "28px 24px" },
+    waBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 24px", background: "#25D366", border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "none", marginTop: 20, lineHeight: 1, whiteSpace: "nowrap" },
+    scheduleRow: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1E3070", fontSize: 14 },
     scheduleDay: { color: "#9AAAD4" },
     scheduleHrs: { color: "#E8EEFF", fontWeight: 600 },
-    footer: { background: "rgba(5,8,15,0.5)", borderTop: "1px solid rgba(216,90,48,0.1)", padding: isMobile ? "48px 24px" : "60px 60px", textAlign: "center" },
-    footerLogo: { fontSize: 14, fontWeight: 700, color: "#E8EEFF", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" },
-    footerSub: { fontSize: 13, color: "#9AAAD4", marginBottom: 32 },
-    footerLinks: { display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 },
-    footerLink: { fontSize: 12, color: "#9AAAD4", cursor: "pointer", letterSpacing: 0.5, transition: "color 0.3s" },
-    footerCopy: { fontSize: 12, color: "#6677AA", letterSpacing: 0.3 },
+    footer: { background: "#050D1A", borderTop: "1px solid #1E3070", padding: isMobile ? "30px 24px" : "40px 40px", textAlign: "center" },
+    footerLogo: { fontSize: 20, fontWeight: 900, color: "#E8EEFF", letterSpacing: 1, marginBottom: 8 },
+    footerSub: { fontSize: 13, color: "#6677AA", marginBottom: 20 },
+    footerLinks: { display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 },
+    footerLink: { fontSize: 13, color: "#6677AA", cursor: "pointer" },
+    footerCopy: { fontSize: 12, color: "#3A4A6B" },
     mobileMenu: { position: "fixed", top: 64, left: 0, right: 0, background: "#0A1428", borderBottom: "1px solid #1E3070", zIndex: 99, padding: "16px 24px", display: "flex", flexDirection: "column", gap: 4 },
-    mobileLink: { padding: "12px 0", fontSize: 16, fontWeight: 500, color: "#9AAAD4", cursor: "pointer", borderBottom: "1px solid rgba(13,20,35,0.5)" },
+    mobileLink: { padding: "12px 0", fontSize: 16, fontWeight: 500, color: "#9AAAD4", cursor: "pointer", borderBottom: "1px solid #0F1C3F" },
   };
 
   return (
@@ -819,7 +818,6 @@ function LandingPage({ onAdmin }) {
           <div style={st.navLinks}>
             <span style={st.navLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</span>
             <span style={st.navLink} onClick={() => scrollTo("cancha")}>La cancha</span>
-            <span style={st.navLink} onClick={() => scrollTo("precios")}>Precios</span>
             <span style={st.navLink} onClick={() => scrollTo("ubicacion")}>Ubicación</span>
             <span style={st.navLink} onClick={() => scrollTo("contacto")}>Contacto</span>
           </div>
@@ -842,7 +840,6 @@ function LandingPage({ onAdmin }) {
         <div style={st.mobileMenu}>
           <div style={st.mobileLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</div>
           <div style={st.mobileLink} onClick={() => scrollTo("cancha")}>La cancha</div>
-          <div style={st.mobileLink} onClick={() => scrollTo("precios")}>Precios</div>
           <div style={st.mobileLink} onClick={() => scrollTo("ubicacion")}>Ubicación</div>
           <div style={st.mobileLink} onClick={() => scrollTo("contacto")}>Contacto</div>
           <div style={{ ...st.mobileLink, color: "#D85A30" }} onClick={onAdmin}>Administración</div>
@@ -854,41 +851,42 @@ function LandingPage({ onAdmin }) {
         <div style={st.heroBg} />
         <div style={st.heroAccent} />
         <div style={st.heroContent}>
-          <span style={st.heroBadge}>EXPERIENCIA PREMIUM · TAVAPY</span>
+          <span style={st.heroBadge}>🎾 Tavapy · Alto Paraná · Paraguay</span>
           <h1 style={st.heroTitle}>
-            Pádel de<br /><span style={st.heroSpan}>clase mundial</span>
+            Tu cancha de<br /><span style={st.heroSpan}>pádel en Tavapy</span>
           </h1>
           <p style={st.heroSub}>
-            Cancha profesional con reserva online. Abierto 24/7. Planes para jugar tanto como quieras.
+            Reservá tu turno fácil y rápido. Disfrutá del mejor pádel de la zona con instalaciones de primer nivel.
           </p>
           <div style={st.heroButtons}>
             <button style={st.btnHeroMain} onClick={() => window.location.href = "/reservar"}>
-              Reservar Cancha
+              Reservar cancha →
             </button>
-            <button style={st.btnHeroSec} onClick={() => scrollTo("precios")}>
-              Conocer Planes
+            <button style={st.btnHeroSec} onClick={() => scrollTo("nosotros")}>
+              Conocer más
             </button>
           </div>
         </div>
       </section>
 
-      {/* NOSOTROS */}
-      <section id="nosotros">
+      {/* QUIÉNES SOMOS */}
+      <section id="nosotros" style={{ background: "#0A1428" }}>
         <div style={st.section}>
-          <div style={{ marginBottom: 80 }}>
-            <h2 style={st.sectionTitle}>Por qué elegir DEXON</h2>
-            <div style={st.divider} />
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 60 : 80 }}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>Quiénes somos</h2>
+          <p style={st.sectionSub}>
+            DEXON PADEL es el primer club de pádel de Tavapy, Alto Paraná. Nació con la misión de acercar este deporte a la comunidad local, con una cancha profesional, ambiente familiar y atención personalizada.
+          </p>
+          <div style={st.grid3}>
             {[
-              { icon: "🏆", title: "Cancha Profesional", text: "Superficie reglamentaria homologada para competencia. Iluminación LED de nivel profesional." },
-              { icon: "📅", title: "Reserva Online", text: "Disponible 24/7. Confirmación inmediata. Sin intermediarios ni llamadas." },
-              { icon: "🎯", title: "Para Todos", text: "Desde principiantes hasta jugadores avanzados. Ambiente familiar y profesional." },
+              { icon: "🏆", title: "Calidad profesional", text: "Cancha construida con materiales de primer nivel, iluminación LED y superficie reglamentaria para el mejor juego." },
+              { icon: "👨‍👩‍👧", title: "Ambiente familiar", text: "Un espacio pensado para todos: principiantes, aficionados y jugadores avanzados. Venís con quien quieras." },
+              { icon: "📅", title: "Reservas simples", text: "Sistema de reservas online disponible las 24 horas. Elegí tu horario, confirmá por WhatsApp y listo." },
             ].map((f, i) => (
-              <div key={i}>
-                <div style={{ fontSize: 48, marginBottom: 24 }}>{f.icon}</div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#E8EEFF", marginBottom: 12, letterSpacing: -0.5 }}>{f.title}</h3>
-                <p style={{ fontSize: 15, color: "#9AAAD4", lineHeight: 1.8 }}>{f.text}</p>
+              <div key={i} style={st.featureCard}>
+                <div style={st.featureIcon}>{f.icon}</div>
+                <div style={st.featureTitle}>{f.title}</div>
+                <div style={st.featureText}>{f.text}</div>
               </div>
             ))}
           </div>
@@ -896,166 +894,140 @@ function LandingPage({ onAdmin }) {
       </section>
 
       {/* LA CANCHA */}
-      <section id="cancha" style={{ background: "rgba(13,20,35,0.4)", paddingTop: isMobile ? "100px" : "120px", paddingBottom: isMobile ? "100px" : "120px" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: isMobile ? "0 24px" : "0 60px" }}>
-          <div style={{ marginBottom: 80 }}>
-            <h2 style={st.sectionTitle}>Instalaciones premium</h2>
-            <div style={st.divider} />
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: isMobile ? 24 : 32 }}>
+      <section id="cancha">
+        <div style={st.section}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>La cancha</h2>
+          <p style={st.sectionSub}>Todo lo que necesitás para jugar al pádel en un solo lugar.</p>
+          <div style={st.grid2}>
             {[
-              {icon:"💡", label:"Iluminación LED"},
-              {icon:"🎾", label:"Superficie Reglamentaria"},
-              {icon:"🅿️", label:"Estacionamiento"},
-              {icon:"🚿", label:"Vestuarios"}
-            ].map((item,i)=>(
-              <div key={i} style={{ textAlign:"center", padding:"40px 24px", transition:"all 0.4s" }}
-                onMouseEnter={e=>e.currentTarget.style.opacity="0.7"}
-                onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                <div style={{ fontSize: 56, marginBottom: 20, lineHeight: 1 }}>{item.icon}</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#E8EEFF", letterSpacing: -0.3 }}>{item.label}</div>
+              { icon: "💡", title: "Iluminación LED", text: "Iluminación profesional para jugar de día o de noche sin inconvenientes." },
+              { icon: "🎾", title: "Superficie reglamentaria", text: "Piso de césped sintético de alta calidad, homologado para competencia." },
+              { icon: "🅿️", title: "Estacionamiento", text: "Amplio espacio para estacionar sin preocupaciones." },
+              { icon: "🚿", title: "Vestuarios", text: "Instalaciones limpias y cómodas para cambiarte antes y después del partido." },
+            ].map((f, i) => (
+              <div key={i} style={{ ...st.featureCard, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 28, flexShrink: 0 }}>{f.icon}</span>
+                <div>
+                  <div style={st.featureTitle}>{f.title}</div>
+                  <div style={st.featureText}>{f.text}</div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* PRECIOS */}
-      <section id="precios">
-        <div style={st.section}>
-          <div style={{ marginBottom: 80 }}>
-            <h2 style={st.sectionTitle}>Planes</h2>
-            <div style={st.divider} />
-            <p style={st.sectionSub}>Elige el plan que se adapte a tu ritmo de juego.</p>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 48 }}>
-            {/* Turno suelto */}
-            <div style={{ padding: "60px 48px", border: "1px solid rgba(216,90,48,0.2)", borderRadius: 8, background: "rgba(13,20,35,0.3)", backdropFilter: "blur(10px)" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#9AAAD4", letterSpacing: 2, textTransform: "uppercase", marginBottom: 28 }}>Turno suelto</div>
-              <div style={{ fontSize: 64, fontWeight: 700, color: "#D85A30", lineHeight: 1, marginBottom: 8 }}>{gs(landingCfg.tarifa_base)}</div>
-              <div style={{ fontSize: 14, color: "#9AAAD4", marginBottom: 40 }}>Por hora</div>
-              <div style={{ fontSize: 13, color: "#6677AA", marginBottom: 40, lineHeight: 1.7 }}>
-                Horario pico ({landingCfg.hora_pico_inicio}–{landingCfg.hora_pico_fin}hs):<br/><strong style={{color:"#D85A30"}}>{gs(landingCfg.tarifa_pico)}</strong>
-              </div>
-              <button onClick={() => window.location.href="/reservar"}
-                style={{ width:"100%", padding:"16px 32px", border:"1px solid rgba(216,90,48,0.4)", borderRadius:6, background:"transparent", color:"#D85A30", fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", transition:"all 0.3s" }}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.6)"}}
-                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(216,90,48,0.4)"}}>
-                Reservar Ahora
-              </button>
-            </div>
-            {/* Abono mensual */}
-            <div style={{ padding: "60px 48px", border: "2px solid #D85A30", borderRadius: 8, background: "rgba(216,90,48,0.08)", backdropFilter: "blur(10px)", position:"relative" }}>
-              <div style={{ position:"absolute", top:24, right:24, fontSize:20 }}>✨</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#D85A30", letterSpacing: 2, textTransform: "uppercase", marginBottom: 28 }}>Abono mensual</div>
-              {planes.length > 0 ? (<>
-                <div style={{ fontSize: 64, fontWeight: 700, color: "#E8EEFF", lineHeight: 1, marginBottom: 8 }}>{gs(planes[0].precio)}</div>
-                <div style={{ fontSize: 14, color: "#9AAAD4", marginBottom: 8 }}>/mes</div>
-                <div style={{ fontSize: 13, color: "#9AAAD4", marginBottom: 28, fontWeight: 600 }}>{planes[0].horas_semana} horas por semana</div>
-                <div style={{ fontSize: 13, color: "#D85A30", fontWeight: 700, marginBottom: 40, paddingTop: 16, borderTop: "1px solid rgba(216,90,48,0.2)" }}>
-                  Ahorrás {gs(planes[0].horas_semana * 4 * landingCfg.tarifa_base - planes[0].precio)}/mes
-                </div>
-              </>) : (<>
-                <div style={{ fontSize: 48, fontWeight: 700, color: "#E8EEFF", lineHeight: 1, marginBottom: 8 }}>Personalizado</div>
-                <div style={{ fontSize: 14, color: "#9AAAD4", marginBottom: 40 }}>Consulta nuestros planes a medida</div>
-              </>)}
-              <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
-                style={{ width:"100%", padding:"16px 32px", border:"1px solid #D85A30", borderRadius:6, background:"#D85A30", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", transition:"all 0.3s" }}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.8)";e.currentTarget.style.boxShadow="0 12px 30px rgba(216,90,48,0.3)"}}
-                onMouseLeave={e=>{e.currentTarget.style.background="#D85A30";e.currentTarget.style.boxShadow="none"}}>
-                Quiero Mi Abono
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* UBICACIÓN */}
-      <section id="ubicacion" style={{ background: "rgba(13,20,35,0.4)" }}>
+      <section id="ubicacion" style={{ background: "#0A1428" }}>
         <div style={st.section}>
-          <div style={{ marginBottom: 80 }}>
-            <h2 style={st.sectionTitle}>Ubicación</h2>
-            <div style={st.divider} />
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 60, alignItems:"center" }}>
-            <div>
-              <div style={{ fontSize: 16, color: "#9AAAD4", lineHeight: 2.2, marginBottom: 48 }}>
-                <div style={{ fontWeight: 700, color: "#E8EEFF", marginBottom: 8 }}>Tavapy, Alto Paraná</div>
-                <div>Paraguay</div>
-                <div style={{ marginTop: 20 }}>
-                  <div style={{ fontWeight: 700, color: "#E8EEFF", marginBottom: 8 }}>Horarios</div>
-                  <div>Lunes a Viernes · 18:00 a 24:00</div>
-                  <div>Sábados y Domingos · 10:00 a 24:00</div>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>Dónde estamos</h2>
+          <p style={st.sectionSub}>Encontranos en Tavapy, Alto Paraná. Fácil acceso desde Ciudad del Este y alrededores.</p>
+          <div style={st.mapBox}>
+            <iframe
+              title="Ubicación DEXON PADEL"
+              style={st.mapFrame}
+              src="https://maps.google.com/maps?q=Tavapy,+Alto+Paraná,+Paraguay&output=embed&z=14"
+              allowFullScreen=""
+              loading="lazy"
+            />
+            <div style={st.mapInfo}>
+              <div style={st.mapInfoRow}>
+                <span style={st.mapInfoIcon}>📍</span>
+                <div style={st.mapInfoText}>
+                  <span style={st.mapInfoLabel}>Dirección</span>
+                  Tavapy, Alto Paraná, Paraguay
                 </div>
               </div>
-              <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer"
-                style={{ display:"inline-block", padding:"14px 32px", background:"transparent", border:"1px solid rgba(216,90,48,0.4)", borderRadius:6, color:"#D85A30", fontSize:13, fontWeight:700, textDecoration:"none", letterSpacing:1, textTransform:"uppercase", cursor:"pointer", transition:"all 0.3s" }}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.6)"}}
-                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(216,90,48,0.4)"}}>
-                Contactar
-              </a>
-            </div>
-            <div style={{height: isMobile ? 300 : 380, borderRadius:8, overflow:"hidden", border:"1px solid rgba(216,90,48,0.2)"}}>
-              <iframe
-                title="Ubicación DEXON PADEL"
-                style={{ width:"100%", height:"100%", border:"none" }}
-                src="https://maps.google.com/maps?q=Tavapy,+Alto+Paraná,+Paraguay&output=embed&z=14"
-                allowFullScreen=""
-                loading="lazy"
-              />
+              <div style={st.mapInfoRow}>
+                <span style={st.mapInfoIcon}>🕐</span>
+                <div style={st.mapInfoText}>
+                  <span style={st.mapInfoLabel}>Horarios</span>
+                  Lunes a Viernes: 18:00 – 24:00 · Sábados y Domingos: 10:00 – 24:00
+                </div>
+              </div>
+              <div style={st.mapInfoRow}>
+                <span style={st.mapInfoIcon}>📞</span>
+                <div style={st.mapInfoText}>
+                  <span style={st.mapInfoLabel}>Teléfono / WhatsApp</span>
+                  <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer" style={{ color: "#25D366", textDecoration: "none", fontWeight: 600 }}>
+                    +595 994 952 201
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section id="contacto" style={{ padding: isMobile ? "120px 24px" : "160px 60px", textAlign:"center" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <h2 style={{ fontSize: isMobile ? 44 : 72, fontWeight: 700, color: "#E8EEFF", marginBottom: 32, lineHeight: 1.1, letterSpacing: -1.5 }}>
-            Listo para<br /><span style={{color:"#D85A30"}}>jugar</span>
-          </h2>
-          <p style={{ fontSize: 18, color: "#9AAAD4", marginBottom: 48, lineHeight: 1.8 }}>
-            Reserva tu cancha hoy mismo o consulta sobre nuestros planes mensuales.
-          </p>
-          <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap: 20, justifyContent:"center" }}>
-            <button onClick={() => window.location.href="/reservar"}
-              style={{ padding:"16px 48px", background:"#D85A30", color:"#fff", border:"none", borderRadius:6, fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", boxShadow:"0 20px 50px rgba(216,90,48,0.15)", transition:"all 0.3s" }}
-              onMouseEnter={e=>e.currentTarget.style.boxShadow="0 24px 60px rgba(216,90,48,0.25)"}
-              onMouseLeave={e=>e.currentTarget.style.boxShadow="0 20px 50px rgba(216,90,48,0.15)"}>
-              Reservar Cancha
-            </button>
-            <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
-              style={{ padding:"16px 48px", background:"transparent", color:"#D85A30", border:"1px solid rgba(216,90,48,0.4)", borderRadius:6, fontSize:13, fontWeight:700, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", transition:"all 0.3s" }}
-              onMouseEnter={e=>{e.currentTarget.style.background="rgba(216,90,48,0.1)";e.currentTarget.style.borderColor="rgba(216,90,48,0.6)"}}
-              onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(216,90,48,0.4)"}}>
-              Consultar Abono
-            </button>
+      {/* CONTACTO */}
+      <section id="contacto">
+        <div style={st.section}>
+          <div style={st.divider} />
+          <h2 style={st.sectionTitle}>Contacto</h2>
+          <p style={st.sectionSub}>¿Tenés dudas o querés coordinar algo especial? Escribinos y te respondemos rápido.</p>
+          <div style={st.contactGrid}>
+            <div style={st.contactCard}>
+              <div style={{ fontSize: 28, marginBottom: 16 }}>💬</div>
+              <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>WhatsApp</div>
+              <div style={{ fontSize: 14, color: "#9AAAD4", lineHeight: 1.7, marginBottom: 4 }}>
+                La forma más rápida de contactarnos. Respondemos en minutos.
+              </div>
+              <div style={{ fontSize: 14, color: "#9AAAD4" }}>Consultas · Reservas · Información general</div>
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <a href={`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20PADEL%2C%20quería%20consultar...`} target="_blank" rel="noreferrer" style={st.waBtn}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                  Escribir por WhatsApp
+                </a>
+              </div>
+            </div>
+            <div style={st.contactCard}>
+              <div style={{ fontSize: 28, marginBottom: 16 }}>🕐</div>
+              <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>Horarios de atención</div>
+              {[
+                { dia: "Lunes a Viernes", hrs: "18:00 – 24:00" },
+                { dia: "Sábados", hrs: "10:00 – 24:00" },
+                { dia: "Domingos", hrs: "10:00 – 24:00" },
+              ].map((h, i) => (
+                <div key={i} style={st.scheduleRow}>
+                  <span style={st.scheduleDay}>{h.dia}</span>
+                  <span style={st.scheduleHrs}>{h.hrs}</span>
+                </div>
+              ))}
+              <button
+                style={{
+                  width: "100%",
+                  marginTop: 20,
+                  padding: "14px 20px",
+                  border: "none",
+                  borderRadius: 12,
+                  background: "#D85A30",
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxSizing: "border-box",
+                  display: "block",
+                }}
+                onClick={() => window.location.href = "/reservar"}
+              >
+                Reservar cancha →
+              </button>
+            </div>
           </div>
         </div>
       </section>
-
-      {/* BOTÓN FLOTANTE MOBILE */}
-      {isMobile && (
-        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, padding:"12px 16px", background:"rgba(8,16,31,0.97)", borderTop:"1px solid #1E3070", display:"flex", gap:10 }}>
-          <button onClick={() => window.open(`https://wa.me/${ADMIN_TEL}?text=Hola%20DEXON%20Padel!%20Quiero%20información%20sobre%20el%20abono%20mensual%20🎾`, "_blank")}
-            style={{ flex:1, padding:"13px", border:"1.5px solid #D85A30", borderRadius:12, background:"transparent", color:"#D85A30", fontSize:14, fontWeight:700, cursor:"pointer" }}>
-            Ver abono
-          </button>
-          <button onClick={() => window.location.href="/reservar"}
-            style={{ flex:2, padding:"13px", border:"none", borderRadius:12, background:"#D85A30", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(216,90,48,0.4)" }}>
-            Reservar cancha →
-          </button>
-        </div>
-      )}
 
       {/* FOOTER */}
-      <footer style={{ ...st.footer, paddingBottom: isMobile ? 90 : st.footer.paddingBottom }}>
+      <footer style={st.footer}>
         <div style={st.footerLogo}>DEXON PADEL</div>
         <div style={st.footerSub}>Tavapy · Alto Paraná · Paraguay</div>
         <div style={st.footerLinks}>
           <span style={st.footerLink} onClick={() => scrollTo("nosotros")}>Quiénes somos</span>
           <span style={st.footerLink} onClick={() => scrollTo("cancha")}>La cancha</span>
-          <span style={st.footerLink} onClick={() => scrollTo("precios")}>Precios</span>
           <span style={st.footerLink} onClick={() => scrollTo("ubicacion")}>Ubicación</span>
           <span style={st.footerLink} onClick={() => scrollTo("contacto")}>Contacto</span>
           <span style={{ ...st.footerLink, color: "#D85A30" }} onClick={onAdmin}>Administración</span>
@@ -1098,7 +1070,7 @@ const ResultadoPago = () => {
   }, []);
 
   const wrap = {minHeight:"100vh",background:BR.dark,color:TX.p,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",padding:20};
-  const card = {background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"36px 24px",textAlign:"center",maxWidth:420,width:"100%"};
+  const card = {background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"36px 24px",textAlign:"center",maxWidth:420,width:"100%"};
   const icon = {width:72,height:72,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 20px"};
 
   if (estado === "verificando") return (
@@ -1116,12 +1088,12 @@ const ResultadoPago = () => {
       <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>
         Tu reserva está confirmada. Te esperamos en <strong style={{color:TX.p}}>DEXON Padel</strong>.
       </div>
-      <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:16,marginBottom:20,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)",fontSize:13,color:TX.s,lineHeight:2}}>
+      <div style={{background:"#0D1830",borderRadius:12,padding:16,marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A",fontSize:13,color:TX.s,lineHeight:2}}>
         <div>💰 Monto: <strong style={{color:TX.p}}>{gs(parseFloat(datos.monto))}</strong></div>
         <div>💳 Método: <strong style={{color:TX.p}}>{datos.forma_pago}</strong></div>
         <div>🧾 Comprobante: <strong style={{color:TX.p}}>{datos.numero_pedido}</strong></div>
       </div>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver al portal
       </button>
     </div></div>
@@ -1135,13 +1107,13 @@ const ResultadoPago = () => {
         Tu pago aún no fue confirmado. Si elegiste boca de cobranza, acercate al local indicado.
       </div>
       {datos?.mensaje_resultado_pago && (
-        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:12,padding:14,marginBottom:20,textAlign:"left",border:"1px solid rgba(216,90,48,0.1)",fontSize:13,color:TX.s,lineHeight:1.6}}
+        <div style={{background:"#0D1830",borderRadius:12,padding:14,marginBottom:20,textAlign:"left",border:"1px solid #1A2B5A",fontSize:13,color:TX.s,lineHeight:1.6}}
           dangerouslySetInnerHTML={{__html: datos.mensaje_resultado_pago.descripcion}}/>
       )}
-      <button onClick={()=>window.location.reload()} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",marginBottom:8,fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.reload()} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",marginBottom:8,fontFamily:"var(--font-sans)"}}>
         Verificar de nuevo
       </button>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver al portal
       </button>
     </div></div>
@@ -1152,7 +1124,7 @@ const ResultadoPago = () => {
       <div style={{...icon,background:"#3A1010",border:"2px solid #A32D2D"}}>×</div>
       <div style={{fontSize:20,fontWeight:700,marginBottom:8,color:"#F58282"}}>Pago cancelado</div>
       <div style={{fontSize:14,color:TX.s,marginBottom:20,lineHeight:1.7}}>El pago fue cancelado. Podés intentar nuevamente.</div>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:"#D85A30",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:14,background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver a reservar
       </button>
     </div></div>
@@ -1166,7 +1138,7 @@ const ResultadoPago = () => {
       <button onClick={()=>window.open(`https://wa.me/${ADMIN_TEL}`,"_blank")} style={{width:"100%",padding:14,background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",marginBottom:10,fontFamily:"var(--font-sans)"}}>
         📱 Contactar por WhatsApp
       </button>
-      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid rgba(216,90,48,0.15)",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+      <button onClick={()=>window.location.href="/reservar"} style={{width:"100%",padding:12,background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
         Volver al portal
       </button>
     </div></div>
@@ -1252,19 +1224,12 @@ export default function App() {
     return()=>{clearTimeout(timer);evs.forEach(e=>window.removeEventListener(e,reset));};
   },[session]);
 
-  // Auto-refresh cada 10 segundos — pausa si estás en el tab WA para no interrumpir conversación
-  const tabRef = useRef(tab);
-  useEffect(()=>{ tabRef.current = tab; },[tab]);
+  // Auto-refresh cada 10 segundos
   useEffect(()=>{
     if(!tk) return;
-    const interval = setInterval(()=>{ if(tabRef.current !== "whatsapp") load(); },10*1000);
+    const interval = setInterval(()=>{load();},10*1000);
     return ()=>clearInterval(interval);
   },[tk,load]);
-
-  // Estado WA hoisted aquí para que sobreviva el auto-refresh del padre
-  const [waContacto, setWaContacto] = useState(null);
-  const [waMsgs,     setWaMsgs]     = useState([]);
-  const [waLoaded,   setWaLoaded]   = useState(false);
 
 
   const doLogout = async()=>{
@@ -1339,29 +1304,7 @@ export default function App() {
 
   const confirmarTurno = async t=>{
     setSaving(true);
-    try{
-      const saldo=t.precio-(t.sena||0);
-      await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);
-      if(saldo>0) await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
-      // Notificar al cliente por WhatsApp
-      const cliente=cById(t.cliente_id);
-      if(cliente?.telefono){
-        fetch("/api/whatsapp/enviar",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            tipo:"pago_confirmado",
-            nombre:cliente.nombre,
-            telefono:cliente.telefono,
-            fecha:t.fecha,
-            horarios:`${t.hora}:00`,
-            monto:gs(t.precio),
-            forma_pago:t.metodo_pago||"transferencia",
-          })
-        }).catch(()=>{});
-      }
-      setDlg(null);await load();
-    }
+    try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);setDlg(null);await load();}
     catch(e){alert(e.message);}
     setSaving(false);
   };
@@ -1393,7 +1336,6 @@ export default function App() {
   const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
   const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="salida"&&item.precio_venta>0)await db.post("caja",{descripcion:`Venta - ${item.nombre} x${form.cantidad_mov}`,tipo:"ingreso",categoria:"stock",monto:item.precio_venta*Number(form.cantidad_mov),fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
   const guardarConfig = async()=>{setSaving(true);try{await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin)},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
-  const guardarConfigWA = async(campos)=>{setSaving(true);try{await db.patch("config",cfg.id,campos,tk);await load();}catch(e){alert(e.message);}setSaving(false);};
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
@@ -1422,7 +1364,7 @@ export default function App() {
       {clima&&<div style={{...card,marginBottom:16}}>
         <div style={{fontWeight:500,fontSize:13,marginBottom:12,color:TX.s}}>Pronóstico — Alto Paraná</div>
         <div style={{display:"flex",gap:8,overflowX:"auto"}}>
-          {clima.map((d,i)=>{const esH=d.fecha===h;const ll=d.lluvia>=60;return<div key={i} style={{flex:1,minWidth:70,textAlign:"center",padding:"10px 8px",borderRadius:10,background:esH?"#1A3570":ll?"#0A1A3A":"rgba(13,20,35,0.4)",border:esH?`1px solid ${BR.coral}`:"1px solid rgba(216,90,48,0.1)"}}>
+          {clima.map((d,i)=>{const esH=d.fecha===h;const ll=d.lluvia>=60;return<div key={i} style={{flex:1,minWidth:70,textAlign:"center",padding:"10px 8px",borderRadius:10,background:esH?"#1A3570":ll?"#0A1A3A":"#0D1830",border:esH?`1px solid ${BR.coral}`:"1px solid #1A2B5A"}}>
             <div style={{fontSize:11,color:TX.s,marginBottom:4}}>{esH?"Hoy":DIAS[new Date(d.fecha+"T12:00:00").getDay()]}</div>
             <div style={{fontSize:22,marginBottom:4}}>{climaIcon(d.code)}</div>
             <div style={{fontSize:14,fontWeight:500,color:TX.p}}>{d.max}°</div>
@@ -1438,7 +1380,7 @@ export default function App() {
       <div style={card}>
         <div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Turnos de hoy</div>
         {tHoy.length===0?<Empty t="Sin turnos para hoy"/>:<div style={{display:"grid",gap:8}}>
-          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"rgba(13,20,35,0.4)",border:"1px solid rgba(216,90,48,0.1)",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
+          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"#0D1830",border:"1px solid #1A2B5A",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
             <div style={{fontSize:16,fontWeight:500,color:BR.coral,minWidth:44}}>{t.hora}:00</div>
             <Avatar nombre={c?.nombre} size={36}/>
             <div style={{flex:1,minWidth:0}}><div style={{fontWeight:500,fontSize:13,color:TX.p}}>{c?.nombre||"?"}</div><div style={{fontSize:11,color:TX.s,marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}{ins&&<span>· {ins.nombre}</span>}{t.sena>0&&<span style={{color:BR.ok}}>· Seña: {gs(t.sena)}</span>}</div></div>
@@ -1464,7 +1406,7 @@ export default function App() {
         <span style={{fontSize:12,color:TX.s,background:"#1E3070",padding:"4px 10px",borderRadius:6}}>{pendientes.length} pendiente{pendientes.length!==1?"s":""}</span>
       </div>
       {pendientes.length===0?<Empty t="Sin reservas pendientes"/>:<div style={{display:"grid",gap:8}}>
-        {pendientes.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);const fechaStr=fmtFechaLegible(t.fecha);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,background:"rgba(13,20,35,0.4)",border:"1px solid #2A5F9F",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
+        {pendientes.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);const fechaStr=fmtFechaLegible(t.fecha);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,background:"#0D1830",border:"1px solid #2A5F9F",cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",minWidth:50,gap:2}}>
             <div style={{fontSize:12,color:TX.s}}>📅</div>
             <div style={{fontSize:13,fontWeight:600,color:BR.coral}}>{fechaStr.split(" ")[0]}</div>
@@ -1520,15 +1462,15 @@ export default function App() {
         </div>
       </div>
       <div style={{overflowX:"auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:`52px repeat(7,1fr)`,gap:1,background:"rgba(216,90,48,0.1)",borderRadius:10,overflow:"hidden",minWidth:600}}>
-          <div style={{background:"rgba(13,20,35,0.4)"}}/>
-          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?"#1A3570":"rgba(13,20,35,0.4)",padding:"10px 4px",textAlign:"center"}}>
+        <div style={{display:"grid",gridTemplateColumns:`52px repeat(7,1fr)`,gap:1,background:"#1A2B5A",borderRadius:10,overflow:"hidden",minWidth:600}}>
+          <div style={{background:"#0D1830"}}/>
+          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?"#1A3570":"#0D1830",padding:"10px 4px",textAlign:"center"}}>
             <div style={{fontSize:11,fontWeight:500,color:isH?BR.coral:TX.s}}>{DIAS[d.getDay()]}</div>
             <div style={{fontSize:16,fontWeight:500,color:isH?BR.coral:TX.p,margin:"2px 0"}}>{d.getDate()}</div>
             {cnt>0?<div style={{fontSize:10,color:BR.coral,fontWeight:500}}>{cnt}t</div>:<div style={{height:14}}/>}
           </div>;})}
           {horas.map(h=><>
-            <div key={`t${h}`} style={{background:"rgba(13,20,35,0.4)",padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:11,color:TX.t,minHeight:40}}>{h}:00</div>
+            <div key={`t${h}`} style={{background:"#0D1830",padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:11,color:TX.t,minHeight:40}}>{h}:00</div>
             {dias.map((d,di)=>{const fs=fmtD(d);const t=all.find(t=>t.fecha===fs&&t.hora===h&&t.estado!=="cancelado");const c=t?cById(t.cliente_id):null;const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;return<div key={`${h}-${di}`} onClick={()=>t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:h,tipo:"ocasional"})} style={{background:t?(t.tipo==="abono"?"#1A0A3A":t.tipo==="clase"?"#0A1A3A":"#3A1A0A"):(isPico?"rgba(216,90,48,0.08)":"#111E40"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",minHeight:40}}>
               {t&&<span style={{fontSize:11,fontWeight:500,color:t.tipo==="abono"?"#B8A0F5":t.tipo==="clase"?"#7EAAFF":"#F5A882",background:t.tipo==="abono"?"#2A1050":t.tipo==="clase"?"#0A1A5A":"#5A2A0A",borderRadius:5,padding:"2px 7px",maxWidth:"92%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c?.nombre?.split(" ")[0]||"?"}</span>}
             </div>;})}
@@ -1622,7 +1564,7 @@ export default function App() {
       </div>
       
       {/* Filtros */}
-      <div style={{background:"rgba(13,20,35,0.3)",borderRadius:8,border:"1px solid rgba(216,90,48,0.15)",padding:"14px 18px",marginBottom:14}}>
+      <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"14px 18px",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"flex-end"}}>
           <div>
             <label style={lbl}>Desde</label>
@@ -1646,13 +1588,13 @@ export default function App() {
       
       <div style={{overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse",borderRadius:10,overflow:"hidden"}}>
-          <thead><tr>{["Fecha","Descripción","Categoría","Monto",""].map((h,i)=><th key={i} style={{textAlign:i>=3?"right":"left",padding:"10px 14px",fontSize:12,fontWeight:500,color:TX.s,borderBottom:"1px solid rgba(216,90,48,0.1)",background:"rgba(13,20,35,0.4)"}}>{h}</th>)}</tr></thead>
-          <tbody>{cajaFiltrada.map(m=><tr key={m.id} style={{background:"rgba(13,20,35,0.3)"}}>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",color:TX.s}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",color:TX.p}}>{m.descripcion}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)"}}><Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge></td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",textAlign:"right",fontWeight:500,color:m.tipo==="ingreso"?"#7ADDA8":"#F58282"}}>{m.tipo==="egreso"?"- ":""}{gs(m.monto)}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid rgba(216,90,48,0.1)",textAlign:"right"}}><Btn sm v="danger" onClick={()=>setDlg({type:"eliminarMov",id:m.id,desc:m.descripcion})}>×</Btn></td>
+          <thead><tr>{["Fecha","Descripción","Categoría","Monto",""].map((h,i)=><th key={i} style={{textAlign:i>=3?"right":"left",padding:"10px 14px",fontSize:12,fontWeight:500,color:TX.s,borderBottom:"1px solid #1E3070",background:"#0D1830"}}>{h}</th>)}</tr></thead>
+          <tbody>{cajaFiltrada.map(m=><tr key={m.id} style={{background:"#111E40"}}>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",color:TX.s}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",color:TX.p}}>{m.descripcion}</td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A"}}><Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge></td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",textAlign:"right",fontWeight:500,color:m.tipo==="ingreso"?"#7ADDA8":"#F58282"}}>{m.tipo==="egreso"?"- ":""}{gs(m.monto)}</td>
+            <td style={{padding:"10px 14px",fontSize:13,borderBottom:"1px solid #1A2B5A",textAlign:"right"}}><Btn sm v="danger" onClick={()=>setDlg({type:"eliminarMov",id:m.id,desc:m.descripcion})}>×</Btn></td>
           </tr>)}</tbody>
         </table>
       </div>
@@ -1698,80 +1640,15 @@ export default function App() {
         <div style={{fontWeight:500,marginBottom:16,fontSize:14,color:TX.p}}>Ingresos últimos 7 días</div>
         <div style={{display:"flex",alignItems:"flex-end",gap:6,height:100}}>
           {porDia.map((d,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-            <div style={{width:"100%",background:d.v>0?BR.coral:"rgba(216,90,48,0.1)",borderRadius:"4px 4px 0 0",height:Math.max(d.v/maxV*80,4)}}/>
+            <div style={{width:"100%",background:d.v>0?BR.coral:"#1A2B5A",borderRadius:"4px 4px 0 0",height:Math.max(d.v/maxV*80,4)}}/>
             <div style={{fontSize:10,color:TX.t}}>{d.f.slice(8)}/{d.f.slice(5,7)}</div>
           </div>)}
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
-        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Horarios pico</div>{hPico.map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid rgba(216,90,48,0.1)"}}><span style={{fontSize:13,minWidth:48,color:TX.p}}>{x.h}:00</span><div style={{flex:1,height:6,background:"rgba(216,90,48,0.1)",borderRadius:3,overflow:"hidden"}}><div style={{width:`${x.n/maxH*100}%`,height:"100%",background:BR.coral,borderRadius:3}}/></div><span style={{fontSize:12,color:TX.s,minWidth:16}}>{x.n}</span></div>)}</div>
-        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Top clientes</div>{topC.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid rgba(216,90,48,0.1)"}}><Avatar nombre={c.nombre} size={28}/><span style={{flex:1,fontSize:13,color:TX.p}}>{c.nombre}</span><Badge type="info">{c.n} turnos</Badge></div>)}</div>
+        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Horarios pico</div>{hPico.map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #1A2B5A"}}><span style={{fontSize:13,minWidth:48,color:TX.p}}>{x.h}:00</span><div style={{flex:1,height:6,background:"#1A2B5A",borderRadius:3,overflow:"hidden"}}><div style={{width:`${x.n/maxH*100}%`,height:"100%",background:BR.coral,borderRadius:3}}/></div><span style={{fontSize:12,color:TX.s,minWidth:16}}>{x.n}</span></div>)}</div>
+        <div style={card}><div style={{fontWeight:500,marginBottom:14,fontSize:14,color:TX.p}}>Top clientes</div>{topC.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #1A2B5A"}}><Avatar nombre={c.nombre} size={28}/><span style={{flex:1,fontSize:13,color:TX.p}}>{c.nombre}</span><Badge type="info">{c.n} turnos</Badge></div>)}</div>
       </div>
-    </div>;
-  };
-
-  const ConfigWA=()=>{
-    const [vals,setVals]=useState({
-      wa_bienvenida_activo: cfg.wa_bienvenida_activo||false,
-      wa_bienvenida_texto:  cfg.wa_bienvenida_texto||"Hola! 👋 Gracias por escribirnos. ¿En qué podemos ayudarte?",
-      wa_admin_tel:         cfg.wa_admin_tel||"595981086046",
-      wa_recordatorio_activo:   cfg.wa_recordatorio_activo||false,
-      wa_recordatorio_template: cfg.wa_recordatorio_template||"",
-    });
-    const sv=k=>e=>setVals(p=>({...p,[k]:e.target.type==="checkbox"?e.target.checked:e.target.value}));
-    const [guardando,setGuardando]=useState(false);
-    const [ok,setOk]=useState(false);
-    const guardar=async()=>{
-      setGuardando(true);
-      await guardarConfigWA(vals);
-      setGuardando(false);setOk(true);
-      setTimeout(()=>setOk(false),2000);
-    };
-    return <div style={card}>
-      <div style={{fontWeight:500,fontSize:14,color:TX.p,marginBottom:14}}>📱 WhatsApp</div>
-
-      {/* Mensaje de bienvenida */}
-      <div style={{marginBottom:16}}>
-        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
-          <input type="checkbox" checked={vals.wa_bienvenida_activo} onChange={sv("wa_bienvenida_activo")}/>
-          <span style={{fontSize:13,fontWeight:500,color:TX.p}}>Mensaje de bienvenida automático</span>
-        </label>
-        <div style={{fontSize:12,color:TX.t,marginBottom:6}}>Se envía cuando alguien te escribe por primera vez</div>
-        {vals.wa_bienvenida_activo&&<textarea
-          value={vals.wa_bienvenida_texto}
-          onChange={sv("wa_bienvenida_texto")}
-          rows={3}
-          style={{...inp,resize:"vertical",fontSize:13}}
-        />}
-      </div>
-
-      {/* Teléfono de notificación */}
-      <div style={{marginBottom:16}}>
-        <label style={lbl}>Teléfono de notificación al admin</label>
-        <input value={vals.wa_admin_tel} onChange={sv("wa_admin_tel")} placeholder="595981086046" style={{...inp,fontSize:13}}/>
-        <div style={{fontSize:11,color:TX.t,marginTop:4}}>Recibís un aviso cuando llega un mensaje nuevo</div>
-      </div>
-
-      {/* Recordatorio automático */}
-      <div style={{marginBottom:16}}>
-        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:8}}>
-          <input type="checkbox" checked={vals.wa_recordatorio_activo} onChange={sv("wa_recordatorio_activo")}/>
-          <span style={{fontSize:13,fontWeight:500,color:TX.p}}>Recordatorio automático 3hs antes del turno</span>
-        </label>
-        <div style={{fontSize:12,color:TX.t,marginBottom:6}}>Requiere template aprobado en Meta. Se ejecuta cada hora vía cron.</div>
-        {vals.wa_recordatorio_activo&&<div>
-          <label style={lbl}>Nombre del template en Meta</label>
-          <input value={vals.wa_recordatorio_template} onChange={sv("wa_recordatorio_template")} placeholder="ej: dexon_recordatorio_turno" style={{...inp,fontSize:13}}/>
-          <div style={{fontSize:11,color:TX.t,marginTop:4}}>
-            El template debe tener: {'{{1}}'} nombre, {'{{2}}'} fecha, {'{{3}}'} hora
-          </div>
-        </div>}
-      </div>
-
-      <button onClick={guardar} disabled={guardando}
-        style={{padding:"9px 20px",borderRadius:8,fontSize:13,cursor:"pointer",background:ok?"#1A4A1A":"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,opacity:guardando?0.6:1}}>
-        {guardando?"Guardando...":(ok?"✓ Guardado":"Guardar WhatsApp")}
-      </button>
     </div>;
   };
 
@@ -1796,7 +1673,7 @@ export default function App() {
         {DIAS_FULL.map((dia,i)=>{
           const horarios = cfg.horarios_por_dia?JSON.parse(cfg.horarios_por_dia||"{}"):{}||{};
           const h = horarios[i]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
-          return <div key={i} style={{padding:10,background:"rgba(13,20,35,0.4)",borderRadius:8,borderLeft:`3px solid ${BR.coral}`,fontSize:12}}>
+          return <div key={i} style={{padding:10,background:"#0D1830",borderRadius:8,borderLeft:`3px solid ${BR.coral}`,fontSize:12}}>
             <div style={{fontWeight:500,color:TX.p,marginBottom:4}}>{dia}</div>
             <div style={{color:TX.s}}>{h.inicio}:00 - {h.fin}:00</div>
           </div>;
@@ -1804,333 +1681,150 @@ export default function App() {
       </div>
     </div>
     
-    {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:500,marginBottom:12,fontSize:14,color:TX.p}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgba(216,90,48,0.1)",fontSize:13}}><span style={{fontWeight:500,color:TX.p}}>{i.nombre}</span><span style={{color:TX.s}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
-    <div style={{...card,marginBottom:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(216,90,48,0.1)",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
-
-    <ConfigWA/>
+    {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:500,marginBottom:12,fontSize:14,color:TX.p}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><span style={{fontWeight:500,color:TX.p}}>{i.nombre}</span><span style={{color:TX.s}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
+    <div style={card}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3070",fontSize:13}}><div><span style={{fontWeight:500,color:TX.p}}>{p.nombre}</span><span style={{color:TX.s,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:500,color:TX.p}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
   </div>;
 
-  const PREDEFINIDOS=[
-    "Hola! 👋 ¿En qué podemos ayudarte?",
-    "Tu reserva está confirmada ✓",
-    "Recordamos que tenés turno mañana 📅",
-    "Por favor envianos el comprobante de pago 📸",
-    "Gracias por comunicarte con DEXON Padel 🎾",
-    "El horario que pediste ya está disponible, ¿lo reservamos?",
-  ];
-
   const WhatsApp=()=>{
-    // Estado hoisted al padre (waContacto, waMsgs, waLoaded) — sobrevive al auto-refresh
-    const [texto,setTexto]=useState("");
-    const [enviando,setEnviando]=useState(false);
-    const [imagenPrevia,setImagenPrevia]=useState(null);
-    const [subiendoImg,setSubiendoImg]=useState(false);
-    const [confirmElim,setConfirmElim]=useState(false);
-    const [busqueda,setBusqueda]=useState("");
-    const [verReservas,setVerReservas]=useState(false);
-    const [nuevaConv,setNuevaConv]=useState(false);
-    const [ncTel,setNcTel]=useState("");
-    const [ncCliente,setNcCliente]=useState("");
-    const [ncMsg,setNcMsg]=useState("");
-    const [ncEnviando,setNcEnviando]=useState(false);
-    const hiloRef=useRef(null);
-    const fileRef=useRef(null);
+    const [msgs,setMsgs]=useState([]);
+    const [loadingMsgs,setLoadingMsgs]=useState(true);
+    const [error,setError]=useState(null);
+    const [soloNoLeidos,setSoloNoLeidos]=useState(false);
+    const [respuestas,setRespuestas]=useState({});
+    const [abierto,setAbierto]=useState(null);
 
-    const cargar=useCallback(async(silencioso=false)=>{
-      if(!silencioso)setWaLoaded(false);
+    const cargar=useCallback(async()=>{
+      setLoadingMsgs(true);setError(null);
       try{
-        const r=await fetch("/api/whatsapp/mensajes?limit=500");
-        if(r.ok)setWaMsgs(await r.json());
-      }catch{}
-      finally{setWaLoaded(true);}
-    },[]);
+        const r=await fetch(`/api/whatsapp/mensajes?limit=100${soloNoLeidos?"&solo_no_leidos=true":""}`);
+        if(!r.ok)throw new Error(await r.text());
+        setMsgs(await r.json());
+      }catch(e){setError(e.message);}
+      finally{setLoadingMsgs(false);}
+    },[soloNoLeidos]);
 
-    // Carga inicial y polling cada 30s (sin perder el contacto seleccionado)
-    useEffect(()=>{
-      if(!waLoaded)cargar();
-      const iv=setInterval(()=>cargar(true),30*1000);
-      return ()=>clearInterval(iv);
-    },[cargar,waLoaded]);
+    useEffect(()=>{cargar();},[cargar]);
 
-    // Auto-scroll al fondo cuando llegan mensajes nuevos
-    useEffect(()=>{
-      if(hiloRef.current)hiloRef.current.scrollTop=hiloRef.current.scrollHeight;
-    },[waMsgs,waContacto]);
+    const [enviando,setEnviando]=useState({});
+    const [enviado,setEnviado]=useState({});
 
-    // Agrupar por contacto — nombre sólo de mensajes entrantes para no corromperse con "DEXON"
-    const contactos=useMemo(()=>{
-      const map={};
-      [...waMsgs].sort((a,b)=>a.created_at.localeCompare(b.created_at)).forEach(m=>{
-        if(!map[m.de])map[m.de]={de:m.de,nombre:null,msgs:[],noLeidos:0};
-        map[m.de].msgs.push(m);
-        if(m.direccion!=="saliente"&&m.nombre&&m.nombre!=="DEXON")map[m.de].nombre=m.nombre;
-        if(!m.leido&&m.direccion!=="saliente")map[m.de].noLeidos++;
-      });
-      return Object.values(map).sort((a,b)=>{
-        const la=a.msgs[a.msgs.length-1]?.created_at||"";
-        const lb=b.msgs[b.msgs.length-1]?.created_at||"";
-        return lb.localeCompare(la);
-      });
-    },[waMsgs]);
-
-    const clienteDeContacto=(de)=>{
-      const tel=(de||"").replace(/\D/g,"");
-      return clientes.find(c=>{
-        const ct=(c.telefono||"").replace(/\D/g,"");
-        return ct===tel||ct==="595"+tel||tel==="595"+ct||ct.endsWith(tel)||tel.endsWith(ct);
-      });
+    const marcarLeido=async(ids)=>{
+      await fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
+      setMsgs(p=>p.map(m=>ids.includes(m.id)?{...m,leido:true}:m));
     };
 
-    const marcarLeidos=(de)=>{
-      const ids=waMsgs.filter(m=>m.de===de&&!m.leido&&m.direccion!=="saliente").map(m=>m.id);
-      if(!ids.length)return;
-      fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
-      setWaMsgs(p=>p.map(m=>m.de===de?{...m,leido:true}:m));
-    };
-
-    const seleccionar=(de)=>{setWaContacto(de);setTexto("");setImagenPrevia(null);setConfirmElim(false);marcarLeidos(de);};
-
-    const enviar=async()=>{
-      if((!texto.trim()&&!imagenPrevia)||enviando)return;
-      setEnviando(true);
+    const enviarRespuesta=async(id,tel,texto)=>{
+      if(!texto?.trim())return;
+      setEnviando(p=>({...p,[id]:true}));
       try{
-        let body={telefono:waContacto,mensaje:texto.trim()||""};
-        if(imagenPrevia){
-          setSubiendoImg(true);
-          const upRes=await fetch("/api/whatsapp/subir-media",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:imagenPrevia.base64,mime:imagenPrevia.mime})});
-          const upData=await upRes.json();
-          if(!upRes.ok)throw new Error(upData.error||"Error subiendo imagen");
-          body={...body,tipo:"imagen",media_id:upData.media_id,caption:texto.trim()||undefined};
-          setSubiendoImg(false);
-        }
-        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:tel,mensaje:texto.trim()})});
         const data=await r.json();
         if(!r.ok)throw new Error(data.error||"Error enviando");
-        setTexto("");setImagenPrevia(null);
-        await cargar(true);
-      }catch(e){alert("Error: "+e.message);}
-      finally{setEnviando(false);setSubiendoImg(false);}
+        setEnviado(p=>({...p,[id]:true}));
+        setRespuestas(p=>({...p,[id]:""}));
+        marcarLeido([id]);
+        setTimeout(()=>{setEnviado(p=>({...p,[id]:false}));setAbierto(null);},1500);
+      }catch(e){
+        alert("Error al enviar: "+e.message);
+      }finally{
+        setEnviando(p=>({...p,[id]:false}));
+      }
     };
 
-    const eliminarConversacion=async()=>{
-      const r=await fetch("/api/whatsapp/mensajes",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({de:waContacto})});
-      if(r.ok){setWaContacto(null);setConfirmElim(false);await cargar(true);}
-      else alert("Error al eliminar");
-    };
-
-    const iniciarConversacion=async()=>{
-      const tel=ncCliente
-        ? (clientes.find(c=>c.id===Number(ncCliente))?.telefono||"")
-        : ncTel;
-      if(!tel.trim()||!ncMsg.trim())return;
-      setNcEnviando(true);
-      try{
-        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:tel.trim(),mensaje:ncMsg.trim()})});
-        const d=await r.json();
-        if(!r.ok)throw new Error(d.error||"Error enviando");
-        setNuevaConv(false);setNcTel("");setNcCliente("");setNcMsg("");
-        await cargar(true);
-        // Abrir la conversación recién iniciada
-        let t=tel.replace(/\D/g,"");
-        if(t.startsWith("0"))t="595"+t.slice(1);
-        if(!t.startsWith("595"))t="595"+t;
-        setWaContacto(t);
-      }catch(e){alert("Error: "+e.message);}
-      finally{setNcEnviando(false);}
-    };
-
-    const onImagen=(e)=>{
-      const file=e.target.files?.[0];
-      if(!file)return;
-      if(file.size>5*1024*1024){alert("La imagen no puede superar 5MB");return;}
-      const reader=new FileReader();
-      reader.onload=ev=>setImagenPrevia({base64:ev.target.result.split(",")[1],mime:file.type,preview:ev.target.result,nombre:file.name});
-      reader.readAsDataURL(file);
-      e.target.value="";
-    };
-
-    const conv=contactos.find(c=>c.de===waContacto);
-    const clienteVinc=waContacto?clienteDeContacto(waContacto):null;
-    const totalNoLeidos=contactos.reduce((a,c)=>a+c.noLeidos,0);
-
-    const Burbuja=({m})=>{
-      const sal=m.direccion==="saliente";
-      const ts=new Date(m.created_at).toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit"});
-      return <div style={{maxWidth:"78%",alignSelf:sal?"flex-end":"flex-start"}}>
-        {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
-          ?<div style={{background:sal?"#1A3A1A":"rgba(13,20,35,0.4)",borderRadius:12,padding:"8px 12px"}}>
-              <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36}}/>
-            </div>
-          :m.tipo==="image"&&m.media_id
-          ?<div style={{background:sal?"#1A3A1A":"rgba(13,20,35,0.4)",borderRadius:12,overflow:"hidden"}}>
-              <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="" style={{maxWidth:220,maxHeight:200,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
-              {m.mensaje&&!["[Imagen]","[Imagen enviada]"].includes(m.mensaje)&&<div style={{fontSize:12,color:TX.s,padding:"4px 10px 8px"}}>{m.mensaje}</div>}
-            </div>
-          :<div style={{background:sal?"#1A3A1A":"rgba(13,20,35,0.4)",borderRadius:12,padding:"8px 12px",fontSize:13,color:TX.p,lineHeight:1.5}}>{m.mensaje}</div>
-        }
-        <div style={{fontSize:10,color:TX.t,marginTop:2,textAlign:sal?"right":"left",padding:"0 4px"}}>{sal?"Vos · ":""}{ts}</div>
-      </div>;
-    };
-
-    if(!waLoaded)return <div style={{textAlign:"center",padding:60,color:TX.s,fontSize:13}}>Cargando...</div>;
-
-    // ── Vista conversación ────────────────────────────────────────────────────
-    if(waContacto&&conv)return <div>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-        <button onClick={()=>setWaContacto(null)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:20,padding:"0 4px",lineHeight:1}}>←</button>
-        <div style={{width:38,height:38,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:600,fontSize:15,color:TX.p}}>{clienteVinc?clienteVinc.nombre:(conv.nombre||conv.de)}</div>
-          {clienteVinc
-            ?<div style={{fontSize:11,color:"#5ABDA8"}}>{conv.de} · {turnos.filter(t=>t.cliente_id===clienteVinc.id).length} reservas</div>
-            :<div style={{fontSize:11,color:TX.t}}>{conv.de}</div>}
-        </div>
-        <Btn sm v="ghost" onClick={()=>cargar(true)}>↻</Btn>
-        {clienteVinc&&<button onClick={()=>setVerReservas(v=>!v)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:verReservas?"#1A2F6B":"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>📅 Reservas</button>}
-        {!confirmElim
-          ?<button onClick={()=>setConfirmElim(true)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"transparent",color:BR.danger,border:`1px solid ${BR.danger}`,fontFamily:"var(--font-sans)"}}>Eliminar</button>
-          :<div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <span style={{fontSize:12,color:TX.s}}>¿Eliminar todo?</span>
-            <button onClick={eliminarConversacion} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:BR.danger,color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600}}>Sí</button>
-            <button onClick={()=>setConfirmElim(false)} style={{padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>No</button>
-          </div>
-        }
-      </div>
-
-      {verReservas&&clienteVinc&&(()=>{
-        const resCliente=turnos.filter(t=>t.cliente_id===clienteVinc.id).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,5);
-        return <div style={{...card,marginBottom:10,padding:"10px 14px"}}>
-          <div style={{fontSize:12,fontWeight:600,color:TX.s,marginBottom:8}}>Últimas reservas de {clienteVinc.nombre}</div>
-          {resCliente.length===0
-            ?<div style={{fontSize:12,color:TX.t}}>Sin reservas</div>
-            :resCliente.map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid rgba(216,90,48,0.1)"}}>
-                <span style={{color:TX.p}}>{t.fecha} {t.hora}:00hs</span>
-                <span style={{color:t.estado==="reservado"?"#5ABDA8":t.estado==="cancelado"?BR.danger:TX.s}}>{t.estado}</span>
-              </div>)
-          }
-        </div>;
-      })()}
-
-      <div ref={hiloRef} style={{...card,padding:12,minHeight:200,maxHeight:380,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
-        {conv.msgs.map(m=><Burbuja key={m.id} m={m}/>)}
-      </div>
-
-      {imagenPrevia&&<div style={{...card,padding:8,marginBottom:8,display:"flex",alignItems:"center",gap:8}}>
-        <img src={imagenPrevia.preview} alt="" style={{height:48,width:48,objectFit:"cover",borderRadius:6}}/>
-        <div style={{flex:1,fontSize:12,color:TX.s}}>{imagenPrevia.nombre}</div>
-        <button onClick={()=>setImagenPrevia(null)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
-      </div>}
-
-      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
-        {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setTexto(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>30?p.slice(0,29)+"…":p}</button>)}
-      </div>
-
-      <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-        <input type="file" accept="image/*" ref={fileRef} style={{display:"none"}} onChange={onImagen}/>
-        <button onClick={()=>fileRef.current?.click()} style={{padding:"9px 11px",borderRadius:8,background:"rgba(13,20,35,0.5)",border:"1px solid #2A3F6B",cursor:"pointer",fontSize:16,color:TX.s,flexShrink:0}} title="Adjuntar imagen">🖼</button>
-        <textarea
-          value={texto}
-          onChange={e=>setTexto(e.target.value)}
-          onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviar();}}
-          placeholder={imagenPrevia?"Pie de foto (opcional)":"Escribí tu mensaje... (Ctrl+Enter)"}
-          rows={2}
-          style={{...inp,resize:"none",flex:1,fontSize:13}}
-          disabled={enviando}
-        />
-        <button onClick={enviar} disabled={enviando||(!texto.trim()&&!imagenPrevia)}
-          style={{padding:"9px 16px",borderRadius:8,fontSize:13,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,flexShrink:0,opacity:(enviando||(!texto.trim()&&!imagenPrevia))?0.5:1}}>
-          {subiendoImg?"Subiendo...":(enviando?"Enviando...":"Enviar")}
-        </button>
-      </div>
-    </div>;
-
-    // ── Vista lista de contactos ──────────────────────────────────────────────
-    // Modal nueva conversación
-    if(nuevaConv)return <div>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-        <button onClick={()=>setNuevaConv(false)} style={{background:"none",border:"none",color:TX.s,cursor:"pointer",fontSize:20,padding:"0 4px",lineHeight:1}}>←</button>
-        <span style={{fontSize:15,fontWeight:600,color:TX.p}}>Nueva conversación</span>
-      </div>
-      <div style={{...card,display:"flex",flexDirection:"column",gap:12}}>
-        <div>
-          <label style={lbl}>Cliente existente</label>
-          <select value={ncCliente} onChange={e=>{setNcCliente(e.target.value);setNcTel("");}} style={{...inp}}>
-            <option value="">Seleccioná un cliente...</option>
-            {clientes.filter(c=>c.telefono).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(c=><option key={c.id} value={c.id}>{c.nombre} — {c.telefono}</option>)}
-          </select>
-        </div>
-        {!ncCliente&&<div>
-          <label style={lbl}>O ingresá un número manualmente</label>
-          <input value={ncTel} onChange={e=>setNcTel(e.target.value)} placeholder="ej: 0981123456" style={inp}/>
-        </div>}
-        <div>
-          <label style={lbl}>Mensaje</label>
-          <textarea value={ncMsg} onChange={e=>setNcMsg(e.target.value)} rows={3} placeholder="Escribí el mensaje..." style={{...inp,resize:"vertical"}}/>
-          <div style={{fontSize:11,color:TX.t,marginTop:4}}>Solo funciona si el destinatario te escribió en las últimas 24hs, o si tenés un template aprobado.</div>
-        </div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {PREDEFINIDOS.map((p,i)=><button key={i} onClick={()=>setNcMsg(p)} style={{padding:"4px 10px",borderRadius:20,fontSize:11,cursor:"pointer",background:"rgba(13,20,35,0.5)",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}>{p.length>28?p.slice(0,27)+"…":p}</button>)}
-        </div>
-        <button onClick={iniciarConversacion} disabled={ncEnviando||(!ncTel.trim()&&!ncCliente)||!ncMsg.trim()}
-          style={{padding:"10px",borderRadius:8,fontSize:14,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,opacity:(ncEnviando||(!ncTel.trim()&&!ncCliente)||!ncMsg.trim())?0.5:1}}>
-          {ncEnviando?"Enviando...":"Enviar"}
-        </button>
-      </div>
-    </div>;
-
-    const contactosFiltrados=busqueda.trim()
-      ?contactos.filter(c=>{
-          const q=busqueda.toLowerCase();
-          const cli=clienteDeContacto(c.de);
-          return (cli?.nombre||"").toLowerCase().includes(q)||(c.nombre||"").toLowerCase().includes(q)||c.de.includes(q);
-        })
-      :contactos;
+    const noLeidos=msgs.filter(m=>!m.leido).length;
 
     return <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Conversaciones</span>
-          {totalNoLeidos>0&&<span style={{marginLeft:8,background:BR.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{totalNoLeidos}</span>}
+          <span style={{fontSize:16,fontWeight:500,color:TX.p}}>Mensajes WhatsApp</span>
+          {noLeidos>0&&<span style={{marginLeft:10,background:BR.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{noLeidos} nuevos</span>}
         </div>
-        <div style={{display:"flex",gap:6}}>
-          <Btn sm v="primary" onClick={()=>setNuevaConv(true)}>+ Nueva</Btn>
-          <Btn sm v="ghost" onClick={()=>cargar(false)}>↻</Btn>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <label style={{fontSize:12,color:TX.s,cursor:"pointer",display:"flex",gap:6,alignItems:"center"}}>
+            <input type="checkbox" checked={soloNoLeidos} onChange={e=>setSoloNoLeidos(e.target.checked)} style={{cursor:"pointer"}}/>
+            Solo no leídos
+          </label>
+          <Btn sm v="ghost" onClick={cargar}>Actualizar</Btn>
+          {noLeidos>0&&<Btn sm v="primary" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Marcar todos leídos</Btn>}
         </div>
       </div>
-      <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar por nombre o número..." style={{...inp,marginBottom:10}}/>
-      {contactosFiltrados.length===0
-        ?<div style={{...card,textAlign:"center",padding:40}}>
-            <div style={{fontSize:32,marginBottom:10}}>💬</div>
-            <div style={{color:TX.s,fontSize:14}}>{busqueda?"Sin resultados":"No hay mensajes aún"}</div>
-          </div>
-        :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-          {contactosFiltrados.map(c=>{
-            const ultimo=c.msgs[c.msgs.length-1];
-            const ts=new Date(ultimo.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-            const cli=clienteDeContacto(c.de);
-            const nombre=cli?cli.nombre:(c.nombre||c.de);
-            return <div key={c.de} onClick={()=>seleccionar(c.de)}
-              style={{...card,cursor:"pointer",display:"flex",alignItems:"center",gap:12,borderLeft:`3px solid ${c.noLeidos>0?BR.coral:"#1E3070"}`}}
-              onMouseEnter={e=>e.currentTarget.style.background="#152040"}
-              onMouseLeave={e=>e.currentTarget.style.background=card.background}>
-              <div style={{width:40,height:40,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontWeight:600,fontSize:14,color:TX.p}}>{nombre}</div>
-                  <div style={{fontSize:11,color:TX.t,flexShrink:0,marginLeft:8}}>{ts}</div>
-                </div>
-                {cli&&<div style={{fontSize:11,color:"#5ABDA8",marginBottom:2}}>{c.de}</div>}
-                <div style={{fontSize:12,color:TX.s,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ultimo.direccion==="saliente"?"Vos: ":""}{ultimo.mensaje}</div>
-              </div>
-              {c.noLeidos>0&&<div style={{background:BR.coral,color:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0}}>{c.noLeidos}</div>}
-            </div>;
-          })}
+
+      {error&&<div style={{...card,background:BR.dangerL,color:BR.danger,marginBottom:12,fontSize:13}}>{error}</div>}
+
+      {loadingMsgs?<div style={{textAlign:"center",padding:60,color:TX.s,fontSize:13}}>Cargando...</div>
+      :msgs.length===0?<div style={{...card,textAlign:"center",padding:40}}>
+          <div style={{fontSize:32,marginBottom:10}}>💬</div>
+          <div style={{color:TX.s,fontSize:14}}>{soloNoLeidos?"No hay mensajes sin leer":"No hay mensajes recibidos aún"}</div>
+          <div style={{color:TX.t,fontSize:12,marginTop:8}}>Los mensajes que los clientes envíen por WhatsApp aparecerán aquí</div>
         </div>
-      }
+      :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {msgs.map(m=>{
+          const ts=new Date(m.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+          const estaAbierto=abierto===m.id;
+          return <div key={m.id} style={{...card,borderLeft:`3px solid ${m.leido?"#1E3070":BR.coral}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:"#1A3570",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>👤</div>
+                <div>
+                  <div style={{fontWeight:600,fontSize:14,color:TX.p}}>{m.nombre||m.de}</div>
+                  <div style={{fontSize:11,color:TX.t}}>{m.de} · {ts}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {!m.leido&&<Btn sm v="ghost" onClick={()=>marcarLeido([m.id])}>Leído</Btn>}
+                <button onClick={()=>setAbierto(estaAbierto?null:m.id)} style={{padding:"4px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:estaAbierto?"#1A3A1A":"#0F1C3F",color:"#25D366",border:"1px solid #1A4A1A",fontFamily:"var(--font-sans)"}}>
+                  {estaAbierto?"Cerrar":"Responder"}
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido del mensaje según tipo */}
+            {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
+              ?<div style={{padding:"8px 12px",background:"#0D1830",borderRadius:8,marginBottom:estaAbierto?10:0}}>
+                  <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36,accentColor:"#25D366"}}/>
+                  {m.mensaje&&m.mensaje!=="[Audio]"&&m.mensaje!=="[Nota de voz]"&&<div style={{fontSize:12,color:TX.s,marginTop:4}}>{m.mensaje}</div>}
+                </div>
+              :m.tipo==="image"&&m.media_id
+              ?<div style={{padding:"8px 12px",background:"#0D1830",borderRadius:8,marginBottom:estaAbierto?10:0}}>
+                  <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="imagen" style={{maxWidth:"100%",maxHeight:260,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
+                  {m.mensaje&&m.mensaje!=="[Imagen]"&&<div style={{fontSize:12,color:TX.s,marginTop:4}}>{m.mensaje}</div>}
+                </div>
+              :<div style={{fontSize:13,color:TX.p,padding:"8px 12px",background:"#0D1830",borderRadius:8,lineHeight:1.5,marginBottom:estaAbierto?10:0}}>{m.mensaje}</div>
+            }
+
+            {estaAbierto&&<div style={{marginTop:8,display:"flex",gap:8,alignItems:"flex-end"}}>
+              <textarea
+                value={respuestas[m.id]||""}
+                onChange={e=>setRespuestas(p=>({...p,[m.id]:e.target.value}))}
+                onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta(m.id,m.de,respuestas[m.id]);}}
+                placeholder="Escribí tu respuesta... (Ctrl+Enter para enviar)"
+                rows={3}
+                style={{...inp,resize:"vertical",flex:1,fontSize:13}}
+                disabled={enviando[m.id]}
+              />
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <button
+                  onClick={()=>enviarRespuesta(m.id,m.de,respuestas[m.id])}
+                  disabled={enviando[m.id]||!respuestas[m.id]?.trim()}
+                  style={{padding:"8px 14px",borderRadius:8,fontSize:13,cursor:"pointer",background:enviado[m.id]?"#1A4A1A":"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,whiteSpace:"nowrap",opacity:(enviando[m.id]||!respuestas[m.id]?.trim())?0.6:1}}
+                >
+                  {enviando[m.id]?"Enviando...":enviado[m.id]?"✓ Enviado":"Enviar"}
+                </button>
+                <button
+                  onClick={()=>setAbierto(null)}
+                  style={{padding:"6px 14px",borderRadius:8,fontSize:12,cursor:"pointer",background:"#0D1830",color:TX.s,border:"1px solid #2A3F6B",fontFamily:"var(--font-sans)"}}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>}
+          </div>;
+        })}
+      </div>}
     </div>;
   };
 
-  const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"rgba(13,20,35,0.5)",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
+  const DiasSel=({value,onChange})=>{const sel=(value||"").split(",").filter(Boolean).map(Number);const toggle=d=>{const n=sel.includes(d)?sel.filter(x=>x!==d):[...sel,d];onChange(n.join(","));};return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>{DIAS_FULL.map((nm,i)=><button key={i} type="button" onClick={()=>toggle(i)} style={{padding:"5px 11px",borderRadius:8,fontSize:12,cursor:"pointer",border:"1px solid",fontFamily:"var(--font-sans)",borderColor:sel.includes(i)?BR.coral:"#2A3F6B",background:sel.includes(i)?"#3A1A0A":"#0F1C3F",color:sel.includes(i)?BR.coral:TX.s}}>{nm.slice(0,3)}</button>)}</div>;};
 
   return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":940,margin:"0 auto",background:"#081020",minHeight:"100vh",paddingTop:isMobile?68:0}}>
     <div style={{position:isMobile?"fixed":"relative",top:0,left:0,right:0,zIndex:1000,background:`linear-gradient(160deg,${BR.dark},${BR.blue})`,boxShadow:"0 2px 16px rgba(0,0,0,0.4)",paddingTop:isMobile?"max(8px, env(safe-area-inset-top))":"0"}}>
@@ -2160,7 +1854,7 @@ export default function App() {
       <R2 isMobile={isMobile}><Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/><FG label="Hora"><select style={inp} value={form.hora??""} onChange={sf("hora")}>{getHorasForDay(form.fecha?new Date(form.fecha+"T00:00:00").getDay():new Date().getDay()).map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}</select></FG></R2>
       <Sel label="Tipo" value={form.tipo||"ocasional"} onChange={sf("tipo")}><option value="ocasional">Ocasional</option><option value="clase">Clase con instructor</option><option value="bloqueado">Bloquear horario</option></Sel>
       {form.tipo==="clase"&&<><Sel label="Instructor" value={form.instructor_id||""} onChange={sf("instructor_id")}><option value="">Sin instructor</option>{instructores.map(i=><option key={i.id} value={i.id}>{i.nombre}</option>)}</Sel><Inp label="Precio clase (Gs)" type="number" value={form.precio_clase||""} onChange={sf("precio_clase")}/></>}
-      {form.tipo==="ocasional"&&<><div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"10px 12px",fontSize:13,marginBottom:14,color:TX.s}}>Precio: <strong style={{color:TX.p}}>{gs(precioTurno(Number(form.hora||cfg.hora_inicio)))}</strong>{Number(form.hora)>=cfg.hora_pico_inicio&&Number(form.hora)<cfg.hora_pico_fin&&<span style={{color:BR.coral}}> (pico)</span>}</div><Inp label="Seña (Gs) — opcional" type="number" value={form.sena||""} onChange={sf("sena")}/></>}
+      {form.tipo==="ocasional"&&<><div style={{background:"#0D1830",borderRadius:8,padding:"10px 12px",fontSize:13,marginBottom:14,color:TX.s}}>Precio: <strong style={{color:TX.p}}>{gs(precioTurno(Number(form.hora||cfg.hora_inicio)))}</strong>{Number(form.hora)>=cfg.hora_pico_inicio&&Number(form.hora)<cfg.hora_pico_fin&&<span style={{color:BR.coral}}> (pico)</span>}</div><Inp label="Seña (Gs) — opcional" type="number" value={form.sena||""} onChange={sf("sena")}/></>}
       <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarTurno} disabled={saving}>{saving?"Guardando...":"Guardar reserva"}</Btn></div>
     </Modal>
@@ -2254,11 +1948,41 @@ export default function App() {
       </>}
     </Modal>
 
-    <Modal show={modal==="cliente"} onClose={closeM} title={form.id?"Editar cliente":"Nuevo cliente"}>
+    <Modal show={modal==="cliente"} onClose={closeM} title={form.id?"Editar cliente":"Nuevo cliente"} width={500}>
       <Inp label="Nombre completo" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
       <Inp label="Teléfono" type="text" value={form.telefono||""} onChange={sf("telefono")}/>
       <R2 isMobile={isMobile}><Sel label="Nivel" value={form.nivel||"intermedio"} onChange={sf("nivel")}><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></Sel></R2>
       <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
+
+      {form.id&&<>
+        <Div/>
+        <div style={{fontSize:13,fontWeight:600,color:TX.p,marginBottom:12}}>📊 Historial</div>
+        {(() => {
+          const misTurnos = turnos.filter(t => t.cliente_id === form.id);
+          const misAbonos = abonos.filter(a => a.cliente_id === form.id);
+          const confirmados = misTurnos.filter(t => t.estado === "confirmado");
+          const totalGastado = confirmados.reduce((a, t) => a + (t.precio || 0), 0);
+          return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Turnos</div><div style={{fontSize:16,fontWeight:700,color:TX.p,marginTop:4}}>{misTurnos.length}</div></div>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Confirmados</div><div style={{fontSize:16,fontWeight:700,color:"#7ADDA8",marginTop:4}}>{confirmados.length}</div></div>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Abonos</div><div style={{fontSize:16,fontWeight:700,color:BR.coral,marginTop:4}}>{misAbonos.length}</div></div>
+            <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:TX.s}}>Gastado</div><div style={{fontSize:13,fontWeight:700,color:"#7EAAFF",marginTop:4}}>{gs(totalGastado)}</div></div>
+          </div>;
+        })()}
+        {(() => {
+          const misTurnos = turnos.filter(t => t.cliente_id === form.id).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+          if (misTurnos.length === 0) return <div style={{fontSize:12,color:TX.t,textAlign:"center",padding:"12px"}}>Sin turnos</div>;
+          return <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #1E3070",borderRadius:8}}>
+            {misTurnos.slice(0, 8).map(t => (
+              <div key={t.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 10px",borderBottom:"1px solid #1E3070",fontSize:11}}>
+                <div><div style={{color:TX.p,fontWeight:500}}>{t.fecha} {t.hora}:00</div><div style={{color:TX.s,marginTop:2}}>{gs(t.precio)}</div></div>
+                <div style={{textAlign:"right"}}>{estadoBadge(t.estado)}</div>
+              </div>
+            ))}
+          </div>;
+        })()}
+      </>}
+
       <Div/><div style={{display:"flex",justifyContent:"space-between"}}>
         {form.id&&<Btn v="danger" onClick={()=>setDlg({type:"eliminarCliente",id:form.id,nombre:form.nombre})}>Eliminar</Btn>}
         <div style={{display:"flex",gap:8,marginLeft:"auto"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarCliente} disabled={saving}>{saving?"Guardando...":form.id?"Guardar cambios":"Agregar"}</Btn></div>
@@ -2329,7 +2053,7 @@ export default function App() {
             }
           } catch(e){}
           
-          return <div key={i} style={{marginBottom:14,padding:12,background:"rgba(13,20,35,0.4)",borderRadius:8,border:`1px solid #1E3070`}}>
+          return <div key={i} style={{marginBottom:14,padding:12,background:"#0D1830",borderRadius:8,border:`1px solid #1E3070`}}>
             <div style={{fontSize:13,fontWeight:500,color:TX.p,marginBottom:8}}>{dia}</div>
             <R2 isMobile={isMobile}>
               <FG label="Inicio">
@@ -2393,10 +2117,10 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
 
     {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
-      <div style={{backgroundColor:"#111E40",borderRadius:8,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid rgba(216,90,48,0.15)"}}>
+      <div style={{backgroundColor:"#111E40",borderRadius:14,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:"1px solid #1E3070"}}>
         <div style={{fontSize:15,fontWeight:500,marginBottom:8,color:TX.p}}>✅ Reserva guardada</div>
         <div style={{fontSize:13,color:TX.s,marginBottom:12}}>¿Enviás confirmación a {dlg.cliente.nombre}?</div>
-        <div style={{background:"rgba(13,20,35,0.4)",borderRadius:8,padding:"10px 12px",fontSize:12,color:TX.s,marginBottom:16,lineHeight:1.6}}>{dlg.msg}</div>
+        <div style={{background:"#0D1830",borderRadius:8,padding:"10px 12px",fontSize:12,color:TX.s,marginBottom:16,lineHeight:1.6}}>{dlg.msg}</div>
         <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
           <Btn onClick={()=>setDlg(null)}>Omitir</Btn>
           <Btn v="success" onClick={()=>{enviarWsp(dlg.cliente.telefono,dlg.msg);setDlg(null);}}>Enviar WhatsApp</Btn>
