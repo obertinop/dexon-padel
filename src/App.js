@@ -334,6 +334,7 @@ const PortalCliente = () => {
   const [metodoPago,setMetodoPago] = useState("transferencia");
   const [descuentoAplicado,setDescuentoAplicado] = useState(false);
   const [referrerCode,setReferrerCode] = useState("");
+  const [miCodigo,setMiCodigo] = useState("");
 
   useEffect(()=>{
     const load = async () => {
@@ -367,12 +368,13 @@ const PortalCliente = () => {
     return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
   })();
   const precioH = h => h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?cfg.tarifa_pico:cfg.tarifa_base;
+  const parseDias = (raw) => { if(Array.isArray(raw))return raw; if(typeof raw==="string"){try{return JSON.parse(raw);}catch{return[2,4];}} return[2,4]; };
   const puedeUsarDesc = () => {
     if(!cfg.desc_martes_jueves_enabled) return false;
     if(!fecha) return false;
     const d = new Date(fecha+"T00:00:00");
     const dw = d.getDay();
-    const diasDesc = cfg.desc_martes_jueves_dias||[2,4]; // 2=Martes, 4=Jueves
+    const diasDesc = parseDias(cfg.desc_martes_jueves_dias);
     return diasDesc.includes(dw);
   };
   const precioConDesc = (h) => {
@@ -654,10 +656,21 @@ const PortalCliente = () => {
               try {
                 const {match,cliente}=buscarCliente();
                 let clienteId=cliente?.id;
+                let codigoCliente=cliente?.referrer_code;
                 let nota="Comprobante enviado vía WhatsApp - Pendiente confirmación";
-                if(match==="nuevo"){const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal"},SUPA_KEY);clienteId=c.id;}
-                else if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
-                else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
+                if(match==="nuevo"){
+                  codigoCliente = genRefCode();
+                  const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal",referrer_code:codigoCliente},SUPA_KEY);
+                  clienteId=c.id;
+                } else {
+                  if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
+                  else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
+                  if(!codigoCliente){
+                    codigoCliente = genRefCode();
+                    try{ await db.patch("clientes",clienteId,{referrer_code:codigoCliente},SUPA_KEY); }catch(e){console.error("No se pudo guardar code:",e);}
+                  }
+                }
+                setMiCodigo(codigoCliente);
 
                 for(const h of slotsSel){
                   const precioBase = precioH(h);
@@ -759,11 +772,20 @@ const PortalCliente = () => {
             <div>💰 {gs(totalSel)} · {slotsSel.length} hora{slotsSel.length>1?"s":""} · Pago pendiente de verificación</div>
           </div>
         </div>
-        <div style={{background:"#0D2A1A",borderRadius:12,padding:"14px 16px",marginBottom:20,border:"1px solid #1A5A30",textAlign:"left"}}>
+        <div style={{background:"#0D2A1A",borderRadius:12,padding:"14px 16px",marginBottom:16,border:"1px solid #1A5A30",textAlign:"left"}}>
           <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8",marginBottom:6}}>✓ Próximo paso</div>
           <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibirás una confirmación por WhatsApp una vez que verifiquemos tu pago.</div>
         </div>
-        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});setDescuentoAplicado(false);setReferrerCode(""); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        {miCodigo && <div style={{background:"linear-gradient(135deg,#3C1A40,#2A1530)",borderRadius:12,padding:"16px 18px",marginBottom:20,border:"1px solid #5A3A6A",textAlign:"left"}}>
+          <div style={{fontSize:13,fontWeight:600,color:"#FFD580",marginBottom:8}}>🎁 Tu código de referido</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{flex:1,background:"#0D1830",border:"1.5px dashed #C09040",borderRadius:8,padding:"10px 14px",fontSize:16,fontWeight:700,color:"#FFD580",letterSpacing:1.5,textAlign:"center"}}>{miCodigo}</div>
+            <button onClick={()=>{navigator.clipboard.writeText(miCodigo);setMsg("Copiado!");setTimeout(()=>setMsg(""),1500);}} style={{padding:"10px 14px",background:"#C09040",color:"#0D1830",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Copiar</button>
+          </div>
+          <div style={{fontSize:12,color:"#E8C898",lineHeight:1.5}}>Compartí este código con amigos. Cuando reserven usándolo, ambos obtienen un descuento.</div>
+          <button onClick={()=>{const txt=`Hola! Te invito a reservar en *${cfg.nombre_club}* usando mi código *${miCodigo}* y obtené descuento. Reservá en: https://dexon.com.py`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,"_blank");}} style={{marginTop:10,width:"100%",padding:"10px",background:"#25D366",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>📱 Compartir por WhatsApp</button>
+        </div>}
+        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});setDescuentoAplicado(false);setReferrerCode("");setMiCodigo(""); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
           Volver al inicio
         </button>
       </div>}
@@ -2139,9 +2161,16 @@ export default function App() {
       <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}><input type="checkbox" checked={form.desc_martes_jueves_enabled||false} onChange={e=>setForm(f=>({...f,desc_martes_jueves_enabled:e.target.checked}))}/><span style={{fontSize:13,color:TX.s}}>Habilitar descuentos por día</span></label>
       {form.desc_martes_jueves_enabled&&<>
         <Inp label="Porcentaje de descuento (%)" type="number" value={form.desc_martes_jueves_percent||20} onChange={sf("desc_martes_jueves_percent")}/>
-        <div style={{fontSize:12,color:TX.s,marginBottom:8,marginTop:0}}>¿En qué días aplica?</div>
+        <div style={{fontSize:12,color:TX.s,marginBottom:8,marginTop:0}}>¿En qué días aplica? (0=Dom, 1=Lun...)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-          {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map((day,i)=>{const diasDesc=form.desc_martes_jueves_dias||[2,4]; return <label key={i} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={diasDesc.includes(i)} onChange={e=>{const newDias=e.target.checked?[...diasDesc,i]:diasDesc.filter(d=>d!==i); setForm(f=>({...f,desc_martes_jueves_dias:newDias}));}} style={{width:16,height:16}}/><span style={{fontSize:12,color:TX.s}}>{day}</span></label>;})}
+          {[{n:"Domingo",i:0},{n:"Lunes",i:1},{n:"Martes",i:2},{n:"Miércoles",i:3},{n:"Jueves",i:4},{n:"Viernes",i:5},{n:"Sábado",i:6}].map(({n,i})=>{
+            const raw=form.desc_martes_jueves_dias;
+            const diasDesc=Array.isArray(raw)?raw:(typeof raw==="string"?(()=>{try{return JSON.parse(raw);}catch{return[2,4];}})():[2,4]);
+            return <label key={i} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",padding:"6px 10px",background:diasDesc.includes(i)?"#1A3570":"#0D1830",border:"1px solid #1E3070",borderRadius:8}}>
+              <input type="checkbox" checked={diasDesc.includes(i)} onChange={e=>{const newDias=e.target.checked?[...diasDesc,i].sort():diasDesc.filter(d=>d!==i); setForm(f=>({...f,desc_martes_jueves_dias:newDias}));}} style={{width:16,height:16}}/>
+              <span style={{fontSize:12,color:diasDesc.includes(i)?"#7EAAFF":TX.s}}>{n}</span>
+            </label>;
+          })}
         </div>
       </>}
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarConfig} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>

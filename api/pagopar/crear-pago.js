@@ -118,21 +118,33 @@ export default async function handler(req, res) {
   // ── 4. Buscar/crear cliente en Supabase ──────────────────────────────────
   const telLimpio = telefono.replace(/\D/g, "");
   let clienteId = null;
+  let codigoCliente = null;
+
+  const genCode = () => { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r="REF-"; for(let i=0;i<8;i++)r+=c[Math.floor(Math.random()*c.length)]; return r; };
 
   // Intentar encontrar por teléfono original o limpio
   for (const tel of [telefono.trim(), telLimpio]) {
     if (!tel) continue;
-    const enc = await sb(`clientes?telefono=eq.${encodeURIComponent(tel)}&select=id&limit=1`);
+    const enc = await sb(`clientes?telefono=eq.${encodeURIComponent(tel)}&select=id,referrer_code&limit=1`);
     if (enc.ok && Array.isArray(enc.data) && enc.data.length > 0) {
       clienteId = enc.data[0].id;
+      codigoCliente = enc.data[0].referrer_code || null;
       break;
     }
   }
 
+  // Cliente existente sin código: generar y guardar
+  if (clienteId && !codigoCliente) {
+    codigoCliente = genCode();
+    await sb(`clientes?id=eq.${clienteId}`, { method: "PATCH", body: JSON.stringify({ referrer_code: codigoCliente }) });
+  }
+
   // Si no existe, crearlo. Intentar primero con todos los campos, luego mínimos.
   if (!clienteId) {
+    codigoCliente = genCode();
     const intentos = [
-      { nombre: nombre.trim(), telefono: telefono.trim(), nivel: "intermedio", notas: "Registrado vía Pagopar" },
+      { nombre: nombre.trim(), telefono: telefono.trim(), nivel: "intermedio", notas: "Registrado vía Pagopar", referrer_code: codigoCliente },
+      { nombre: nombre.trim(), telefono: telefono.trim(), referrer_code: codigoCliente },
       { nombre: nombre.trim(), telefono: telefono.trim() },
     ];
     let lastErr = null;
@@ -194,5 +206,6 @@ export default async function handler(req, res) {
     checkout_url: `https://www.pagopar.com/pagos/${hashPedido}`,
     hash: hashPedido,
     pedido: pedidoNum,
+    referrer_code: codigoCliente,
   });
 }
