@@ -48,7 +48,7 @@ export default async function handler(req, res) {
   }
 
   // ── 2. Validar payload ───────────────────────────────────────────────────
-  const { nombre, telefono, email, documento, fecha, slots, total } = req.body || {};
+  const { nombre, telefono, email, documento, fecha, slots, total, descuentoAplicado, referrerCode } = req.body || {};
   if (!nombre || !telefono || !fecha || !Array.isArray(slots) || slots.length === 0 || !total) {
     return res.status(400).json({ error: "Faltan datos obligatorios" });
   }
@@ -171,6 +171,8 @@ export default async function handler(req, res) {
     notas: `Pago online vía Pagopar - Pedido ${pedidoNum}`,
     metodo_pago: "pagopar",
     pagopar_hash: hashPedido, pagopar_pedido_num: pedidoNum, pagopar_id_pedido: idPedido,
+    day_discount_amount: descuentoAplicado ? Math.round(montoInt * 0.2 / slots.length) : 0,
+    applied_referral_code: referrerCode||null,
   }));
 
   const insTur = await sb("turnos", {
