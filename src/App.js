@@ -96,6 +96,7 @@ const fmtD = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"
 const initials = n => n?.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
 const avatarBg = n => { const c=["#1A3570","#0D3020","#3A1A10","#2A1A40","#0A2A3A","#1A2A0A"]; return c[(n||"").charCodeAt(0)%c.length]; };
 const avatarFg = n => { const c=["#7EAAFF","#7ADDA8","#F5A882","#B8A0F5","#7ACCE0","#A8D47A"]; return c[(n||"").charCodeAt(0)%c.length]; };
+const generateReferralCode = () => { const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let code="REF-"; for(let i=0;i<8;i++)code+=chars.charAt(Math.floor(Math.random()*chars.length)); return code; };
 
 // ── COMPONENTES BASE ──
 const Avatar = ({nombre,size=36}) => <div style={{width:size,height:size,borderRadius:"50%",background:avatarBg(nombre),display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.33,fontWeight:600,color:avatarFg(nombre),flexShrink:0}}>{initials(nombre)}</div>;
@@ -363,7 +364,28 @@ const PortalCliente = () => {
     } catch(e){}
     return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
   })();
-  const precioH = h => h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?cfg.tarifa_pico:cfg.tarifa_base;
+  const precioH = (h, fechaStr=fecha, descReferral=0) => {
+    const base = h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?cfg.tarifa_pico:cfg.tarifa_base;
+    let precio = base;
+
+    // Descuento Martes/Jueves
+    if(cfg.desc_martes_jueves_enabled && fechaStr) {
+      const d = new Date(fechaStr+"T00:00:00");
+      const dayOfWeek = d.getDay();
+      const esMJ = dayOfWeek === 2 || dayOfWeek === 4;
+      const esHoraDesc = h >= cfg.desc_martes_jueves_hora_inicio && h < cfg.desc_martes_jueves_hora_fin;
+      if(esMJ && esHoraDesc) {
+        precio = Math.round(base * (1 - (cfg.desc_martes_jueves_percent||20)/100));
+      }
+    }
+
+    // Descuento referral
+    if(descReferral > 0) {
+      precio = Math.max(0, precio - descReferral);
+    }
+
+    return precio;
+  };
   const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado");
   const pasado = h => fecha===hoy()&&h<=new Date().getHours();
   const climaFecha = clima[fecha];
@@ -618,6 +640,12 @@ const PortalCliente = () => {
               <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>Requerido por la pasarela de pago para verificación.</div>
             </div>
           )}
+
+          <div style={{marginBottom:14}}>
+            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>¿Alguien te recomendó? (código opcional)</label>
+            <input type="text" value={form.referrer_code||""} onChange={e=>setForm(f=>({...f,referrer_code:e.target.value.toUpperCase()}))} style={inpPortal} placeholder="REF-XXXXXXXX"/>
+            {form.referrer_code && <div style={{fontSize:11,color:"#7ADDA8",marginTop:4}}>✓ Ambos recibirán 20k Gs de descuento</div>}
+          </div>
 
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
 
@@ -2106,6 +2134,19 @@ export default function App() {
       <R2 isMobile={isMobile}><Inp label="Tarifa base (Gs)" type="number" value={form.tarifa_base||""} onChange={sf("tarifa_base")}/><Inp label="Tarifa pico (Gs)" type="number" value={form.tarifa_pico||""} onChange={sf("tarifa_pico")}/></R2>
       <R2 isMobile={isMobile}><FG label="Hora pico inicio"><select style={inp} value={form.hora_pico_inicio??""} onChange={sf("hora_pico_inicio")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG><FG label="Hora pico fin"><select style={inp} value={form.hora_pico_fin??""} onChange={sf("hora_pico_fin")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG></R2>
       <R2 isMobile={isMobile}><FG label="Apertura"><select style={inp} value={form.hora_inicio??""} onChange={sf("hora_inicio")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG><FG label="Cierre"><select style={inp} value={form.hora_fin??""} onChange={sf("hora_fin")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG></R2>
+      <Div/>
+      <div style={{fontSize:13,fontWeight:500,marginBottom:10,color:TX.p}}>💰 Descuentos Martes/Jueves</div>
+      <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:14}}>
+        <input type="checkbox" checked={form.desc_martes_jueves_enabled||false} onChange={sf("desc_martes_jueves_enabled")}/>
+        <span style={{fontSize:13,color:TX.p}}>Activar descuento M/J</span>
+      </label>
+      {form.desc_martes_jueves_enabled && <>
+        <R2 isMobile={isMobile}>
+          <Inp label="Descuento (%)" type="number" min="0" max="100" value={form.desc_martes_jueves_percent||20} onChange={sf("desc_martes_jueves_percent")}/>
+          <FG label="Hora inicio"><select style={inp} value={form.desc_martes_jueves_hora_inicio??16} onChange={sf("desc_martes_jueves_hora_inicio")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG>
+        </R2>
+        <FG label="Hora fin"><select style={inp} value={form.desc_martes_jueves_hora_fin??19} onChange={sf("desc_martes_jueves_hora_fin")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG>
+      </>}
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarConfig} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 
