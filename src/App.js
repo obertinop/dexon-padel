@@ -702,85 +702,30 @@ const PortalCliente = () => {
           {metodoPago==="transferencia" ? (
             <button onClick={async ()=>{
               if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
-              if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
               setSaving(true);setMsg("");
               try {
-                const {match,cliente}=buscarCliente();
-                let clienteId=cliente?.id;
-                let codigoCliente=cliente?.referrer_code;
-                let nota="Comprobante enviado vía WhatsApp - Pendiente confirmación";
-                if(match==="nuevo"){
-                  codigoCliente = genRefCode();
-                  const[c]=await db.post("clientes",{nombre:form.nombre.trim(),telefono:form.telefono.trim(),nivel:"intermedio",notas:"Registrado desde portal",referrer_code:codigoCliente},SUPA_KEY);
-                  clienteId=c.id;
-                } else {
-                  if(match==="parcial_nombre"){nota=`⚠️ Nombre coincide pero tel diferente (reg: ${cliente.telefono}) - ${nota}`;clienteId=cliente.id;}
-                  else if(match==="parcial_tel"){nota=`⚠️ Tel coincide pero nombre diferente (reg: ${cliente.nombre}) - ${nota}`;clienteId=cliente.id;}
-                  if(!codigoCliente){
-                    codigoCliente = genRefCode();
-                    try{ await db.patch("clientes",clienteId,{referrer_code:codigoCliente},SUPA_KEY); }catch(e){console.error("No se pudo guardar code:",e);}
-                  }
-                }
-                setMiCodigo(codigoCliente);
-
-                // Distribuir descuentos proporcionalmente entre los slots
-                const descTotalGlobal = descRef + descSaldo;
-                const totalAntesGlobal = subtotalSel || 1;
-                for(const h of slotsSel){
-                  const precioBase = precioH(h);
-                  const precioConDescDia = precioConDesc(h);
-                  const descDayAmount = precioBase - precioConDescDia;
-                  const proporcionGlobal = precioConDescDia / totalAntesGlobal;
-                  const descGlobalSlot = Math.round(descTotalGlobal * proporcionGlobal);
-                  const precioFinal = Math.max(0, precioConDescDia - descGlobalSlot);
-                  await db.post("turnos",{
-                    fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,
-                    precio:precioFinal,sena:0,saldo:precioFinal,notas:nota,metodo_pago:"transferencia",
-                    day_discount_amount:descDayAmount,
-                    applied_referral_code:refValido?refCodeNorm:null,
-                    referral_discount_amount:Math.round(descRef*proporcionGlobal),
-                  },SUPA_KEY);
-                }
-
-                // Acreditar saldo al referente (si el código fue válido)
-                if(refValido && refMatch){
-                  const nuevoSaldo = (refMatch.saldo_favor||0) + refMontoDesc;
-                  try{ await db.patch("clientes",refMatch.id,{saldo_favor:nuevoSaldo},SUPA_KEY); }catch(e){console.error("No se pudo acreditar saldo referente:",e);}
-                }
-                // Descontar saldo usado del cliente
-                if(descSaldo>0 && clienteEncontrado){
-                  const saldoRestante = Math.max(0, (clienteEncontrado.saldo_favor||0) - descSaldo);
-                  try{ await db.patch("clientes",clienteEncontrado.id,{saldo_favor:saldoRestante},SUPA_KEY); }catch(e){console.error("No se pudo descontar saldo:",e);}
-                }
-
-                const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
-                const msgWsp = encodeURIComponent(
-                  `🏀 *COMPROBANTE DE PAGO*\n\n` +
-                  `Nombre: *${form.nombre}*\n` +
-                  `Teléfono: *${form.telefono}*\n\n` +
-                  `📅 Fecha: *${fmtFechaLegible(fecha)}*\n` +
-                  `⏰ Horarios: *${horasStr}hs*\n` +
-                  `💰 Total: *${gs(totalSel)}*\n\n` +
-                  `Adjunto: Foto de la transferencia al alias 80168039-5`
-                );
-                window.open(`https://wa.me/${ADMIN_TEL}?text=${msgWsp}`,"_blank");
-
-                // Notificación WhatsApp automática al cliente y admin (fire & forget)
-                fetch("/api/whatsapp/enviar",{
+                const r = await fetch("/api/reservar",{
                   method:"POST",
                   headers:{"Content-Type":"application/json"},
-                  body:JSON.stringify({
-                    tipo:"transferencia_pendiente",
-                    nombre:form.nombre.trim(),
-                    telefono:form.telefono.trim(),
-                    fecha:fmtFechaLegible(fecha),
-                    horarios:horasStr+"hs",
-                    monto:gs(totalSel),
+                  body: JSON.stringify({
+                    nombre: form.nombre.trim(),
+                    telefono: form.telefono.trim(),
+                    fecha,
+                    slots: slotsSel,
+                    referrerCode: refValido ? refCodeNorm : null,
+                    usarSaldo: usarSaldo && descSaldo>0,
                   })
-                }).catch(()=>{});
-
+                });
+                const d = await r.json();
+                if(!r.ok) { setMsg(d.error||"Error al guardar. Intentá de nuevo."); setSaving(false); return; }
+                setMiCodigo(d.referrer_code||"");
+                const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
+                window.open(`https://wa.me/${ADMIN_TEL}?text=${encodeURIComponent(
+                  `🏀 *COMPROBANTE DE PAGO*\n\nNombre: *${form.nombre.trim()}*\nTeléfono: *${form.telefono.trim()}*\n\n📅 Fecha: *${fmtFechaLegible(fecha)}*\n⏰ Horarios: *${horasStr}hs*\n💰 Total: *${gs(d.total||totalSel)}*\n\nAdjunto: Foto de la transferencia al alias 80168039-5`
+                )}`,"_blank");
+                fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
                 setPaso("confirmado");
-              } catch(e){console.error(e);setMsg("Error al guardar. Intentá de nuevo.");}
+              } catch(e){console.error(e);setMsg("Error de conexión. Intentá de nuevo.");}
               setSaving(false);
             }} disabled={saving} style={{width:"100%",padding:"14px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
               {saving?"Guardando...":"📱 Enviar comprobante por WhatsApp"}
