@@ -44,18 +44,20 @@
 Run this SQL in your Supabase database:
 
 ```sql
--- Discount config
+-- Config: descuento por día y monto del descuento por referido
 ALTER TABLE config ADD COLUMN IF NOT EXISTS desc_martes_jueves_enabled boolean default false;
 ALTER TABLE config ADD COLUMN IF NOT EXISTS desc_martes_jueves_percent numeric default 20;
 ALTER TABLE config ADD COLUMN IF NOT EXISTS desc_martes_jueves_dias text default '[2,4]';
+ALTER TABLE config ADD COLUMN IF NOT EXISTS referral_discount_amount numeric default 20000;
 
 -- Tracking en turnos
 ALTER TABLE turnos ADD COLUMN IF NOT EXISTS day_discount_amount numeric default 0;
 ALTER TABLE turnos ADD COLUMN IF NOT EXISTS applied_referral_code text;
 ALTER TABLE turnos ADD COLUMN IF NOT EXISTS referral_discount_amount numeric default 0;
 
--- Código de referido por cliente
+-- Cliente: código único + saldo a favor (acumulado por referidos)
 ALTER TABLE clientes ADD COLUMN IF NOT EXISTS referrer_code text UNIQUE;
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS saldo_favor numeric default 0;
 CREATE INDEX IF NOT EXISTS clientes_referrer_code_idx ON clientes(referrer_code);
 ```
 

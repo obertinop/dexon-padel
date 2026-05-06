@@ -175,16 +175,27 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── 5. Guardar turnos ────────────────────────────────────────────────────
+  // ── 5. Validar código de referido ────────────────────────────────────────
+  let refMatch = null;
+  const refCodeNorm = (referrerCode||"").trim().toUpperCase();
+  if (refCodeNorm.length >= 4) {
+    const r = await sb(`clientes?referrer_code=eq.${encodeURIComponent(refCodeNorm)}&select=id,nombre,telefono,saldo_favor&limit=1`);
+    if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+      const m = r.data[0];
+      const tNorm = telefono.replace(/\D/g, "");
+      if (m.telefono?.replace(/\D/g, "") !== tNorm) refMatch = m;
+    }
+  }
+
+  // ── 6. Guardar turnos ────────────────────────────────────────────────────
   const precioPorSlot = Math.round(montoInt / slots.length);
   const turnosBody = slots.map(h => ({
     fecha, hora: h, tipo: "ocasional", estado: "pendiente_pago",
     cliente_id: clienteId, precio: precioPorSlot, sena: 0, saldo: precioPorSlot,
-    notas: `Pago online vía Pagopar - Pedido ${pedidoNum}`,
+    notas: `Pago online vía Pagopar - Pedido ${pedidoNum}${refMatch?` - Ref: ${refMatch.nombre}`:""}`,
     metodo_pago: "pagopar",
     pagopar_hash: hashPedido, pagopar_pedido_num: pedidoNum, pagopar_id_pedido: idPedido,
-    day_discount_amount: descuentoAplicado ? Math.round(montoInt * 0.2 / slots.length) : 0,
-    applied_referral_code: referrerCode||null,
+    applied_referral_code: refMatch ? refCodeNorm : null,
   }));
 
   const insTur = await sb("turnos", {
@@ -199,6 +210,14 @@ export default async function handler(req, res) {
       checkout_url: `https://www.pagopar.com/pagos/${hashPedido}`,
       hash: hashPedido,
     });
+  }
+
+  // Acreditar saldo al referente
+  if (refMatch) {
+    const refMontoCfg = await sb("config?select=referral_discount_amount&limit=1");
+    const monto = Number(refMontoCfg?.data?.[0]?.referral_discount_amount) || 20000;
+    const nuevoSaldo = (Number(refMatch.saldo_favor) || 0) + monto;
+    await sb(`clientes?id=eq.${refMatch.id}`, { method: "PATCH", body: JSON.stringify({ saldo_favor: nuevoSaldo }) });
   }
 
   return res.status(200).json({

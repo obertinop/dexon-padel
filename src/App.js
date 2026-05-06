@@ -332,9 +332,10 @@ const PortalCliente = () => {
   const [clima,setClima] = useState({});
   const [comprobante,setComprobante] = useState(null);
   const [metodoPago,setMetodoPago] = useState("transferencia");
-  const [descuentoAplicado,setDescuentoAplicado] = useState(false);
   const [referrerCode,setReferrerCode] = useState("");
   const [miCodigo,setMiCodigo] = useState("");
+  const [usarSaldo,setUsarSaldo] = useState(false);
+  const [clienteEncontrado,setClienteEncontrado] = useState(null);
 
   useEffect(()=>{
     const load = async () => {
@@ -369,27 +370,38 @@ const PortalCliente = () => {
   })();
   const precioH = h => h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?cfg.tarifa_pico:cfg.tarifa_base;
   const parseDias = (raw) => { if(Array.isArray(raw))return raw; if(typeof raw==="string"){try{return JSON.parse(raw);}catch{return[2,4];}} return[2,4]; };
-  const puedeUsarDesc = () => {
+  const diaTieneDesc = () => {
     if(!cfg.desc_martes_jueves_enabled) return false;
     if(!fecha) return false;
     const d = new Date(fecha+"T00:00:00");
-    const dw = d.getDay();
-    const diasDesc = parseDias(cfg.desc_martes_jueves_dias);
-    return diasDesc.includes(dw);
+    return parseDias(cfg.desc_martes_jueves_dias).includes(d.getDay());
   };
+  const descPct = Number(cfg.desc_martes_jueves_percent)||20;
   const precioConDesc = (h) => {
     const base = precioH(h);
-    if(!descuentoAplicado || !puedeUsarDesc()) return base;
-    const descPct = cfg.desc_martes_jueves_percent||20;
+    if(!diaTieneDesc()) return base;
     return Math.round(base * (1 - descPct/100));
   };
+  // Validación en vivo del código de referido (busca en clientes ya cargados)
+  const refCodeNorm = referrerCode.trim().toUpperCase();
+  const refMatch = refCodeNorm.length>=4 ? clientes.find(c=>c.referrer_code===refCodeNorm) : null;
+  const miTelNorm = form.telefono.trim().replace(/\D/g,"");
+  const refValido = !!refMatch && (!miTelNorm || refMatch.telefono?.replace(/\D/g,"") !== miTelNorm);
+  const refMontoDesc = Number(cfg.referral_discount_amount)||20000;
+  // Saldo a favor del cliente (si ya está registrado)
+  const saldoDisponible = clienteEncontrado?.saldo_favor || 0;
   const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado");
   const pasado = h => fecha===hoy()&&h<=new Date().getHours();
   const climaFecha = clima[fecha];
   const climaIcon = code => {if(!code&&code!==0)return"🌤";if(code===0)return"☀️";if(code<=2)return"⛅";if(code<=48)return"☁️";if(code<=67)return"🌧️";return"⛈️";};
   const libres = horasArr.filter(h=>!ocupado(h)&&!pasado(h));
   const ocupados = horasArr.filter(h=>ocupado(h)||pasado(h));
-  const totalSel = slotsSel.reduce((a,h)=>a+precioConDesc(h),0);
+  const subtotalSel = slotsSel.reduce((a,h)=>a+precioConDesc(h),0);
+  const subtotalSinDesc = slotsSel.reduce((a,h)=>a+precioH(h),0);
+  const ahorroDia = subtotalSinDesc - subtotalSel;
+  const descRef = refValido ? Math.min(refMontoDesc, subtotalSel) : 0;
+  const descSaldo = usarSaldo ? Math.min(saldoDisponible, subtotalSel - descRef) : 0;
+  const totalSel = Math.max(0, subtotalSel - descRef - descSaldo);
 
   const toggleSlot = h => {
     if(slotsSel.includes(h)){setSlotsSel(slotsSel.filter(s=>s!==h));return;}
@@ -398,6 +410,14 @@ const PortalCliente = () => {
     if(h===min-1||h===max+1) setSlotsSel([...slotsSel,h].sort((a,b)=>a-b));
     else setSlotsSel([h]);
   };
+
+  useEffect(()=>{
+    const t = form.telefono.trim().replace(/\D/g,"");
+    if(t.length<6){setClienteEncontrado(null);return;}
+    const found = clientes.find(c=>c.telefono?.replace(/\D/g,"")===t);
+    setClienteEncontrado(found||null);
+    if(!found) setUsarSaldo(false);
+  },[form.telefono,clientes]);
 
   const buscarCliente = () => {
     const n=form.nombre.trim().toLowerCase();const t=form.telefono.trim().replace(/\D/g,"");
@@ -493,6 +513,14 @@ const PortalCliente = () => {
           </div>
         </div>}
 
+        {/* Banner descuento del día */}
+        {diaTieneDesc()&&<div style={{background:"linear-gradient(135deg,#3C1A40,#5A2A1A)",border:"1px solid #C09040",borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+          <div style={{fontSize:32,flexShrink:0}}>🎉</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#FFD580"}}>Día de descuento — {descPct}% off</div>
+            <div style={{fontSize:12,color:"#E8C898",marginTop:3,lineHeight:1.4}}>El descuento ya está aplicado en todos los precios de hoy.</div>
+          </div>
+        </div>}
         {/* Horarios */}
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",overflow:"hidden",marginBottom:12}}>
           <div style={{padding:"14px 18px",borderBottom:"1px solid #1E3070"}}>
@@ -503,6 +531,9 @@ const PortalCliente = () => {
           {libres.map(h=>{
             const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
             const selec=slotsSel.includes(h);
+            const tieneDesc=diaTieneDesc();
+            const precioOriginal=precioH(h);
+            const precioFinal=precioConDesc(h);
             return <div key={h} onClick={()=>toggleSlot(h)} style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",padding:isMobile?"12px 14px":"14px 18px",borderBottom:"1px solid #1A2B5A",cursor:"pointer",background:selec?"#1A3570":"#111E40",gap:isMobile?8:0}}>
               <div style={{display:"flex",alignItems:"center",gap:12,width:isMobile?"100%":"auto"}}>
                 <div style={{width:44,height:44,borderRadius:12,background:selec?BR.blueM:isPico?"rgba(216,90,48,0.2)":"#0D1830",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:selec?"#fff":isPico?BR.coral:TX.s,flexShrink:0}}>
@@ -510,11 +541,12 @@ const PortalCliente = () => {
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:isMobile?13:14,fontWeight:500,color:TX.p}}>{h}:00 — {h+1}:00 hs</div>
-                  <div style={{fontSize:12,color:TX.s,marginTop:1}}>{isPico?"Horario pico 🔥":"Tarifa normal"}</div>
+                  <div style={{fontSize:12,color:TX.s,marginTop:1}}>{isPico?"Horario pico 🔥":"Tarifa normal"}{tieneDesc&&<span style={{color:"#FFD580",marginLeft:6}}>· -{descPct}%</span>}</div>
                 </div>
               </div>
               <div style={{textAlign:isMobile?"left":"right",width:isMobile?"100%":"auto"}}>
-                <div style={{fontSize:isMobile?14:15,fontWeight:700,color:selec?"#7EAAFF":isPico?BR.coral:TX.p}}>{gs(precioH(h))}</div>
+                {tieneDesc&&<div style={{fontSize:11,color:TX.t,textDecoration:"line-through",lineHeight:1}}>{gs(precioOriginal)}</div>}
+                <div style={{fontSize:isMobile?14:15,fontWeight:700,color:selec?"#7EAAFF":tieneDesc?"#FFD580":isPico?BR.coral:TX.p}}>{gs(precioFinal)}</div>
                 {selec&&<div style={{fontSize:11,color:"#7EAAFF",marginTop:2}}>✓ Seleccionado</div>}
               </div>
             </div>;
@@ -532,11 +564,12 @@ const PortalCliente = () => {
         </div>}
 
         {slotsSel.length>0&&<>
-          <div style={{background:"#111E40",borderRadius:12,padding:"12px 16px",marginBottom:12,border:"1px solid #2A3F7A"}}>
+          <div style={{background:"#111E40",borderRadius:12,padding:"14px 16px",marginBottom:12,border:"1px solid #2A3F7A"}}>
             <div style={{fontSize:12,color:TX.s,marginBottom:4}}>Seleccionados · {slotsSel.length}hs</div>
-            <div style={{fontSize:14,fontWeight:600,color:TX.p}}>{slotsSel.map(h=>`${h}:00`).join(" · ")} hs</div>
-            <div style={{fontSize:13,color:BR.coral,marginTop:4,fontWeight:500}}>Total: {gs(totalSel)}</div>
-            {puedeUsarDesc() && <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer"}}><input type="checkbox" checked={descuentoAplicado} onChange={e=>setDescuentoAplicado(e.target.checked)}/><span style={{fontSize:11,color:"#7ADDA8"}}>Aplicar {cfg.desc_martes_jueves_percent}% descuento</span></label>}
+            <div style={{fontSize:14,fontWeight:600,color:TX.p,marginBottom:8}}>{slotsSel.map(h=>`${h}:00`).join(" · ")} hs</div>
+            {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:TX.s,marginTop:4}}><span>Subtotal</span><span style={{textDecoration:"line-through"}}>{gs(subtotalSinDesc)}</span></div>}
+            {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#FFD580",marginTop:3}}><span>Descuento del día (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:15,color:BR.coral,marginTop:6,fontWeight:700,paddingTop:6,borderTop:"1px solid #1E3070"}}><span>Total</span><span>{gs(totalSel)}</span></div>
           </div>
           <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${BR.coral},${BR.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
             Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
@@ -572,11 +605,26 @@ const PortalCliente = () => {
         <div style={{background:"#111E40",borderRadius:14,border:"1px solid #1E3070",padding:"22px"}}>
           <div style={{fontSize:16,fontWeight:600,color:TX.p,marginBottom:16}}>Completá tu pago</div>
 
-          {/* Resumen */}
-          <div style={{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,borderRadius:12,padding:"14px 18px",marginBottom:20}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>Total a pagar: {gs(totalSel)}</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginTop:4}}>{slotsSel.length} hora{slotsSel.length>1?"s":""} · {fmtFechaLegible(fecha)}</div>
+          {/* Resumen con desglose */}
+          <div style={{background:`linear-gradient(135deg,${BR.blue},${BR.blueM})`,borderRadius:12,padding:"14px 18px",marginBottom:14}}>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Detalle del pago</div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"rgba(255,255,255,0.8)",marginBottom:4}}><span>{slotsSel.length} hora{slotsSel.length>1?"s":""} · {fmtFechaLegible(fecha)}</span><span>{gs(subtotalSinDesc)}</span></div>
+            {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#FFD580",marginBottom:4}}><span>🎉 Descuento del día (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
+            {descRef>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#7ADDA8",marginBottom:4}}><span>👥 Código referido ({refMatch.nombre.split(" ")[0]})</span><span>-{gs(descRef)}</span></div>}
+            {descSaldo>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#7ADDA8",marginBottom:4}}><span>💰 Saldo a favor</span><span>-{gs(descSaldo)}</span></div>}
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:16,fontWeight:700,color:"#fff",marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.15)"}}><span>Total a pagar</span><span>{gs(totalSel)}</span></div>
           </div>
+
+          {/* Saldo a favor (si el cliente lo tiene) */}
+          {clienteEncontrado && saldoDisponible>0 && <div style={{background:"linear-gradient(135deg,#0D2A1A,#1A3A2A)",border:"1px solid #2A6A4A",borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+            <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+              <input type="checkbox" checked={usarSaldo} onChange={e=>setUsarSaldo(e.target.checked)} style={{width:18,height:18}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:"#7ADDA8"}}>Tenés {gs(saldoDisponible)} de saldo a favor</div>
+                <div style={{fontSize:11,color:"#5ABDA8",marginTop:2}}>Ganado por referidos. Marcá para usarlo en esta reserva.</div>
+              </div>
+            </label>
+          </div>}
 
           {/* Selector de método de pago */}
           <div style={{fontSize:12,color:TX.s,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:0.4}}>Elegí cómo pagar</div>
@@ -638,11 +686,14 @@ const PortalCliente = () => {
             </div>
           )}
 
-          {/* Referral code input (for both payment methods) */}
-          <div style={{background:"#0D1830",borderRadius:12,padding:"14px 16px",marginBottom:14,border:"1px solid #1A2B5A"}}>
-            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Código de referido <span style={{color:TX.s}}>(opcional)</span></label>
-            <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={inpPortal} placeholder="Ej: REF-ABCD1234"/>
-            <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>¿Vos o un amigo usan nuestro servicio? Ingresá el código para obtener descuento.</div>
+          {/* Referral code input con validación en vivo */}
+          <div style={{background:"#0D1830",borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${refValido?"#2A6A4A":refMatch&&!refValido?"#6A2A2A":refCodeNorm.length>=4&&!refMatch?"#6A4A2A":"#1A2B5A"}`}}>
+            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Código de referido <span style={{color:TX.s,fontWeight:400}}>(opcional · descuento de {gs(refMontoDesc)})</span></label>
+            <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpPortal,textTransform:"uppercase"}} placeholder="Ej: REF-ABCD1234"/>
+            {refValido && <div style={{fontSize:12,color:"#7ADDA8",marginTop:8,display:"flex",alignItems:"center",gap:6}}>✓ Código válido — {gs(refMontoDesc)} de descuento aplicado</div>}
+            {refMatch && !refValido && <div style={{fontSize:12,color:"#F58282",marginTop:8}}>✗ No podés usar tu propio código</div>}
+            {refCodeNorm.length>=4 && !refMatch && <div style={{fontSize:12,color:"#FFB060",marginTop:8}}>⚠ Código no encontrado</div>}
+            {!refCodeNorm && <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>¿Un amigo te invitó? Pedile su código y obtené {gs(refMontoDesc)} de descuento.</div>}
           </div>
 
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
@@ -672,11 +723,34 @@ const PortalCliente = () => {
                 }
                 setMiCodigo(codigoCliente);
 
+                // Distribuir descuentos proporcionalmente entre los slots
+                const descTotalGlobal = descRef + descSaldo;
+                const totalAntesGlobal = subtotalSel || 1;
                 for(const h of slotsSel){
                   const precioBase = precioH(h);
-                  const precioFinal = precioConDesc(h);
-                  const descDayAmount = descuentoAplicado && puedeUsarDesc() ? precioBase - precioFinal : 0;
-                  await db.post("turnos",{fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,precio:precioFinal,sena:0,saldo:precioFinal,notas:nota,metodo_pago:"transferencia",day_discount_amount:descDayAmount,applied_referral_code:referrerCode||null},SUPA_KEY);
+                  const precioConDescDia = precioConDesc(h);
+                  const descDayAmount = precioBase - precioConDescDia;
+                  const proporcionGlobal = precioConDescDia / totalAntesGlobal;
+                  const descGlobalSlot = Math.round(descTotalGlobal * proporcionGlobal);
+                  const precioFinal = Math.max(0, precioConDescDia - descGlobalSlot);
+                  await db.post("turnos",{
+                    fecha,hora:h,tipo:"ocasional",estado:"pendiente_pago",cliente_id:clienteId,
+                    precio:precioFinal,sena:0,saldo:precioFinal,notas:nota,metodo_pago:"transferencia",
+                    day_discount_amount:descDayAmount,
+                    applied_referral_code:refValido?refCodeNorm:null,
+                    referral_discount_amount:Math.round(descRef*proporcionGlobal),
+                  },SUPA_KEY);
+                }
+
+                // Acreditar saldo al referente (si el código fue válido)
+                if(refValido && refMatch){
+                  const nuevoSaldo = (refMatch.saldo_favor||0) + refMontoDesc;
+                  try{ await db.patch("clientes",refMatch.id,{saldo_favor:nuevoSaldo},SUPA_KEY); }catch(e){console.error("No se pudo acreditar saldo referente:",e);}
+                }
+                // Descontar saldo usado del cliente
+                if(descSaldo>0 && clienteEncontrado){
+                  const saldoRestante = Math.max(0, (clienteEncontrado.saldo_favor||0) - descSaldo);
+                  try{ await db.patch("clientes",clienteEncontrado.id,{saldo_favor:saldoRestante},SUPA_KEY); }catch(e){console.error("No se pudo descontar saldo:",e);}
                 }
 
                 const horasStr = slotsSel.map(h=>`${h}:00`).join(", ");
@@ -728,8 +802,9 @@ const PortalCliente = () => {
                     fecha,
                     slots: slotsSel,
                     total: totalSel,
-                    descuentoAplicado,
-                    referrerCode: referrerCode||null
+                    referrerCode: refValido ? refCodeNorm : null,
+                    usarSaldo: usarSaldo && descSaldo>0,
+                    saldoUsado: descSaldo
                   })
                 });
                 const d = await r.json();
@@ -785,7 +860,7 @@ const PortalCliente = () => {
           <div style={{fontSize:12,color:"#E8C898",lineHeight:1.5}}>Compartí este código con amigos. Cuando reserven usándolo, ambos obtienen un descuento.</div>
           <button onClick={()=>{const txt=`Hola! Te invito a reservar en *${cfg.nombre_club}* usando mi código *${miCodigo}* y obtené descuento. Reservá en: https://dexon.com.py`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,"_blank");}} style={{marginTop:10,width:"100%",padding:"10px",background:"#25D366",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)"}}>📱 Compartir por WhatsApp</button>
         </div>}
-        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});setDescuentoAplicado(false);setReferrerCode("");setMiCodigo(""); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+        <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});setReferrerCode("");setMiCodigo("");setUsarSaldo(false); }} style={{width:"100%",padding:"11px",background:"transparent",color:TX.s,border:"1px solid #1E3070",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
           Volver al inicio
         </button>
       </div>}
@@ -1386,7 +1461,11 @@ export default function App() {
   const eliminarMovCaja = async id=>{setSaving(true);try{await db.del("caja",id,tk);await load();setDlg(null);}catch(e){alert(e.message);}setSaving(false);};
   const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
   const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="salida"&&item.precio_venta>0)await db.post("caja",{descripcion:`Venta - ${item.nombre} x${form.cantidad_mov}`,tipo:"ingreso",categoria:"stock",monto:item.precio_venta*Number(form.cantidad_mov),fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
-  const guardarConfig = async()=>{setSaving(true);try{await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(form.desc_martes_jueves_dias||[2,4])},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
+  const guardarConfig = async()=>{setSaving(true);try{
+    const dias=Array.isArray(form.desc_martes_jueves_dias)?form.desc_martes_jueves_dias:(typeof form.desc_martes_jueves_dias==="string"?(()=>{try{return JSON.parse(form.desc_martes_jueves_dias);}catch{return[2,4];}})():[2,4]);
+    await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_amount:Number(form.referral_discount_amount||20000)},tk);
+    await load();closeM();
+  }catch(e){alert(e.message);}setSaving(false);};
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
@@ -2157,11 +2236,11 @@ export default function App() {
       <R2 isMobile={isMobile}><Inp label="Tarifa base (Gs)" type="number" value={form.tarifa_base||""} onChange={sf("tarifa_base")}/><Inp label="Tarifa pico (Gs)" type="number" value={form.tarifa_pico||""} onChange={sf("tarifa_pico")}/></R2>
       <R2 isMobile={isMobile}><FG label="Hora pico inicio"><select style={inp} value={form.hora_pico_inicio??""} onChange={sf("hora_pico_inicio")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG><FG label="Hora pico fin"><select style={inp} value={form.hora_pico_fin??""} onChange={sf("hora_pico_fin")}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select></FG></R2>
       <R2 isMobile={isMobile}><FG label="Apertura"><select style={inp} value={form.hora_inicio??""} onChange={sf("hora_inicio")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG><FG label="Cierre"><select style={inp} value={form.hora_fin??""} onChange={sf("hora_fin")}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{i}:00</option>)}</select></FG></R2>
-      <Div/><div style={{fontSize:13,fontWeight:600,color:TX.p,marginBottom:10}}>Descuentos especiales</div>
-      <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}><input type="checkbox" checked={form.desc_martes_jueves_enabled||false} onChange={e=>setForm(f=>({...f,desc_martes_jueves_enabled:e.target.checked}))}/><span style={{fontSize:13,color:TX.s}}>Habilitar descuentos por día</span></label>
+      <Div/><div style={{fontSize:13,fontWeight:600,color:TX.p,marginBottom:10}}>Descuentos por día</div>
+      <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}><input type="checkbox" checked={form.desc_martes_jueves_enabled||false} onChange={e=>setForm(f=>({...f,desc_martes_jueves_enabled:e.target.checked}))}/><span style={{fontSize:13,color:TX.s}}>Aplicar descuento automático en días específicos</span></label>
       {form.desc_martes_jueves_enabled&&<>
         <Inp label="Porcentaje de descuento (%)" type="number" value={form.desc_martes_jueves_percent||20} onChange={sf("desc_martes_jueves_percent")}/>
-        <div style={{fontSize:12,color:TX.s,marginBottom:8,marginTop:0}}>¿En qué días aplica? (0=Dom, 1=Lun...)</div>
+        <div style={{fontSize:12,color:TX.s,marginBottom:8,marginTop:0}}>¿En qué días aplica?</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
           {[{n:"Domingo",i:0},{n:"Lunes",i:1},{n:"Martes",i:2},{n:"Miércoles",i:3},{n:"Jueves",i:4},{n:"Viernes",i:5},{n:"Sábado",i:6}].map(({n,i})=>{
             const raw=form.desc_martes_jueves_dias;
@@ -2173,6 +2252,9 @@ export default function App() {
           })}
         </div>
       </>}
+      <Div/><div style={{fontSize:13,fontWeight:600,color:TX.p,marginBottom:6}}>Programa de referidos</div>
+      <div style={{fontSize:11,color:TX.s,marginBottom:10,lineHeight:1.5}}>El monto se descuenta al cliente que usa el código y se acredita como saldo a favor al referente.</div>
+      <Inp label="Monto del descuento por referido (Gs)" type="number" value={form.referral_discount_amount||20000} onChange={sf("referral_discount_amount")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarConfig} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 
