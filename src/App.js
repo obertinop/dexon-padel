@@ -1443,7 +1443,7 @@ export default function App() {
   const noShow = async t=>{setSaving(true);try{await db.patch("turnos",t.id,{estado:"no_show"},tk);setDlg(null);closeM();await load();}catch(e){alert(e.message);}setSaving(false);};
   const guardarCliente = async()=>{
     if(!form.nombre?.trim())return;setSaving(true);
-    try{const p={nombre:form.nombre.trim(),telefono:form.telefono||"",nivel:form.nivel||"intermedio",notas:form.notas||""};if(form.id)await db.patch("clientes",form.id,p,tk);else await db.post("clientes",p,tk);await load();closeM();}
+    try{const p={nombre:form.nombre.trim(),telefono:form.telefono||"",nivel:form.nivel||"intermedio",notas:form.notas||"",referrer_code:form.referrer_code||null,saldo_favor:Number(form.saldo_favor||0)};if(form.id)await db.patch("clientes",form.id,p,tk);else await db.post("clientes",p,tk);await load();closeM();}
     catch(e){alert(e.message);}setSaving(false);
   };
   const eliminarCliente = async id=>{setSaving(true);try{await db.del("clientes",id,tk);await load();setDlg(null);closeM();}catch(e){alert(e.message);}setSaving(false);};
@@ -1629,7 +1629,15 @@ export default function App() {
       <div style={{display:"grid",gap:8}}>
         {lista.map(c=>{const ab=abonos.find(a=>a.cliente_id===c.id&&a.estado==="activo");const resC=turnos.filter(t=>t.cliente_id===c.id).length;return<div key={c.id} style={{...card,display:"flex",alignItems:"center",gap:14,padding:"12px 16px",cursor:"pointer"}} onClick={()=>openM("cliente",{...c})}>
           <Avatar nombre={c.nombre} size={40}/>
-          <div style={{flex:1,minWidth:0}}><div style={{fontWeight:500,fontSize:14,color:TX.p}}>{c.nombre}</div><div style={{fontSize:12,color:TX.s,marginTop:2}}>{c.telefono||"Sin teléfono"} · {resC} turnos · {c.nivel}</div>{c.notas&&<div style={{fontSize:11,color:TX.t,marginTop:2}}>{c.notas}</div>}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:500,fontSize:14,color:TX.p}}>{c.nombre}</div>
+            <div style={{fontSize:12,color:TX.s,marginTop:2}}>{c.telefono||"Sin teléfono"} · {resC} turnos · {c.nivel}</div>
+            <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
+              {c.referrer_code&&<span style={{fontSize:11,color:"#FFD580",background:"rgba(192,144,64,0.15)",padding:"2px 7px",borderRadius:5,letterSpacing:.5}}>{c.referrer_code}</span>}
+              {c.saldo_favor>0&&<span style={{fontSize:11,color:"#7ADDA8",background:"rgba(58,180,100,0.15)",padding:"2px 7px",borderRadius:5}}>Saldo: {gs(c.saldo_favor)}</span>}
+            </div>
+            {c.notas&&<div style={{fontSize:11,color:TX.t,marginTop:2}}>{c.notas}</div>}
+          </div>
           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}} onClick={e=>e.stopPropagation()}>
             {ab?<Badge type="purple">{pById(ab.plan_id)?.nombre||"Abonado"}</Badge>:<Badge type="gray">Ocasional</Badge>}
             {c.deuda>0&&<Badge type="danger">Debe {gs(c.deuda)}</Badge>}
@@ -2083,6 +2091,26 @@ export default function App() {
       <Inp label="Teléfono" type="text" value={form.telefono||""} onChange={sf("telefono")}/>
       <R2 isMobile={isMobile}><Sel label="Nivel" value={form.nivel||"intermedio"} onChange={sf("nivel")}><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></Sel></R2>
       <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
+      {form.id&&<><Div/>
+        <div style={{fontSize:13,fontWeight:600,color:TX.p,marginBottom:10}}>Referidos</div>
+        <div style={{background:"#0D1830",borderRadius:10,padding:"12px 14px",marginBottom:10,border:"1px solid #1A2B5A"}}>
+          <div style={{fontSize:11,color:TX.s,marginBottom:4}}>Código de referido</div>
+          {form.referrer_code
+            ? <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:14,fontWeight:700,color:"#FFD580",letterSpacing:1.5,flex:1}}>{form.referrer_code}</span>
+                <Btn sm v="ghost" onClick={()=>{navigator.clipboard.writeText(form.referrer_code);}} >Copiar</Btn>
+                <Btn sm v="ghost" onClick={()=>setForm(f=>({...f,referrer_code:genRefCode()}))}>Regenerar</Btn>
+              </div>
+            : <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:12,color:TX.t,flex:1}}>Sin código asignado</span>
+                <Btn sm v="primary" onClick={()=>setForm(f=>({...f,referrer_code:genRefCode()}))}>Generar</Btn>
+              </div>}
+        </div>
+        <R2 isMobile={isMobile}>
+          <Inp label="Saldo a favor (Gs)" type="number" value={form.saldo_favor||0} onChange={sf("saldo_favor")}/>
+        </R2>
+        <div style={{fontSize:11,color:TX.t,marginBottom:4}}>Podés ajustar el saldo manualmente (ej: compensar error, bonificación extra).</div>
+      </>}
 
       {form.id&&<>
         <Div/>
