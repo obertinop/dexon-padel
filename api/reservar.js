@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "No se pudo leer la configuración" });
   }
   const cfg = { ...cfgRes.data[0], _fecha: fecha };
-  const refMontoDesc = Number(cfg.referral_discount_amount) || 20000;
+  const refDescPct = Number(cfg.referral_discount_percent) || 10;
 
   // ── 3. Calcular total real server-side ───────────────────────────────────
   const preciosPorSlot = slots.map(h => calcularPrecio(h, cfg));
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
       if (mTNorm !== tNorm) refMatch = m;
     }
   }
-  const descRef = refMatch ? Math.min(refMontoDesc, subtotal) : 0;
+  const descRef = refMatch ? Math.round(subtotal * refDescPct / 100) : 0;
 
   // ── 5. Buscar/crear cliente ───────────────────────────────────────────────
   const telNorm9 = telefono.replace(/\D/g, "").replace(/^(595|0)/, "").slice(-9);
@@ -166,7 +166,7 @@ export default async function handler(req, res) {
   if (refMatch) {
     updates.push(sb(`clientes?id=eq.${refMatch.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ saldo_favor: (Number(refMatch.saldo_favor) || 0) + refMontoDesc }),
+      body: JSON.stringify({ saldo_favor: (Number(refMatch.saldo_favor) || 0) + descRef }),
     }));
   }
   if (descSaldo > 0) {

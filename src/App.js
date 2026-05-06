@@ -387,7 +387,7 @@ const PortalCliente = () => {
   const refMatch = refCodeNorm.length>=4 ? clientes.find(c=>c.referrer_code===refCodeNorm) : null;
   const miTelNorm = form.telefono.trim().replace(/\D/g,"");
   const refValido = !!refMatch && (!miTelNorm || refMatch.telefono?.replace(/\D/g,"") !== miTelNorm);
-  const refMontoDesc = Number(cfg.referral_discount_amount)||20000;
+  const refDescPct = Number(cfg.referral_discount_percent)||10;
   // Saldo a favor del cliente (si ya está registrado)
   const saldoDisponible = clienteEncontrado?.saldo_favor || 0;
   const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado");
@@ -399,7 +399,7 @@ const PortalCliente = () => {
   const subtotalSel = slotsSel.reduce((a,h)=>a+precioConDesc(h),0);
   const subtotalSinDesc = slotsSel.reduce((a,h)=>a+precioH(h),0);
   const ahorroDia = subtotalSinDesc - subtotalSel;
-  const descRef = refValido ? Math.min(refMontoDesc, subtotalSel) : 0;
+  const descRef = refValido ? Math.round(subtotalSel * refDescPct / 100) : 0;
   const descSaldo = usarSaldo ? Math.min(saldoDisponible, subtotalSel - descRef) : 0;
   const totalSel = Math.max(0, subtotalSel - descRef - descSaldo);
 
@@ -688,12 +688,12 @@ const PortalCliente = () => {
 
           {/* Referral code input con validación en vivo */}
           <div style={{background:"#0D1830",borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${refValido?"#2A6A4A":refMatch&&!refValido?"#6A2A2A":refCodeNorm.length>=4&&!refMatch?"#6A4A2A":"#1A2B5A"}`}}>
-            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Código de referido <span style={{color:TX.s,fontWeight:400}}>(opcional · descuento de {gs(refMontoDesc)})</span></label>
+            <label style={{fontSize:12,color:TX.s,fontWeight:600,display:"block",marginBottom:6}}>Código de referido <span style={{color:TX.s,fontWeight:400}}>(opcional · {refDescPct}% de descuento)</span></label>
             <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpPortal,textTransform:"uppercase"}} placeholder="Ej: REF-ABCD1234"/>
-            {refValido && <div style={{fontSize:12,color:"#7ADDA8",marginTop:8,display:"flex",alignItems:"center",gap:6}}>✓ Código válido — {gs(refMontoDesc)} de descuento aplicado</div>}
+            {refValido && <div style={{fontSize:12,color:"#7ADDA8",marginTop:8,display:"flex",alignItems:"center",gap:6}}>✓ Código válido — {refDescPct}% de descuento ({gs(descRef)}) aplicado</div>}
             {refMatch && !refValido && <div style={{fontSize:12,color:"#F58282",marginTop:8}}>✗ No podés usar tu propio código</div>}
             {refCodeNorm.length>=4 && !refMatch && <div style={{fontSize:12,color:"#FFB060",marginTop:8}}>⚠ Código no encontrado</div>}
-            {!refCodeNorm && <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>¿Un amigo te invitó? Pedile su código y obtené {gs(refMontoDesc)} de descuento.</div>}
+            {!refCodeNorm && <div style={{fontSize:11,color:TX.s,marginTop:6,lineHeight:1.5}}>¿Un amigo te invitó? Pedile su código y obtené {refDescPct}% de descuento.</div>}
           </div>
 
           {msg&&<div style={{background:"#2A0A0A",color:"#F58282",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
@@ -1408,7 +1408,7 @@ export default function App() {
   const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="salida"&&item.precio_venta>0)await db.post("caja",{descripcion:`Venta - ${item.nombre} x${form.cantidad_mov}`,tipo:"ingreso",categoria:"stock",monto:item.precio_venta*Number(form.cantidad_mov),fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
   const guardarConfig = async()=>{setSaving(true);try{
     const dias=Array.isArray(form.desc_martes_jueves_dias)?form.desc_martes_jueves_dias:(typeof form.desc_martes_jueves_dias==="string"?(()=>{try{return JSON.parse(form.desc_martes_jueves_dias);}catch{return[2,4];}})():[2,4]);
-    await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_amount:Number(form.referral_discount_amount||20000)},tk);
+    await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_percent:Number(form.referral_discount_percent||10)},tk);
     await load();closeM();
   }catch(e){alert(e.message);}setSaving(false);};
 
@@ -2227,7 +2227,7 @@ export default function App() {
       </>}
       <Div/><div style={{fontSize:13,fontWeight:600,color:TX.p,marginBottom:6}}>Programa de referidos</div>
       <div style={{fontSize:11,color:TX.s,marginBottom:10,lineHeight:1.5}}>El monto se descuenta al cliente que usa el código y se acredita como saldo a favor al referente.</div>
-      <Inp label="Monto del descuento por referido (Gs)" type="number" value={form.referral_discount_amount||20000} onChange={sf("referral_discount_amount")}/>
+      <Inp label="Descuento por referido (%)" type="number" value={form.referral_discount_percent||10} onChange={sf("referral_discount_percent")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarConfig} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 

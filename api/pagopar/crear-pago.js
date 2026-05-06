@@ -58,7 +58,7 @@ export default async function handler(req, res) {
   const cfgRes = await sb("config?limit=1");
   if (!cfgRes.ok || !cfgRes.data?.[0]) return res.status(500).json({ error: "No se pudo leer configuración" });
   const cfg = cfgRes.data[0];
-  const refMontoDesc = Number(cfg.referral_discount_amount) || 20000;
+  const refDescPct = Number(cfg.referral_discount_percent) || 10;
   const preciosPorSlot = slots.map(h => calcularPrecio(h, cfg, fecha));
   const subtotal = preciosPorSlot.reduce((a, b) => a + b, 0);
 
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
       if (mTNorm !== tNorm) refMatch = m;
     }
   }
-  const descRef = refMatch ? Math.min(refMontoDesc, subtotal) : 0;
+  const descRef = refMatch ? Math.round(subtotal * refDescPct / 100) : 0;
   const montoInt = Math.max(0, subtotal - descRef);
 
   // ── 4. Llamar a Pagopar con el total calculado server-side ───────────────
@@ -183,7 +183,7 @@ export default async function handler(req, res) {
   if (refMatch) {
     await sb(`clientes?id=eq.${refMatch.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ saldo_favor: (Number(refMatch.saldo_favor) || 0) + refMontoDesc }),
+      body: JSON.stringify({ saldo_favor: (Number(refMatch.saldo_favor) || 0) + descRef }),
     });
   }
 
