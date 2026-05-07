@@ -1626,107 +1626,160 @@ export default function App() {
     const [msgs,setMsgs]=useState([]);
     const [loadingMsgs,setLoadingMsgs]=useState(true);
     const [error,setError]=useState(null);
-    const [soloNoLeidos,setSoloNoLeidos]=useState(false);
-    const [respuestas,setRespuestas]=useState({});
-    const [abierto,setAbierto]=useState(null);
-    const [enviando,setEnviando]=useState({});
-    const [enviado,setEnviado]=useState({});
+    const [convAbierta,setConvAbierta]=useState(null); // telefono del contacto abierto
+    const [respuesta,setRespuesta]=useState("");
+    const [enviando,setEnviando]=useState(false);
+    const [enviado,setEnviado]=useState(false);
+    const chatRef=useRef(null);
 
     const cargar=useCallback(async()=>{
       setLoadingMsgs(true);setError(null);
-      try{const r=await fetch(`/api/whatsapp/mensajes?limit=100${soloNoLeidos?"&solo_no_leidos=true":""}`);if(!r.ok)throw new Error(await r.text());setMsgs(await r.json());}
+      try{const r=await fetch("/api/whatsapp/mensajes?limit=500");if(!r.ok)throw new Error(await r.text());setMsgs(await r.json());}
       catch(e){setError(e.message);}finally{setLoadingMsgs(false);}
-    },[soloNoLeidos]);
+    },[]);
 
     useEffect(()=>{cargar();},[cargar]);
 
+    // Scroll al final cuando se abre una conversación
+    useEffect(()=>{
+      if(convAbierta&&chatRef.current) setTimeout(()=>{chatRef.current.scrollTop=chatRef.current.scrollHeight;},50);
+    },[convAbierta,msgs]);
+
     const marcarLeido=async(ids)=>{
+      if(!ids.length)return;
       await fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
       setMsgs(p=>p.map(m=>ids.includes(m.id)?{...m,leido:true}:m));
     };
 
-    const enviarRespuesta=async(id,tel,texto)=>{
-      if(!texto?.trim())return;
-      setEnviando(p=>({...p,[id]:true}));
+    const enviarRespuesta=async()=>{
+      if(!respuesta.trim()||!convAbierta)return;
+      setEnviando(true);
       try{
-        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:tel,mensaje:texto.trim()})});
+        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:convAbierta,mensaje:respuesta.trim()})});
         const data=await r.json();
         if(!r.ok)throw new Error(data.error||"Error enviando");
-        setEnviado(p=>({...p,[id]:true}));setRespuestas(p=>({...p,[id]:""}));marcarLeido([id]);
-        setTimeout(()=>{setEnviado(p=>({...p,[id]:false}));setAbierto(null);},1500);
+        setEnviado(true);setRespuesta("");
+        await cargar();
+        setTimeout(()=>setEnviado(false),2000);
       }catch(e){alert("Error al enviar: "+e.message);}
-      finally{setEnviando(p=>({...p,[id]:false}));}
+      finally{setEnviando(false);}
     };
 
-    const noLeidos=msgs.filter(m=>!m.leido).length;
+    // Agrupar mensajes por número de teléfono (conversaciones)
+    const conversaciones = React.useMemo(()=>{
+      const mapa={};
+      msgs.forEach(m=>{
+        const tel=m.de;
+        if(!mapa[tel]) mapa[tel]={tel,nombre:m.nombre||tel,mensajes:[],noLeidos:0,ultimo:null};
+        mapa[tel].mensajes.push(m);
+        if(!m.leido) mapa[tel].noLeidos++;
+        if(!mapa[tel].ultimo||new Date(m.created_at)>new Date(mapa[tel].ultimo.created_at)) mapa[tel].ultimo=m;
+      });
+      return Object.values(mapa).sort((a,b)=>new Date(b.ultimo.created_at)-new Date(a.ultimo.created_at));
+    },[msgs]);
+
+    const noLeidosTotal=msgs.filter(m=>!m.leido).length;
+    const convActual=conversaciones.find(c=>c.tel===convAbierta);
+
+    const MensajeBurbuja=({m})=>{
+      const saliente=m.direccion==="saliente";
+      return <div style={{display:"flex",justifyContent:saliente?"flex-end":"flex-start",marginBottom:6}}>
+        <div style={{maxWidth:"78%",background:saliente?"#1A4A1A":C.bgElev,borderRadius:saliente?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"8px 12px",border:`1px solid ${saliente?C.greenBd:C.border}`}}>
+          {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
+            ?<audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:200,height:32,accentColor:"#25D366"}}/>
+            :m.tipo==="image"&&m.media_id
+            ?<img src={`/api/whatsapp/media?id=${m.media_id}`} alt="img" style={{maxWidth:220,maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
+            :<div style={{fontSize:13,color:saliente?C.green:C.t1,lineHeight:1.5}}>{m.mensaje}</div>
+          }
+          <div style={{fontSize:10,color:saliente?"#5ABDA8":C.t3,marginTop:4,textAlign:"right"}}>
+            {new Date(m.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
+          </div>
+        </div>
+      </div>;
+    };
+
+    // Vista de conversación abierta
+    if(convAbierta&&convActual){
+      const idsNoLeidos=convActual.mensajes.filter(m=>!m.leido).map(m=>m.id);
+      if(idsNoLeidos.length) marcarLeido(idsNoLeidos);
+      return <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 160px)",minHeight:400}}>
+        {/* Header conversación */}
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:C.bgCard,borderRadius:12,marginBottom:8,border:`1px solid ${C.border}`}}>
+          <button onClick={()=>setConvAbierta(null)} style={{background:"none",border:"none",color:C.t2,fontSize:20,cursor:"pointer",padding:"0 4px",fontFamily:"var(--font-sans)"}}>←</button>
+          <Avatar nombre={convActual.nombre} size={38}/>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:14,color:C.t1}}>{convActual.nombre}</div>
+            <div style={{fontSize:11,color:C.t3}}>{convActual.tel} · {convActual.mensajes.length} mensaje{convActual.mensajes.length!==1?"s":""}</div>
+          </div>
+          <button onClick={()=>window.open(`https://wa.me/${convActual.tel}`,"_blank")} style={{padding:"6px 12px",borderRadius:8,fontSize:12,cursor:"pointer",background:C.greenBg,color:"#25D366",border:`1px solid ${C.greenBd}`,fontFamily:"var(--font-sans)",fontWeight:600}}>
+            Abrir WA
+          </button>
+        </div>
+        {/* Mensajes */}
+        <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"8px 4px",display:"flex",flexDirection:"column"}}>
+          {convActual.mensajes.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(m=><MensajeBurbuja key={m.id} m={m}/>)}
+        </div>
+        {/* Input respuesta */}
+        <div style={{display:"flex",gap:8,alignItems:"flex-end",padding:"10px 0 0"}}>
+          <textarea
+            value={respuesta}
+            onChange={e=>setRespuesta(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta();}}
+            placeholder="Escribí tu respuesta… (Ctrl+Enter para enviar)"
+            rows={2}
+            style={{...inp,resize:"none",flex:1,fontSize:13,borderRadius:10}}
+            disabled={enviando}
+          />
+          <button onClick={enviarRespuesta} disabled={enviando||!respuesta.trim()}
+            style={{padding:"10px 18px",borderRadius:10,fontSize:13,cursor:"pointer",background:enviado?"#1A4A1A":"#25D366",color:enviado?C.green:"#fff",border:enviado?`1px solid ${C.greenBd}`:"none",fontFamily:"var(--font-sans)",fontWeight:700,whiteSpace:"nowrap",flexShrink:0,opacity:(enviando||!respuesta.trim())?0.6:1,transition:"all 0.15s"}}>
+            {enviando?"Enviando…":enviado?"✓ Enviado":"Enviar"}
+          </button>
+        </div>
+      </div>;
+    }
+
+    // Lista de conversaciones
     return <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Mensajes WhatsApp</span>
-          {noLeidos>0&&<span style={{marginLeft:10,background:C.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{noLeidos} nuevos</span>}
+          <span style={{fontSize:16,fontWeight:600,color:C.t1}}>WhatsApp</span>
+          {noLeidosTotal>0&&<span style={{marginLeft:10,background:C.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{noLeidosTotal} nuevos</span>}
         </div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <label style={{fontSize:12,color:C.t2,cursor:"pointer",display:"flex",gap:6,alignItems:"center"}}>
-            <input type="checkbox" checked={soloNoLeidos} onChange={e=>setSoloNoLeidos(e.target.checked)} style={{cursor:"pointer"}}/>
-            Solo no leídos
-          </label>
+        <div style={{display:"flex",gap:8}}>
           <Btn sm v="ghost" onClick={cargar}>Actualizar</Btn>
-          {noLeidos>0&&<Btn sm v="primary" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Marcar todos</Btn>}
+          {noLeidosTotal>0&&<Btn sm v="primary" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Marcar todos leídos</Btn>}
         </div>
       </div>
       {error&&<div style={{...card,background:C.redBg,color:C.red,marginBottom:12,fontSize:13}}>{error}</div>}
       {loadingMsgs?<div style={{textAlign:"center",padding:60,color:C.t2,fontSize:13}}>Cargando...</div>
-      :msgs.length===0?<div style={{...card,textAlign:"center",padding:40}}>
+      :conversaciones.length===0?<div style={{...card,textAlign:"center",padding:40}}>
           <div style={{fontSize:32,marginBottom:10}}>💬</div>
-          <div style={{color:C.t2,fontSize:14}}>{soloNoLeidos?"No hay mensajes sin leer":"No hay mensajes recibidos aún"}</div>
+          <div style={{color:C.t2,fontSize:14}}>No hay mensajes recibidos aún</div>
         </div>
-      :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {msgs.map(m=>{
-          const ts=new Date(m.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-          const estaAbierto=abierto===m.id;
-          return <div key={m.id} style={{...card,borderLeft:`3px solid ${m.leido?C.border:C.coral}`}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-              <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                <div style={{width:36,height:36,borderRadius:"50%",background:C.bgElev,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>👤</div>
-                <div>
-                  <div style={{fontWeight:600,fontSize:14,color:C.t1}}>{m.nombre||m.de}</div>
-                  <div style={{fontSize:11,color:C.t3}}>{m.de} · {ts}</div>
-                </div>
+      :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {conversaciones.map(conv=>{
+          const ult=conv.ultimo;
+          const ts=new Date(ult.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+          const preview=ult.mensaje&&ult.mensaje.length>55?ult.mensaje.slice(0,55)+"…":ult.mensaje;
+          return <div key={conv.tel} onClick={()=>setConvAbierta(conv.tel)}
+            style={{...card,display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer",borderLeft:`3px solid ${conv.noLeidos>0?C.coral:C.border}`,transition:"background 0.1s"}}
+            onMouseEnter={e=>e.currentTarget.style.background=C.bgHover}
+            onMouseLeave={e=>e.currentTarget.style.background=C.bgCard}>
+            <div style={{position:"relative",flexShrink:0}}>
+              <Avatar nombre={conv.nombre} size={44}/>
+              {conv.noLeidos>0&&<div style={{position:"absolute",top:-4,right:-4,background:C.coral,color:"#fff",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{conv.noLeidos}</div>}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:3}}>
+                <div style={{fontWeight:conv.noLeidos>0?700:500,fontSize:14,color:C.t1}}>{conv.nombre}</div>
+                <div style={{fontSize:11,color:C.t3,flexShrink:0,marginLeft:8}}>{ts}</div>
               </div>
-              <div style={{display:"flex",gap:6,flexShrink:0}}>
-                {!m.leido&&<Btn sm v="ghost" onClick={()=>marcarLeido([m.id])}>Leído</Btn>}
-                <button onClick={()=>setAbierto(estaAbierto?null:m.id)} style={{padding:"4px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:estaAbierto?C.greenBg:C.bg,color:"#25D366",border:`1px solid ${C.greenBd}`,fontFamily:"var(--font-sans)"}}>
-                  {estaAbierto?"Cerrar":"Responder"}
-                </button>
+              <div style={{fontSize:12,color:conv.noLeidos>0?C.t2:C.t3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {ult.direccion==="saliente"&&<span style={{color:C.green,marginRight:4}}>Tú:</span>}
+                {preview||"—"}
               </div>
             </div>
-            {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
-              ?<div style={{padding:"8px 12px",background:C.bg,borderRadius:8,marginBottom:estaAbierto?10:0}}>
-                  <audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",height:36,accentColor:"#25D366"}}/>
-                  {m.mensaje&&m.mensaje!=="[Audio]"&&m.mensaje!=="[Nota de voz]"&&<div style={{fontSize:12,color:C.t2,marginTop:4}}>{m.mensaje}</div>}
-                </div>
-              :m.tipo==="image"&&m.media_id
-              ?<div style={{padding:"8px 12px",background:C.bg,borderRadius:8,marginBottom:estaAbierto?10:0}}>
-                  <img src={`/api/whatsapp/media?id=${m.media_id}`} alt="imagen" style={{maxWidth:"100%",maxHeight:260,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
-                  {m.mensaje&&m.mensaje!=="[Imagen]"&&<div style={{fontSize:12,color:C.t2,marginTop:4}}>{m.mensaje}</div>}
-                </div>
-              :<div style={{fontSize:13,color:C.t1,padding:"8px 12px",background:C.bg,borderRadius:8,lineHeight:1.5,marginBottom:estaAbierto?10:0}}>{m.mensaje}</div>
-            }
-            {estaAbierto&&<div style={{marginTop:8,display:"flex",gap:8,alignItems:"flex-end"}}>
-              <textarea value={respuestas[m.id]||""} onChange={e=>setRespuestas(p=>({...p,[m.id]:e.target.value}))}
-                onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta(m.id,m.de,respuestas[m.id]);}}
-                placeholder="Escribí tu respuesta... (Ctrl+Enter para enviar)" rows={3}
-                style={{...inp,resize:"vertical",flex:1,fontSize:13}} disabled={enviando[m.id]}/>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                <button onClick={()=>enviarRespuesta(m.id,m.de,respuestas[m.id])} disabled={enviando[m.id]||!respuestas[m.id]?.trim()}
-                  style={{padding:"8px 14px",borderRadius:8,fontSize:13,cursor:"pointer",background:enviado[m.id]?C.greenBg:"#25D366",color:enviado[m.id]?C.green:"#fff",border:enviado[m.id]?`1px solid ${C.greenBd}`:"none",fontFamily:"var(--font-sans)",fontWeight:600,whiteSpace:"nowrap",opacity:(enviando[m.id]||!respuestas[m.id]?.trim())?0.6:1}}>
-                  {enviando[m.id]?"Enviando...":enviado[m.id]?"✓ Enviado":"Enviar"}
-                </button>
-                <button onClick={()=>setAbierto(null)} style={{padding:"6px 14px",borderRadius:8,fontSize:12,cursor:"pointer",background:C.bg,color:C.t2,border:`1px solid ${C.border}`,fontFamily:"var(--font-sans)"}}>
-                  Cancelar
-                </button>
-              </div>
-            </div>}
+            {conv.mensajes.length>1&&<div style={{fontSize:11,color:C.t3,flexShrink:0,background:C.bgElev,padding:"2px 7px",borderRadius:10,border:`1px solid ${C.border}`}}>{conv.mensajes.length}</div>}
           </div>;
         })}
       </div>}
