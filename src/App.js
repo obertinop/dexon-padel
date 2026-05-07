@@ -1717,6 +1717,14 @@ export default function App() {
           <button onClick={()=>window.open(`https://wa.me/${convActual.tel}`,"_blank")} style={{padding:"6px 12px",borderRadius:8,fontSize:12,cursor:"pointer",background:C.greenBg,color:"#25D366",border:`1px solid ${C.greenBd}`,fontFamily:"var(--font-sans)",fontWeight:600}}>
             Abrir WA
           </button>
+          <button onClick={async()=>{
+            if(!window.confirm(`¿Eliminar toda la conversación con ${convActual.nombre}?`))return;
+            await fetch("/api/whatsapp/mensajes",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({de:convActual.tel})});
+            setConvAbierta(null);
+            await cargar();
+          }} style={{padding:"6px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,fontFamily:"var(--font-sans)",fontWeight:600}}>
+            Eliminar
+          </button>
         </div>
         {/* Mensajes */}
         <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"8px 4px",display:"flex",flexDirection:"column"}}>
