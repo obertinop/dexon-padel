@@ -1146,6 +1146,7 @@ export default function App() {
   const [reprogramHora,setReprogramHora] = useState("");
   const [clima,setClima] = useState(null);
   const [waConvAbierta,setWaConvAbierta] = useState(null);
+  const [waNoLeidos,setWaNoLeidos] = useState(0);
   const tk = session?.token;
 
   const load = useCallback(async()=>{
@@ -1190,7 +1191,9 @@ export default function App() {
 
   useEffect(()=>{
     if(!tk) return;
-    const interval=setInterval(()=>{load();},10*1000);
+    const loadWaBadge=()=>fetch("/api/whatsapp/mensajes?limit=500").then(r=>r.json()).then(d=>setWaNoLeidos(Array.isArray(d)?d.filter(m=>!m.leido).length:0)).catch(()=>{});
+    loadWaBadge();
+    const interval=setInterval(()=>{load();loadWaBadge();},10*1000);
     return()=>clearInterval(interval);
   },[tk,load]);
 
@@ -1652,6 +1655,7 @@ export default function App() {
       if(!ids.length)return;
       await fetch("/api/whatsapp/mensajes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids})});
       setMsgs(p=>p.map(m=>ids.includes(m.id)?{...m,leido:true}:m));
+      setWaNoLeidos(n=>Math.max(0,n-ids.length));
     };
 
     const enviarRespuesta=async()=>{
@@ -1802,7 +1806,15 @@ export default function App() {
       <div style={{display:"flex",alignItems:"center",padding:`0 8px ${isMobile?"8px":"0"} 8px`}}>
         <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain",marginRight:8,flexShrink:0,padding:"8px 0"}}/>
         <div style={{display:"flex",flex:1,overflowX:"auto"}}>
-          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?C.t1:C.t3,borderBottom:tab===t.id?`2px solid ${C.coral}`:"2px solid transparent",fontWeight:tab===t.id?700:400,fontFamily:"var(--font-sans)",transition:"color 0.15s"}}>{t.l}</button>)}
+          {TABS.map(t=>{
+            const pendientesN=t.id==="pendientes"?turnos.filter(x=>x.estado==="pendiente_pago").length:0;
+            const waN=t.id==="whatsapp"?waNoLeidos:0;
+            const badge=pendientesN||waN;
+            return <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?C.t1:C.t3,borderBottom:tab===t.id?`2px solid ${C.coral}`:"2px solid transparent",fontWeight:tab===t.id?700:400,fontFamily:"var(--font-sans)",transition:"color 0.15s",position:"relative"}}>
+              {t.l}
+              {badge>0&&<span style={{position:"absolute",top:6,right:2,background:t.id==="whatsapp"?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 5px",fontSize:10,fontWeight:700,lineHeight:1.4,minWidth:16,textAlign:"center"}}>{badge}</span>}
+            </button>;
+          })}
         </div>
         <button onClick={doLogout} style={{padding:"6px 12px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
         <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:8,paddingLeft:8,borderLeft:`1px solid ${C.border}`,opacity:isRefreshing?1:0.4,transition:"opacity 0.3s"}}>
