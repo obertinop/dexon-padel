@@ -1145,6 +1145,7 @@ export default function App() {
   const [reprogramFecha,setReprogramFecha] = useState("");
   const [reprogramHora,setReprogramHora] = useState("");
   const [clima,setClima] = useState(null);
+  const [waConvAbierta,setWaConvAbierta] = useState(null);
   const tk = session?.token;
 
   const load = useCallback(async()=>{
@@ -1626,7 +1627,9 @@ export default function App() {
     const [msgs,setMsgs]=useState([]);
     const [loadingMsgs,setLoadingMsgs]=useState(true);
     const [error,setError]=useState(null);
-    const [convAbierta,setConvAbierta]=useState(null); // telefono del contacto abierto
+    // convAbierta vive en App para sobrevivir re-renders del auto-refresh
+    const convAbierta=waConvAbierta;
+    const setConvAbierta=setWaConvAbierta;
     const [respuesta,setRespuesta]=useState("");
     const [enviando,setEnviando]=useState(false);
     const [enviado,setEnviado]=useState(false);
