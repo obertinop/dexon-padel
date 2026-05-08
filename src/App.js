@@ -292,14 +292,16 @@ const PortalCliente = () => {
   const [miCodigo,setMiCodigo] = useState("");
   const [usarSaldo,setUsarSaldo] = useState(false);
   const [clienteEncontrado,setClienteEncontrado] = useState(null);
+  const [codigosRef,setCodigosRef] = useState([]);
 
   useEffect(()=>{
     const load = async () => {
       try {
-        const [cf,tu,cl] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc")]);
+        const [cf,tu,cl,cr] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true")]);
         if(cf?.[0]) setCfg(cf[0]);
         setTurnos(tu||[]);
         setClientes(cl||[]);
+        setCodigosRef(cr||[]);
       } catch(e){console.error(e);}
       setLoading(false);
     };
@@ -337,10 +339,12 @@ const PortalCliente = () => {
     return Math.round(base * (1 - descPct/100));
   };
   const refCodeNorm = referrerCode.trim().toUpperCase();
-  const refMatch = refCodeNorm.length>=4 ? clientes.find(c=>c.referrer_code===refCodeNorm) : null;
   const miTelNorm = form.telefono.trim().replace(/\D/g,"");
-  const refValido = !!refMatch && (!miTelNorm || refMatch.telefono?.replace(/\D/g,"") !== miTelNorm);
-  const refDescPct = Number(cfg.referral_discount_percent)||10;
+  // Verificar primero en codigos_referido institucionales, luego en clientes
+  const codigoInstit = refCodeNorm.length>=4 ? codigosRef.find(c=>c.codigo===refCodeNorm&&c.activo&&(c.max_usos===null||c.usos_actuales<c.max_usos)) : null;
+  const refMatch = (!codigoInstit && refCodeNorm.length>=4) ? clientes.find(c=>c.referrer_code===refCodeNorm) : null;
+  const refValido = !!codigoInstit || (!!refMatch && (!miTelNorm || refMatch.telefono?.replace(/\D/g,"") !== miTelNorm));
+  const refDescPct = codigoInstit ? Number(codigoInstit.descuento_pct)||10 : Number(cfg.referral_discount_percent)||10;
   const saldoDisponible = clienteEncontrado?.saldo_favor || 0;
   const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado");
   const pasado = h => fecha===hoy()&&h<=new Date().getHours();
@@ -653,9 +657,9 @@ const PortalCliente = () => {
             <div style={{background:C.bgElev,borderRadius:12,padding:"14px 16px",marginBottom:16,border:`1px solid ${refValido?C.greenBd:refMatch&&!refValido?C.redBd:C.border}`,transition:"border-color 0.2s"}}>
               <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Codigo de referido <span style={{color:C.t3,fontWeight:400}}>(opcional · {refDescPct}% descuento)</span></label>
               <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpP,textTransform:"uppercase",letterSpacing:1}} placeholder="REF-ABCD1234"/>
-              {refValido&&<div style={{fontSize:12,color:C.green,marginTop:8,display:"flex",alignItems:"center",gap:6}}>✓ Codigo valido — {refDescPct}% aplicado ({gs(descRef)})</div>}
+              {refValido&&<div style={{fontSize:12,color:C.green,marginTop:8,display:"flex",alignItems:"center",gap:6}}>✓ {codigoInstit?codigoInstit.nombre:`Codigo de ${refMatch?.nombre||"referido"}`} — {refDescPct}% aplicado ({gs(descRef)})</div>}
               {refMatch&&!refValido&&<div style={{fontSize:12,color:C.red,marginTop:8}}>No podes usar tu propio codigo</div>}
-              {refCodeNorm.length>=4&&!refMatch&&<div style={{fontSize:12,color:C.yellow,marginTop:8}}>Codigo no encontrado</div>}
+              {refCodeNorm.length>=4&&!refValido&&!refMatch&&<div style={{fontSize:12,color:C.yellow,marginTop:8}}>Codigo no encontrado</div>}
               {!refCodeNorm&&<div style={{fontSize:11,color:C.t3,marginTop:6}}>Un amigo te invito? Pedile su codigo y obtene {refDescPct}% off.</div>}
             </div>
 
@@ -1322,7 +1326,7 @@ export default function App() {
   };
   const eliminarCodigoRef = async id=>{setSaving(true);try{await db.del("codigos_referido",id,tk);await load();setDlg(null);}catch(e){alert(e.message);}setSaving(false);};
 
-  // ── Items vendidos en turno ──
+  // ── Items vendidos en turno (pendiente de cobro — no registra caja hasta cobro manual) ──
   const agregarItemTurno = async()=>{
     if(!form.id||!form.item_stock_id||!form.item_cantidad) return;
     setSaving(true);
@@ -1331,12 +1335,26 @@ export default function App() {
       if(!item) return;
       const cant=Number(form.item_cantidad);
       const precioUnit=Number(form.item_precio_unit||item.precio_venta||0);
-      await db.post("turno_items",{turno_id:form.id,stock_id:item.id,nombre:item.nombre,cantidad:cant,precio_unitario:precioUnit},tk);
+      // Solo registra el item y descuenta stock. Caja queda para cobro manual.
+      await db.post("turno_items",{turno_id:form.id,stock_id:item.id,nombre:item.nombre,cantidad:cant,precio_unitario:precioUnit,cobrado:false},tk);
       await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad-cant)},tk);
-      const cliente=clientes.find(c=>c.id===form.cliente_id);
-      await db.post("caja",{descripcion:`Venta ${item.nombre} x${cant}${cliente?` — ${cliente.nombre}`:""}`,tipo:"ingreso",categoria:"stock",monto:precioUnit*cant,fecha:form.fecha||hoy(),turno_id:form.id},tk);
       await load();
       setForm(f=>({...f,item_stock_id:"",item_cantidad:1,item_precio_unit:""}));
+    } catch(e){alert(e.message);}
+    setSaving(false);
+  };
+  const cobrarItemsTurno = async(turnoId)=>{
+    const items=turno_items.filter(i=>i.turno_id===turnoId&&!i.cobrado);
+    if(!items.length) return;
+    setSaving(true);
+    try {
+      const turno=turnos.find(t=>t.id===turnoId);
+      const cliente=clientes.find(c=>c.id===turno?.cliente_id);
+      for(const i of items){
+        await db.post("caja",{descripcion:`Venta ${i.nombre} x${i.cantidad}${cliente?` — ${cliente.nombre}`:""}`,tipo:"ingreso",categoria:"stock",monto:i.precio_unitario*i.cantidad,fecha:turno?.fecha||hoy(),turno_id:turnoId},tk);
+        await db.patch("turno_items",i.id,{cobrado:true},tk);
+      }
+      await load();
     } catch(e){alert(e.message);}
     setSaving(false);
   };
@@ -2016,21 +2034,27 @@ export default function App() {
       {/* ── Productos vendidos en el turno ── */}
       {form.id&&(()=>{
         const items=turno_items.filter(i=>i.turno_id===form.id);
-        const totalItems=items.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+        const pendientes=items.filter(i=>!i.cobrado);
+        const cobrados=items.filter(i=>i.cobrado);
+        const totalPend=pendientes.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
         const stockDisp=stock.filter(s=>s.cantidad>0);
         return <><Div/>
-          <div style={{fontWeight:600,fontSize:13,color:C.t1,marginBottom:10}}>Productos vendidos en este turno</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <span style={{fontWeight:600,fontSize:13,color:C.t1}}>Productos en este turno</span>
+            {pendientes.length>0&&<Btn sm v="success" onClick={()=>cobrarItemsTurno(form.id)} disabled={saving}>💰 Cobrar {gs(totalPend)}</Btn>}
+          </div>
           {items.length>0&&<div style={{background:C.bg,borderRadius:8,border:`1px solid ${C.border}`,marginBottom:10,overflow:"hidden"}}>
             {items.map(i=><div key={i.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
               <span style={{flex:1,color:C.t1,fontWeight:500}}>{i.nombre}</span>
               <span style={{color:C.t3}}>x{i.cantidad}</span>
-              <span style={{color:C.green,fontWeight:600,minWidth:70,textAlign:"right"}}>{gs(i.precio_unitario*i.cantidad)}</span>
-              <button onClick={()=>eliminarItemTurno(i.id,i.stock_id,i.cantidad)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>
+              <span style={{color:i.cobrado?C.green:C.yellow,fontWeight:600,minWidth:70,textAlign:"right"}}>{gs(i.precio_unitario*i.cantidad)}</span>
+              <span style={{fontSize:10,padding:"1px 6px",borderRadius:6,background:i.cobrado?C.greenBg:C.yellowBg,color:i.cobrado?C.green:C.yellow,border:`1px solid ${i.cobrado?C.greenBd:C.yellowBd}`,whiteSpace:"nowrap"}}>{i.cobrado?"Cobrado":"Pendiente"}</span>
+              {!i.cobrado&&<button onClick={()=>eliminarItemTurno(i.id,i.stock_id,i.cantidad)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>}
             </div>)}
-            <div style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",fontSize:13,fontWeight:700}}>
-              <span style={{color:C.t2}}>Total productos</span>
-              <span style={{color:C.green}}>{gs(totalItems)}</span>
-            </div>
+            {(pendientes.length>0||cobrados.length>0)&&<div style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",fontSize:12,color:C.t2}}>
+              {pendientes.length>0&&<span>Pendiente: <strong style={{color:C.yellow}}>{gs(totalPend)}</strong></span>}
+              {cobrados.length>0&&<span>Cobrado: <strong style={{color:C.green}}>{gs(cobrados.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0))}</strong></span>}
+            </div>}
           </div>}
           {stockDisp.length>0&&<div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
             <div style={{flex:2,minWidth:130}}>
