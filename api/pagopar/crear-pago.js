@@ -62,19 +62,34 @@ export default async function handler(req, res) {
   const preciosPorSlot = slots.map(h => calcularPrecio(h, cfg, fecha));
   const subtotal = preciosPorSlot.reduce((a, b) => a + b, 0);
 
-  // ── 3. Validar código de referido ────────────────────────────────────────
-  let refMatch = null;
+  // ── 3. Validar código de referido (institucional primero, luego cliente) ──
+  let refMatch = null;      // cliente referente (clientes.referrer_code)
+  let codigoRefDoc = null;  // código institucional (codigos_referido)
+  let descPctUsado = refDescPct;
   const refCodeNorm = (referrerCode || "").trim().toUpperCase();
+
   if (refCodeNorm.length >= 4) {
-    const r = await sb(`clientes?referrer_code=eq.${encodeURIComponent(refCodeNorm)}&select=id,nombre,telefono,saldo_favor&limit=1`);
-    if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
-      const m = r.data[0];
-      const tNorm = telefono.replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
-      const mTNorm = (m.telefono||"").replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
-      if (mTNorm !== tNorm) refMatch = m;
+    // 3a. Buscar en codigos_referido (gym, empresa, red social, etc.)
+    const rCod = await sb(`codigos_referido?codigo=eq.${encodeURIComponent(refCodeNorm)}&select=id,codigo,nombre,descuento_pct,max_usos,usos_actuales,activo&limit=1`);
+    if (rCod.ok && Array.isArray(rCod.data) && rCod.data.length > 0) {
+      const cod = rCod.data[0];
+      if (cod.activo && (cod.max_usos === null || cod.usos_actuales < cod.max_usos)) {
+        codigoRefDoc = cod;
+        descPctUsado = Number(cod.descuento_pct) || 10;
+      }
+    }
+    // 3b. Si no es código institucional, buscar en clientes
+    if (!codigoRefDoc) {
+      const r = await sb(`clientes?referrer_code=eq.${encodeURIComponent(refCodeNorm)}&select=id,nombre,telefono,saldo_favor&limit=1`);
+      if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+        const m = r.data[0];
+        const tNorm = telefono.replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
+        const mTNorm = (m.telefono||"").replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
+        if (mTNorm !== tNorm) refMatch = m;
+      }
     }
   }
-  const descRef = refMatch ? Math.round(subtotal * refDescPct / 100) : 0;
+  const descRef = (refMatch || codigoRefDoc) ? Math.round(subtotal * descPctUsado / 100) : 0;
   const montoInt = Math.max(0, subtotal - descRef);
 
   // ── 4. Llamar a Pagopar con el total calculado server-side ───────────────
@@ -164,14 +179,15 @@ export default async function handler(req, res) {
   }
 
   // ── 6. Guardar turnos ────────────────────────────────────────────────────
+  const refNota = refMatch ? ` - Ref: ${refMatch.nombre}` : codigoRefDoc ? ` - Código: ${codigoRefDoc.codigo}` : "";
   const turnosBody = slots.map((h, i) => ({
     fecha, hora: h, tipo: "ocasional", estado: "pendiente_pago",
     cliente_id: clienteId, precio: preciosPorSlot[i], sena: 0, saldo: preciosPorSlot[i],
-    notas: `Pago online vía Pagopar - Pedido ${pedidoNum}${refMatch ? ` - Ref: ${refMatch.nombre}` : ""}`,
+    notas: `Pago online vía Pagopar - Pedido ${pedidoNum}${refNota}`,
     metodo_pago: "pagopar",
     pagopar_hash: hashPedido, pagopar_pedido_num: pedidoNum, pagopar_id_pedido: idPedido,
-    applied_referral_code: refMatch ? refCodeNorm : null,
-    referral_discount_amount: refMatch ? Math.round(descRef * (preciosPorSlot[i] / (subtotal || 1))) : 0,
+    applied_referral_code: (refMatch || codigoRefDoc) ? refCodeNorm : null,
+    referral_discount_amount: (refMatch || codigoRefDoc) ? Math.round(descRef * (preciosPorSlot[i] / (subtotal || 1))) : 0,
   }));
 
   const insTur = await sb("turnos", { method: "POST", body: JSON.stringify(turnosBody), prefer: "return=representation" });
@@ -179,11 +195,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Error guardando turnos", detail: JSON.stringify(insTur.data), checkout_url: `https://www.pagopar.com/pagos/${hashPedido}`, hash: hashPedido });
   }
 
-  // ── 7. Actualizar saldo del referente ────────────────────────────────────
+  // ── 7. Actualizar saldo del referente / incrementar usos código ──────────
   if (refMatch) {
     await sb(`clientes?id=eq.${refMatch.id}`, {
       method: "PATCH",
       body: JSON.stringify({ saldo_favor: (Number(refMatch.saldo_favor) || 0) + descRef }),
+    });
+  }
+  if (codigoRefDoc) {
+    await sb(`codigos_referido?id=eq.${codigoRefDoc.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ usos_actuales: (codigoRefDoc.usos_actuales || 0) + slots.length }),
     });
   }
 

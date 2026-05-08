@@ -1134,7 +1134,7 @@ export default function App() {
     const u=localStorage.getItem("dx_user");
     return tk?{token:tk,user:u?JSON.parse(u):null}:null;
   });
-  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],espera:[],abono_turnos:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
+  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],espera:[],abono_turnos:[],codigos_ref:[],turno_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [semOff,setSemOff] = useState(0);
@@ -1153,7 +1153,7 @@ export default function App() {
     if(!tk) return;
     setIsRefreshing(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,es,cf,at] = await Promise.all([
+      const [tu,cl,ab,pl,ins,ca,st,es,cf,at,cr,ti] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc",tk),
         db.get("clientes","order=nombre.asc",tk),
         db.get("abonos","order=fecha_vencimiento.asc",tk),
@@ -1164,8 +1164,10 @@ export default function App() {
         db.get("espera","order=fecha.asc,hora.asc",tk),
         db.get("config","limit=1",tk),
         db.get("abono_turnos","order=abono_id.asc",tk),
+        db.get("codigos_referido","order=created_at.desc",tk),
+        db.get("turno_items","order=created_at.asc",tk),
       ]);
-      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],cfg:cf?.[0]||prev.cfg}));
+      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],cfg:cf?.[0]||prev.cfg}));
     } catch(e){console.error(e);}
     setIsRefreshing(false);
   },[tk]);
@@ -1206,7 +1208,7 @@ export default function App() {
 
   if(!session) return <Login onLogin={(token,user)=>setSession({token,user})}/>;
 
-  const {turnos,clientes,abonos,planes,instructores,caja,stock,abono_turnos,cfg} = data;
+  const {turnos,clientes,abonos,planes,instructores,caja,stock,abono_turnos,codigos_ref,turno_items,cfg} = data;
   const getHorasForDay = (dayOfWeek)=>{
     if(!cfg.horarios_por_dia) return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
     try {
@@ -1305,6 +1307,49 @@ export default function App() {
   }catch(e){alert(e.message);}setSaving(false);};
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
+
+  // ── Códigos de referido ──
+  const guardarCodigoRef = async()=>{
+    if(!form.codigo?.trim()||!form.nombre?.trim()) return;
+    setSaving(true);
+    try {
+      const p={codigo:form.codigo.trim().toUpperCase(),nombre:form.nombre.trim(),tipo:form.tipo||"socio",descuento_pct:Number(form.descuento_pct||10),max_usos:form.max_usos?Number(form.max_usos):null,activo:form.activo!==false,notas:form.notas||""};
+      if(form.id) await db.patch("codigos_referido",form.id,p,tk);
+      else { p.usos_actuales=0; await db.post("codigos_referido",p,tk); }
+      await load(); closeM();
+    } catch(e){alert(e.message);}
+    setSaving(false);
+  };
+  const eliminarCodigoRef = async id=>{setSaving(true);try{await db.del("codigos_referido",id,tk);await load();setDlg(null);}catch(e){alert(e.message);}setSaving(false);};
+
+  // ── Items vendidos en turno ──
+  const agregarItemTurno = async()=>{
+    if(!form.id||!form.item_stock_id||!form.item_cantidad) return;
+    setSaving(true);
+    try {
+      const item=stock.find(s=>s.id===Number(form.item_stock_id));
+      if(!item) return;
+      const cant=Number(form.item_cantidad);
+      const precioUnit=Number(form.item_precio_unit||item.precio_venta||0);
+      await db.post("turno_items",{turno_id:form.id,stock_id:item.id,nombre:item.nombre,cantidad:cant,precio_unitario:precioUnit},tk);
+      await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad-cant)},tk);
+      const cliente=clientes.find(c=>c.id===form.cliente_id);
+      await db.post("caja",{descripcion:`Venta ${item.nombre} x${cant}${cliente?` — ${cliente.nombre}`:""}`,tipo:"ingreso",categoria:"stock",monto:precioUnit*cant,fecha:form.fecha||hoy(),turno_id:form.id},tk);
+      await load();
+      setForm(f=>({...f,item_stock_id:"",item_cantidad:1,item_precio_unit:""}));
+    } catch(e){alert(e.message);}
+    setSaving(false);
+  };
+  const eliminarItemTurno = async(itemId,stockId,cant)=>{
+    setSaving(true);
+    try {
+      const item=stock.find(s=>s.id===stockId);
+      await db.del("turno_items",itemId,tk);
+      if(item) await db.patch("stock",stockId,{cantidad:item.cantidad+cant},tk);
+      await load();
+    } catch(e){alert(e.message);}
+    setSaving(false);
+  };
 
   const TABS=[{id:"agenda",l:"Agenda"},{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"whatsapp",l:"💬 WA"},{id:"config",l:"Config"}];
 
@@ -1623,7 +1668,80 @@ export default function App() {
       </div>
     </div>
     {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:600,marginBottom:12,fontSize:14,color:C.t1}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{fontWeight:600,color:C.t1}}>{i.nombre}</span><span style={{color:C.t2}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
-    <div style={card}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:600,fontSize:14,color:C.t1}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div><span style={{fontWeight:600,color:C.t1}}>{p.nombre}</span><span style={{color:C.t2,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:600,color:C.t1}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
+    <div style={{...card,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:600,fontSize:14,color:C.t1}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div><span style={{fontWeight:600,color:C.t1}}>{p.nombre}</span><span style={{color:C.t2,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:600,color:C.t1}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
+
+    {/* ── CÓDIGOS DE REFERIDO ── */}
+    <div style={card}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div>
+          <div style={{fontWeight:600,fontSize:14,color:C.t1}}>Códigos de referido</div>
+          <div style={{fontSize:12,color:C.t2,marginTop:2}}>Gym, socios, redes sociales, eventos — con descuento propio y límite de usos</div>
+        </div>
+        <Btn v="primary" sm onClick={()=>openM("codigoRef",{tipo:"socio",descuento_pct:10,activo:true})}>+ Nuevo</Btn>
+      </div>
+
+      {/* Stats globales */}
+      {codigos_ref.length>0&&(()=>{
+        const totalUsos=codigos_ref.reduce((a,c)=>a+c.usos_actuales,0);
+        const activos=codigos_ref.filter(c=>c.activo).length;
+        const descTotal=turnos.filter(t=>t.applied_referral_code).reduce((a,t)=>a+(t.referral_discount_amount||0),0);
+        return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,margin:"12px 0"}}>
+          {[["Códigos activos",activos,C.green],["Total usos",totalUsos,C.info],["Descuentos otorgados",gs(descTotal),C.yellow]].map(([l,v,col])=>
+            <div key={l} style={{background:C.bg,borderRadius:8,padding:"10px 12px",textAlign:"center",border:`1px solid ${C.border}`}}>
+              <div style={{fontSize:18,fontWeight:700,color:col}}>{v}</div>
+              <div style={{fontSize:11,color:C.t2,marginTop:2}}>{l}</div>
+            </div>
+          )}
+        </div>;
+      })()}
+
+      {codigos_ref.length===0
+        ?<div style={{textAlign:"center",padding:"28px 0",color:C.t3,fontSize:13}}>Sin códigos creados. Usá "+" para agregar uno.</div>
+        :<div style={{display:"grid",gap:8,marginTop:8}}>
+          {codigos_ref.map(cr=>{
+            const pct=cr.max_usos?Math.round(cr.usos_actuales/cr.max_usos*100):null;
+            const tipoCol={cliente:C.info,socio:C.green,empresa:C.coral,red_social:"#25D366",evento:C.yellow}[cr.tipo]||C.t2;
+            const usadoresTurnos=turnos.filter(t=>t.applied_referral_code===cr.codigo);
+            const usadoresUnicos=[...new Set(usadoresTurnos.map(t=>t.cliente_id))];
+            return <div key={cr.id} style={{background:C.bg,borderRadius:10,padding:"12px 14px",border:`1px solid ${cr.activo?C.border:C.redBd}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span style={{fontWeight:800,fontSize:16,color:C.yellow,letterSpacing:2}}>{cr.codigo}</span>
+                    <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:`${tipoCol}22`,color:tipoCol,fontWeight:600}}>{cr.tipo}</span>
+                    {!cr.activo&&<span style={{fontSize:11,padding:"2px 7px",borderRadius:10,background:C.redBg,color:C.red,fontWeight:600}}>Inactivo</span>}
+                  </div>
+                  <div style={{fontSize:13,color:C.t1,marginTop:3}}>{cr.nombre}</div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <Btn sm v="ghost" onClick={()=>openM("codigoRef",{...cr})}>Editar</Btn>
+                  <Btn sm v="danger" onClick={()=>setDlg({type:"eliminarCodigo",id:cr.id,codigo:cr.codigo})}>×</Btn>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:16,fontSize:12,color:C.t2,flexWrap:"wrap",alignItems:"center"}}>
+                <span>Descuento: <strong style={{color:C.t1}}>{cr.descuento_pct}%</strong></span>
+                <span>Usos: <strong style={{color:cr.usos_actuales>0?C.green:C.t1}}>{cr.usos_actuales}</strong>{cr.max_usos&&<span style={{color:C.t3}}>/{cr.max_usos}</span>}</span>
+                <span>Clientes únicos: <strong style={{color:C.t1}}>{usadoresUnicos.length}</strong></span>
+                {cr.max_usos&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{width:80,height:4,background:C.border,borderRadius:2,overflow:"hidden"}}>
+                    <div style={{width:`${Math.min(pct,100)}%`,height:"100%",background:pct>=90?C.red:pct>=60?C.yellow:C.green,borderRadius:2,transition:"width .3s"}}/>
+                  </div>
+                  <span style={{fontSize:11,color:C.t3}}>{pct}%</span>
+                </div>}
+                {cr.notas&&<span style={{color:C.t3,fontStyle:"italic"}}>· {cr.notas}</span>}
+              </div>
+              {/* Últimos usuarios */}
+              {usadoresTurnos.length>0&&<div style={{marginTop:8,borderTop:`1px solid ${C.border}`,paddingTop:8,display:"flex",flexWrap:"wrap",gap:6}}>
+                {[...new Set(usadoresTurnos.map(t=>t.cliente_id))].slice(0,5).map(cid=>{
+                  const cl=clientes.find(c=>c.id===cid);
+                  return cl?<span key={cid} style={{fontSize:11,background:C.bgElev,color:C.t2,padding:"2px 8px",borderRadius:8}}>{cl.nombre}</span>:null;
+                })}
+                {usadoresUnicos.length>5&&<span style={{fontSize:11,color:C.t3}}>+{usadoresUnicos.length-5} más</span>}
+              </div>}
+            </div>;
+          })}
+        </div>}
+    </div>
   </div>;
 
   const WhatsApp=()=>{
@@ -1894,6 +2012,51 @@ export default function App() {
         <Btn v="danger" onClick={()=>{closeM();setDlg({type:"cancelar",t:form});}}>Cancelar turno</Btn>
       </div>}
       {form.estado==="confirmado"&&form.cliente?.telefono&&<Btn v="success" onClick={()=>enviarWsp(form.cliente.telefono,`¡Hola ${form.cliente.nombre}! Tu turno en ${cfg.nombre_club} del ${form.fecha} a las ${form.hora}:00hs fue confirmado. ¡Gracias!`)}>Enviar WhatsApp</Btn>}
+
+      {/* ── Productos vendidos en el turno ── */}
+      {form.id&&(()=>{
+        const items=turno_items.filter(i=>i.turno_id===form.id);
+        const totalItems=items.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+        const stockDisp=stock.filter(s=>s.cantidad>0);
+        return <><Div/>
+          <div style={{fontWeight:600,fontSize:13,color:C.t1,marginBottom:10}}>Productos vendidos en este turno</div>
+          {items.length>0&&<div style={{background:C.bg,borderRadius:8,border:`1px solid ${C.border}`,marginBottom:10,overflow:"hidden"}}>
+            {items.map(i=><div key={i.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+              <span style={{flex:1,color:C.t1,fontWeight:500}}>{i.nombre}</span>
+              <span style={{color:C.t3}}>x{i.cantidad}</span>
+              <span style={{color:C.green,fontWeight:600,minWidth:70,textAlign:"right"}}>{gs(i.precio_unitario*i.cantidad)}</span>
+              <button onClick={()=>eliminarItemTurno(i.id,i.stock_id,i.cantidad)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>
+            </div>)}
+            <div style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",fontSize:13,fontWeight:700}}>
+              <span style={{color:C.t2}}>Total productos</span>
+              <span style={{color:C.green}}>{gs(totalItems)}</span>
+            </div>
+          </div>}
+          {stockDisp.length>0&&<div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+            <div style={{flex:2,minWidth:130}}>
+              <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Producto</label>
+              <select style={inp} value={form.item_stock_id||""} onChange={e=>{const s=stock.find(x=>x.id===Number(e.target.value));setForm(f=>({...f,item_stock_id:e.target.value,item_precio_unit:s?.precio_venta||0,item_cantidad:1}));}}>
+                <option value="">Seleccionar...</option>
+                {stockDisp.map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad})</option>)}
+              </select>
+            </div>
+            <div style={{width:65}}>
+              <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Cant.</label>
+              <input type="number" min={1} style={{...inp,width:"100%"}} value={form.item_cantidad||1}
+                onChange={e=>setForm(f=>({...f,item_cantidad:e.target.value}))}/>
+            </div>
+            <div style={{flex:1,minWidth:90}}>
+              <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Precio unit. (Gs)</label>
+              <input type="number" style={inp} value={form.item_precio_unit||""} placeholder="Auto"
+                onChange={e=>setForm(f=>({...f,item_precio_unit:e.target.value}))}/>
+            </div>
+            {form.item_stock_id&&<div style={{fontSize:12,color:C.green,fontWeight:600,paddingBottom:8,whiteSpace:"nowrap"}}>
+              = {gs(Number(form.item_precio_unit||0)*Number(form.item_cantidad||1))}
+            </div>}
+            <Btn v="success" sm onClick={agregarItemTurno} disabled={saving||!form.item_stock_id}>+ Agregar</Btn>
+          </div>}
+        </>;
+      })()}
       </>}
     </Modal>
 
@@ -2041,6 +2204,40 @@ export default function App() {
       <Inp label="Descuento por referido (%)" type="number" value={form.referral_discount_percent||10} onChange={sf("referral_discount_percent")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarConfig} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
+
+    {/* Modal crear/editar código de referido */}
+    <Modal show={modal==="codigoRef"} onClose={closeM} title={form.id?"Editar código":"Nuevo código de referido"} width={460}>
+      <R2 isMobile={isMobile}>
+        <div>
+          <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Código *</label>
+          <input style={{...inp,fontWeight:700,letterSpacing:2,textTransform:"uppercase"}} value={form.codigo||""} onChange={e=>setForm(f=>({...f,codigo:e.target.value.toUpperCase()}))} placeholder="GYM2024" autoFocus/>
+        </div>
+        <Sel label="Tipo" value={form.tipo||"socio"} onChange={sf("tipo")}>
+          <option value="cliente">Cliente referido</option>
+          <option value="socio">Socio / Gimnasio</option>
+          <option value="empresa">Empresa</option>
+          <option value="red_social">Red social</option>
+          <option value="evento">Evento / Promo</option>
+        </Sel>
+      </R2>
+      <Inp label="Nombre / descripción *" value={form.nombre||""} onChange={sf("nombre")} placeholder="Gym Energía, Instagram, Torneo verano…"/>
+      <R2 isMobile={isMobile}>
+        <Inp label="Descuento (%)" type="number" value={form.descuento_pct||10} onChange={sf("descuento_pct")}/>
+        <Inp label="Límite de usos (vacío = ilimitado)" type="number" value={form.max_usos||""} onChange={sf("max_usos")} placeholder="Ej: 50"/>
+      </R2>
+      <Inp label="Notas internas" value={form.notas||""} onChange={sf("notas")} placeholder="Dónde circula, quién lo coordinó…"/>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <input type="checkbox" id="cod_activo" checked={form.activo!==false} onChange={e=>setForm(f=>({...f,activo:e.target.checked}))} style={{cursor:"pointer"}}/>
+        <label htmlFor="cod_activo" style={{fontSize:13,color:C.t1,cursor:"pointer"}}>Código activo</label>
+      </div>
+      <Div/>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <Btn onClick={closeM}>Cancelar</Btn>
+        <Btn v="primary" onClick={guardarCodigoRef} disabled={saving}>{saving?"Guardando...":form.id?"Guardar cambios":"Crear código"}</Btn>
+      </div>
+    </Modal>
+
+    <Dialog show={dlg?.type==="eliminarCodigo"} title="Eliminar código" msg={`¿Eliminar el código "${dlg?.codigo}"? Se perderá el historial de usos.`} onOk={()=>eliminarCodigoRef(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
 
     <Dialog show={dlg?.type==="confirmar"} title="Confirmar cobro" msg={`¿Cobrar ${gs((dlg?.t?.precio||0)-(dlg?.t?.sena||0))} a ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?`} onOk={()=>confirmarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="✓ Confirmar" okV="success"/>
     <Dialog show={dlg?.type==="cancelar"} title="Cancelar turno" msg={`¿Cancelar turno de ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?${dlg?.t?.sena>0?" La seña se devuelve en caja.":""}`} onOk={()=>cancelarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Cancelar turno" okV="danger"/>
