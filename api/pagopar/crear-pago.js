@@ -2,7 +2,60 @@
 import crypto from "crypto";
 
 const sha1 = (s) => crypto.createHash("sha1").update(s).digest("hex");
-const genCode = () => { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r="REF-"; for(let i=0;i<8;i++)r+=c[Math.floor(Math.random()*c.length)]; return r; };
+
+const limpiarTexto = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
+
+// Fisher-Yates shuffle
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+// Verifica que ninguna subsecuencia de 3+ chars consecutivos del resultado
+// aparezca también consecutiva en el origen
+const tieneSecuenciaOriginal = (resultado, origen) => {
+  for (let i = 0; i <= resultado.length - 3; i++) {
+    const sub = resultado.slice(i, i + 3);
+    if (origen.includes(sub)) return true;
+  }
+  return false;
+};
+
+const mezclarSinPatron = (chars, origen, intentos = 20) => {
+  for (let i = 0; i < intentos; i++) {
+    const mezclado = shuffle(chars);
+    if (!tieneSecuenciaOriginal(mezclado.join(""), origen)) return mezclado;
+  }
+  return shuffle(chars); // fallback: igual se mezcla, solo puede quedar algún patrón
+};
+
+const genCodigoBase = (nombre, telefono) => {
+  const letras = [...limpiarTexto(nombre)];
+  const digitos = [...telefono.replace(/\D/g,"")];
+  if (letras.length < 3 || digitos.length < 4) {
+    // Fallback para nombres/teléfonos muy cortos
+    const pad = "XYZWQK";
+    while (letras.length < 3) letras.push(pad[letras.length % pad.length]);
+    while (digitos.length < 4) digitos.push(String(digitos.length % 10));
+  }
+  const letMezcladas = mezclarSinPatron(letras, limpiarTexto(nombre));
+  const digMezclados = mezclarSinPatron(digitos, telefono.replace(/\D/g,""));
+  return `${letMezcladas.slice(0,3).join("")}-${digMezclados.slice(0,4).join("")}`;
+};
+
+const genCodePersonalizado = async (nombre, telefono) => {
+  for (let i = 0; i < 10; i++) {
+    const codigo = genCodigoBase(nombre, telefono);
+    const check = await sb(`clientes?referrer_code=eq.${encodeURIComponent(codigo)}&select=id&limit=1`);
+    if (!check.ok || !check.data?.length) return codigo;
+  }
+  // Extremadamente improbable llegar acá
+  return genCodigoBase(nombre, telefono) + Math.floor(Math.random()*9);
+};
 
 async function sb(path, opts = {}) {
   const url = `${process.env.SUPABASE_URL}/rest/v1/${path}`;
@@ -62,19 +115,34 @@ export default async function handler(req, res) {
   const preciosPorSlot = slots.map(h => calcularPrecio(h, cfg, fecha));
   const subtotal = preciosPorSlot.reduce((a, b) => a + b, 0);
 
-  // ── 3. Validar código de referido ────────────────────────────────────────
-  let refMatch = null;
+  // ── 3. Validar código de referido (institucional primero, luego cliente) ──
+  let refMatch = null;      // cliente referente (clientes.referrer_code)
+  let codigoRefDoc = null;  // código institucional (codigos_referido)
+  let descPctUsado = refDescPct;
   const refCodeNorm = (referrerCode || "").trim().toUpperCase();
+
   if (refCodeNorm.length >= 4) {
-    const r = await sb(`clientes?referrer_code=eq.${encodeURIComponent(refCodeNorm)}&select=id,nombre,telefono,saldo_favor&limit=1`);
-    if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
-      const m = r.data[0];
-      const tNorm = telefono.replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
-      const mTNorm = (m.telefono||"").replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
-      if (mTNorm !== tNorm) refMatch = m;
+    // 3a. Buscar en codigos_referido (gym, empresa, red social, etc.)
+    const rCod = await sb(`codigos_referido?codigo=eq.${encodeURIComponent(refCodeNorm)}&select=id,codigo,nombre,descuento_pct,max_usos,usos_actuales,activo&limit=1`);
+    if (rCod.ok && Array.isArray(rCod.data) && rCod.data.length > 0) {
+      const cod = rCod.data[0];
+      if (cod.activo && (cod.max_usos === null || cod.usos_actuales < cod.max_usos)) {
+        codigoRefDoc = cod;
+        descPctUsado = Number(cod.descuento_pct) || 10;
+      }
+    }
+    // 3b. Si no es código institucional, buscar en clientes
+    if (!codigoRefDoc) {
+      const r = await sb(`clientes?referrer_code=eq.${encodeURIComponent(refCodeNorm)}&select=id,nombre,telefono,saldo_favor&limit=1`);
+      if (r.ok && Array.isArray(r.data) && r.data.length > 0) {
+        const m = r.data[0];
+        const tNorm = telefono.replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
+        const mTNorm = (m.telefono||"").replace(/\D/g,"").replace(/^(595|0)/,"").slice(-9);
+        if (mTNorm !== tNorm) refMatch = m;
+      }
     }
   }
-  const descRef = refMatch ? Math.round(subtotal * refDescPct / 100) : 0;
+  const descRef = (refMatch || codigoRefDoc) ? Math.round(subtotal * descPctUsado / 100) : 0;
   const montoInt = Math.max(0, subtotal - descRef);
 
   // ── 4. Llamar a Pagopar con el total calculado server-side ───────────────
@@ -143,12 +211,12 @@ export default async function handler(req, res) {
   }
 
   if (clienteId && !codigoCliente) {
-    codigoCliente = genCode();
+    codigoCliente = await genCodePersonalizado(nombre, telefono);
     await sb(`clientes?id=eq.${clienteId}`, { method: "PATCH", body: JSON.stringify({ referrer_code: codigoCliente }) });
   }
 
   if (!clienteId) {
-    codigoCliente = genCode();
+    codigoCliente = await genCodePersonalizado(nombre, telefono);
     const ins = await sb("clientes", {
       method: "POST",
       body: JSON.stringify({ nombre: nombre.trim(), telefono: telefono.trim(), nivel: "intermedio", notas: "Registrado vía Pagopar", referrer_code: codigoCliente }),
@@ -164,14 +232,15 @@ export default async function handler(req, res) {
   }
 
   // ── 6. Guardar turnos ────────────────────────────────────────────────────
+  const refNota = refMatch ? ` - Ref: ${refMatch.nombre}` : codigoRefDoc ? ` - Código: ${codigoRefDoc.codigo}` : "";
   const turnosBody = slots.map((h, i) => ({
     fecha, hora: h, tipo: "ocasional", estado: "pendiente_pago",
     cliente_id: clienteId, precio: preciosPorSlot[i], sena: 0, saldo: preciosPorSlot[i],
-    notas: `Pago online vía Pagopar - Pedido ${pedidoNum}${refMatch ? ` - Ref: ${refMatch.nombre}` : ""}`,
+    notas: `Pago online vía Pagopar - Pedido ${pedidoNum}${refNota}`,
     metodo_pago: "pagopar",
     pagopar_hash: hashPedido, pagopar_pedido_num: pedidoNum, pagopar_id_pedido: idPedido,
-    applied_referral_code: refMatch ? refCodeNorm : null,
-    referral_discount_amount: refMatch ? Math.round(descRef * (preciosPorSlot[i] / (subtotal || 1))) : 0,
+    applied_referral_code: (refMatch || codigoRefDoc) ? refCodeNorm : null,
+    referral_discount_amount: (refMatch || codigoRefDoc) ? Math.round(descRef * (preciosPorSlot[i] / (subtotal || 1))) : 0,
   }));
 
   const insTur = await sb("turnos", { method: "POST", body: JSON.stringify(turnosBody), prefer: "return=representation" });
@@ -179,11 +248,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Error guardando turnos", detail: JSON.stringify(insTur.data), checkout_url: `https://www.pagopar.com/pagos/${hashPedido}`, hash: hashPedido });
   }
 
-  // ── 7. Actualizar saldo del referente ────────────────────────────────────
+  // ── 7. Actualizar saldo del referente / incrementar usos código ──────────
   if (refMatch) {
     await sb(`clientes?id=eq.${refMatch.id}`, {
       method: "PATCH",
       body: JSON.stringify({ saldo_favor: (Number(refMatch.saldo_favor) || 0) + descRef }),
+    });
+  }
+  if (codigoRefDoc) {
+    await sb(`codigos_referido?id=eq.${codigoRefDoc.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ usos_actuales: (codigoRefDoc.usos_actuales || 0) + slots.length }),
     });
   }
 
