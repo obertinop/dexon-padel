@@ -5,31 +5,56 @@ const sha1 = (s) => crypto.createHash("sha1").update(s).digest("hex");
 
 const limpiarTexto = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
 
+// Fisher-Yates shuffle
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+// Verifica que ninguna subsecuencia de 3+ chars consecutivos del resultado
+// aparezca también consecutiva en el origen
+const tieneSecuenciaOriginal = (resultado, origen) => {
+  for (let i = 0; i <= resultado.length - 3; i++) {
+    const sub = resultado.slice(i, i + 3);
+    if (origen.includes(sub)) return true;
+  }
+  return false;
+};
+
+const mezclarSinPatron = (chars, origen, intentos = 20) => {
+  for (let i = 0; i < intentos; i++) {
+    const mezclado = shuffle(chars);
+    if (!tieneSecuenciaOriginal(mezclado.join(""), origen)) return mezclado;
+  }
+  return shuffle(chars); // fallback: igual se mezcla, solo puede quedar algún patrón
+};
+
 const genCodigoBase = (nombre, telefono) => {
-  const partes = nombre.trim().split(/\s+/);
-  const primerNombre = limpiarTexto(partes[0] || "");
-  const apellido = limpiarTexto(partes[partes.length > 1 ? partes.length - 1 : 0] || "");
-  const ini = primerNombre[0] || "X";
-  const ap2 = (apellido[0] || "X") + (apellido[1] || "X");
-  const digsTel = telefono.replace(/\D/g,"");
-  // Toma 4 dígitos del medio del teléfono
-  const mid = Math.floor((digsTel.length - 4) / 2);
-  const nums = digsTel.slice(mid, mid + 4) || digsTel.slice(-4).padStart(4,"0");
-  return `${ini}${ap2}-${nums}`;
+  const letras = [...limpiarTexto(nombre)];
+  const digitos = [...telefono.replace(/\D/g,"")];
+  if (letras.length < 3 || digitos.length < 4) {
+    // Fallback para nombres/teléfonos muy cortos
+    const pad = "XYZWQK";
+    while (letras.length < 3) letras.push(pad[letras.length % pad.length]);
+    while (digitos.length < 4) digitos.push(String(digitos.length % 10));
+  }
+  const letMezcladas = mezclarSinPatron(letras, limpiarTexto(nombre));
+  const digMezclados = mezclarSinPatron(digitos, telefono.replace(/\D/g,""));
+  return `${letMezcladas.slice(0,3).join("")}-${digMezclados.slice(0,4).join("")}`;
 };
 
 const genCodePersonalizado = async (nombre, telefono) => {
-  const base = genCodigoBase(nombre, telefono);
-  // Verificar colisión
-  const check = await sb(`clientes?referrer_code=eq.${encodeURIComponent(base)}&select=id&limit=1`);
-  if (!check.ok || !check.data?.length) return base;
-  // Colisión: agregar dígito extra aleatorio
   for (let i = 0; i < 10; i++) {
-    const extra = base + Math.floor(Math.random() * 10);
-    const c2 = await sb(`clientes?referrer_code=eq.${encodeURIComponent(extra)}&select=id&limit=1`);
-    if (!c2.ok || !c2.data?.length) return extra;
+    const codigo = genCodigoBase(nombre, telefono);
+    const check = await sb(`clientes?referrer_code=eq.${encodeURIComponent(codigo)}&select=id&limit=1`);
+    if (!check.ok || !check.data?.length) return codigo;
   }
-  return base + Date.now().toString().slice(-2);
+  // Extremadamente improbable llegar acá
+  return genCodigoBase(nombre, telefono) + Math.floor(Math.random()*9);
 };
 
 async function sb(path, opts = {}) {
