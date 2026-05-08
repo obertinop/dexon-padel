@@ -306,15 +306,17 @@ const PortalCliente = () => {
   const [usarSaldo,setUsarSaldo] = useState(false);
   const [clienteEncontrado,setClienteEncontrado] = useState(null);
   const [codigosRef,setCodigosRef] = useState([]);
+  const [abonoTurnos,setAbonoTurnos] = useState([]);
 
   useEffect(()=>{
     const load = async () => {
       try {
-        const [cf,tu,cl,cr] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true")]);
+        const [cf,tu,cl,cr,at] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true"),db.get("abono_turnos","select=dia,hora")]);
         if(cf?.[0]) setCfg(cf[0]);
         setTurnos(tu||[]);
         setClientes(cl||[]);
         setCodigosRef(cr||[]);
+        setAbonoTurnos(at||[]);
       } catch(e){console.error(e);}
       setLoading(false);
     };
