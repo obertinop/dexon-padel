@@ -359,7 +359,8 @@ const PortalCliente = () => {
   const refValido = !!codigoInstit || (!!refMatch && (!miTelNorm || refMatch.telefono?.replace(/\D/g,"") !== miTelNorm));
   const refDescPct = codigoInstit ? Number(codigoInstit.descuento_pct)||10 : Number(cfg.referral_discount_percent)||10;
   const saldoDisponible = clienteEncontrado?.saldo_favor || 0;
-  const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado");
+  const diaFecha = fecha ? new Date(fecha+"T00:00:00").getDay() : -1;
+  const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado") || abonoTurnos.find(at=>at.dia===diaFecha&&at.hora===h);
   const pasado = h => fecha===hoy()&&h<=new Date().getHours();
   const climaFecha = clima[fecha];
   const climaIcon = code => {if(!code&&code!==0)return"🌤";if(code===0)return"☀️";if(code<=2)return"⛅";if(code<=48)return"☁️";if(code<=67)return"🌧️";return"⛈️";};
@@ -1307,8 +1308,37 @@ export default function App() {
     if(!form.cliente_id||!form.plan_id||!form.fecha_inicio)return;
     if(!form.slots||form.slots.length===0){alert("Agregá al menos un turno fijo.");return;}
     setSaving(true);
-    try{const plan=pById(Number(form.plan_id));const ini=new Date(form.fecha_inicio);const venc=new Date(ini);venc.setMonth(venc.getMonth()+1);const precio=Number(form.precio_acordado||plan?.precio||0);const[ab]=await db.post("abonos",{cliente_id:Number(form.cliente_id),plan_id:Number(form.plan_id),precio_acordado:precio,fecha_inicio:fmtD(ini),fecha_vencimiento:fmtD(venc),estado:"activo",turno_hora:null},tk);for(const s of form.slots)await db.post("abono_turnos",{abono_id:ab.id,dia:Number(s.dia),hora:Number(s.hora)},tk);await db.post("caja",{descripcion:`Abono ${plan?.nombre||""} - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"abono",monto:precio,fecha:fmtD(ini),abono_id:ab.id},tk);await load();closeM();}
-    catch(e){alert(e.message);}setSaving(false);
+    try{
+      const plan=pById(Number(form.plan_id));
+      const ini=new Date(form.fecha_inicio);
+      const venc=new Date(ini);venc.setMonth(venc.getMonth()+1);
+      const precio=Number(form.precio_acordado||plan?.precio||0);
+      const[ab]=await db.post("abonos",{cliente_id:Number(form.cliente_id),plan_id:Number(form.plan_id),precio_acordado:precio,fecha_inicio:fmtD(ini),fecha_vencimiento:fmtD(venc),estado:"activo",turno_hora:null},tk);
+      for(const s of form.slots) await db.post("abono_turnos",{abono_id:ab.id,dia:Number(s.dia),hora:Number(s.hora)},tk);
+      await db.post("caja",{descripcion:`Abono ${plan?.nombre||""} - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"abono",monto:precio,fecha:fmtD(ini),abono_id:ab.id},tk);
+      // Materializar turnos reales para las próximas 5 semanas
+      await materilarizarTurnosAbono(ab.id,Number(form.cliente_id),form.slots,fmtD(venc));
+      await load();closeM();
+    }catch(e){alert(e.message);}setSaving(false);
+  };
+
+  const materilarizarTurnosAbono = async(abonoId,clienteId,slots,fechaVenc)=>{
+    const hoy_=new Date();
+    const turnosACrear=[];
+    for(let semana=0;semana<5;semana++){
+      for(const s of slots){
+        // Encontrar el próximo día de la semana indicado
+        const d=new Date(hoy_);
+        const diasHasta=(Number(s.dia)-d.getDay()+7)%7+(semana*7);
+        d.setDate(d.getDate()+diasHasta);
+        const fs=fmtD(d);
+        if(fs>fechaVenc) continue;
+        // Solo si no hay ya un turno en ese horario
+        const yaExiste=turnos.find(t=>t.fecha===fs&&t.hora===Number(s.hora)&&t.estado!=="cancelado");
+        if(!yaExiste) turnosACrear.push({fecha:fs,hora:Number(s.hora),tipo:"abono",estado:"confirmado",cliente_id:clienteId,abono_id:abonoId,precio:0,sena:0,saldo:0,notas:"Turno fijo de abono"});
+      }
+    }
+    if(turnosACrear.length>0) await db.post("turnos",turnosACrear,tk);
   };
   const cancelarAbono = async id=>{setSaving(true);try{await db.patch("abonos",id,{estado:"cancelado"},tk);await load();setDlg(null);}catch(e){alert(e.message);}setSaving(false);};
   const guardarPlan = async()=>{if(!form.nombre||!form.horas_semana||!form.precio)return;setSaving(true);try{if(form.id)await db.patch("planes",form.id,{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);else await db.post("planes",{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
@@ -1570,6 +1600,7 @@ export default function App() {
               {v?<Badge type="danger">Vencido {ab.fecha_vencimiento?.slice(5)}</Badge>:<Badge type="ok">Hasta {ab.fecha_vencimiento?.slice(5)}</Badge>}
               <div style={{display:"flex",gap:6}}>
                 {v&&<Btn v="primary" sm onClick={()=>openM("abono",{cliente_id:ab.cliente_id,plan_id:ab.plan_id,precio_acordado:ab.precio_acordado,fecha_inicio:hoy(),slots:abono_turnos.filter(at=>at.abono_id===ab.id).map(at=>({dia:at.dia,hora:at.hora}))})}>Renovar</Btn>}
+                {!v&&<Btn v="ghost" sm onClick={async()=>{setSaving(true);const slots=abono_turnos.filter(at=>at.abono_id===ab.id).map(at=>({dia:at.dia,hora:at.hora}));await materilarizarTurnosAbono(ab.id,ab.cliente_id,slots,ab.fecha_vencimiento);await load();setSaving(false);}}>Generar turnos</Btn>}
                 <Btn v="danger" sm onClick={()=>setDlg({type:"cancelarAbono",id:ab.id,nombre:c?.nombre})}>Cancelar</Btn>
               </div>
             </div>
