@@ -2,7 +2,35 @@
 import crypto from "crypto";
 
 const sha1 = (s) => crypto.createHash("sha1").update(s).digest("hex");
-const genCode = () => { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r="REF-"; for(let i=0;i<8;i++)r+=c[Math.floor(Math.random()*c.length)]; return r; };
+
+const limpiarTexto = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
+
+const genCodigoBase = (nombre, telefono) => {
+  const partes = nombre.trim().split(/\s+/);
+  const primerNombre = limpiarTexto(partes[0] || "");
+  const apellido = limpiarTexto(partes[partes.length > 1 ? partes.length - 1 : 0] || "");
+  const ini = primerNombre[0] || "X";
+  const ap2 = (apellido[0] || "X") + (apellido[1] || "X");
+  const digsTel = telefono.replace(/\D/g,"");
+  // Toma 4 dígitos del medio del teléfono
+  const mid = Math.floor((digsTel.length - 4) / 2);
+  const nums = digsTel.slice(mid, mid + 4) || digsTel.slice(-4).padStart(4,"0");
+  return `${ini}${ap2}-${nums}`;
+};
+
+const genCodePersonalizado = async (nombre, telefono) => {
+  const base = genCodigoBase(nombre, telefono);
+  // Verificar colisión
+  const check = await sb(`clientes?referrer_code=eq.${encodeURIComponent(base)}&select=id&limit=1`);
+  if (!check.ok || !check.data?.length) return base;
+  // Colisión: agregar dígito extra aleatorio
+  for (let i = 0; i < 10; i++) {
+    const extra = base + Math.floor(Math.random() * 10);
+    const c2 = await sb(`clientes?referrer_code=eq.${encodeURIComponent(extra)}&select=id&limit=1`);
+    if (!c2.ok || !c2.data?.length) return extra;
+  }
+  return base + Date.now().toString().slice(-2);
+};
 
 async function sb(path, opts = {}) {
   const url = `${process.env.SUPABASE_URL}/rest/v1/${path}`;
@@ -158,12 +186,12 @@ export default async function handler(req, res) {
   }
 
   if (clienteId && !codigoCliente) {
-    codigoCliente = genCode();
+    codigoCliente = await genCodePersonalizado(nombre, telefono);
     await sb(`clientes?id=eq.${clienteId}`, { method: "PATCH", body: JSON.stringify({ referrer_code: codigoCliente }) });
   }
 
   if (!clienteId) {
-    codigoCliente = genCode();
+    codigoCliente = await genCodePersonalizado(nombre, telefono);
     const ins = await sb("clientes", {
       method: "POST",
       body: JSON.stringify({ nombre: nombre.trim(), telefono: telefono.trim(), nivel: "intermedio", notas: "Registrado vía Pagopar", referrer_code: codigoCliente }),

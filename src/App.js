@@ -99,7 +99,18 @@ const fmtD = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"
 const initials = n => n?.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
 const avatarBg = n => { const c=["#0D2248","#072A1A","#2A1008","#180A38","#062030","#0E2008"]; return c[(n||"").charCodeAt(0)%c.length]; };
 const avatarFg = n => { const c=["#6EA8FF","#5ADDA8","#F5A878","#B090F8","#6ACCE0","#90D470"]; return c[(n||"").charCodeAt(0)%c.length]; };
-const genRefCode = () => { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r="REF-"; for(let i=0;i<8;i++)r+=c[Math.floor(Math.random()*c.length)]; return r; };
+const limpiarTexto = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
+const genRefCode = (nombre="", telefono="") => {
+  const partes = nombre.trim().split(/\s+/);
+  const primerNombre = limpiarTexto(partes[0]||"");
+  const apellido = limpiarTexto(partes[partes.length>1?partes.length-1:0]||"");
+  const ini = primerNombre[0]||"X";
+  const ap2 = (apellido[0]||"X")+(apellido[1]||"X");
+  const digs = telefono.replace(/\D/g,"");
+  const mid = Math.floor((digs.length-4)/2);
+  const nums = (digs.slice(mid,mid+4)||digs.slice(-4)||"0000").padStart(4,"0");
+  return `${ini}${ap2}-${nums}`;
+};
 
 // ── COMPONENTES BASE ──
 const Avatar = ({nombre,size=36}) => (
@@ -2097,11 +2108,11 @@ export default function App() {
             ?<div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:14,fontWeight:700,color:C.yellow,letterSpacing:1.5,flex:1}}>{form.referrer_code}</span>
                 <Btn sm v="ghost" onClick={()=>navigator.clipboard.writeText(form.referrer_code)}>Copiar</Btn>
-                <Btn sm v="ghost" onClick={()=>setForm(f=>({...f,referrer_code:genRefCode()}))}>Regen.</Btn>
+                <Btn sm v="ghost" onClick={()=>setForm(f=>({...f,referrer_code:genRefCode(f.nombre,f.telefono)}))}>Regen.</Btn>
               </div>
             :<div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:12,color:C.t3,flex:1}}>Sin código asignado</span>
-                <Btn sm v="primary" onClick={()=>setForm(f=>({...f,referrer_code:genRefCode()}))}>Generar</Btn>
+                <Btn sm v="primary" onClick={()=>setForm(f=>({...f,referrer_code:genRefCode(f.nombre,f.telefono)}))}>Generar</Btn>
               </div>}
         </div>
         <R2 isMobile={isMobile}><Inp label="Saldo a favor (Gs)" type="number" value={form.saldo_favor||0} onChange={sf("saldo_favor")}/></R2>
