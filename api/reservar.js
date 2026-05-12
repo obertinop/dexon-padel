@@ -3,11 +3,14 @@
 // Calcula el total real, valida el código de referido, crea cliente y turnos.
 import crypto from "crypto";
 
-const genCode = () => {
-  const c = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let r = "REF-";
-  for (let i = 0; i < 8; i++) r += c[Math.floor(Math.random() * c.length)];
-  return r;
+const genCode = (nombre = "", telefono = "") => {
+  const limpiar = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z]/g, "");
+  const letras = [...limpiar(nombre || "X")];
+  const digitos = [...(telefono.replace(/\D/g, "") || "0000")];
+  const padL = "XYZWQK";
+  while (letras.length < 3) letras.push(padL[letras.length % padL.length]);
+  while (digitos.length < 4) digitos.push(String(digitos.length % 10));
+  return `${letras.slice(0, 3).join("")}-${digitos.slice(-4).join("")}`;
 };
 
 async function sb(path, opts = {}) {
@@ -110,7 +113,7 @@ export default async function handler(req, res) {
 
   // Nuevo cliente
   if (!clienteId) {
-    codigoCliente = genCode();
+    codigoCliente = genCode(nombre, telefono);
     const ins = await sb("clientes", {
       method: "POST",
       body: JSON.stringify({ nombre: nombre.trim(), telefono: telefono.trim(), nivel: "intermedio", notas: "Registrado desde portal", referrer_code: codigoCliente }),
@@ -133,7 +136,7 @@ export default async function handler(req, res) {
 
   // Generar código si no tiene
   if (clienteId && !codigoCliente) {
-    codigoCliente = genCode();
+    codigoCliente = genCode(nombre, telefono);
     await sb(`clientes?id=eq.${clienteId}`, { method: "PATCH", body: JSON.stringify({ referrer_code: codigoCliente }) });
   }
 
