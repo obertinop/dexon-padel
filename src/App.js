@@ -121,6 +121,12 @@ const Avatar = ({nombre,size=36}) => (
   </div>
 );
 
+const WhatsAppIcon = ({size=14,color="#25D366"}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={{flexShrink:0,display:"block"}} xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/>
+  </svg>
+);
+
 const Badge = ({type,children}) => {
   const m = {
     ok:[C.greenBg,C.green,C.greenBd], warn:[C.yellowBg,C.yellow,C.yellowBd],
@@ -1415,7 +1421,18 @@ export default function App() {
     setSaving(false);
   };
 
-  const TABS=[{id:"agenda",l:"Agenda"},{id:"hoy",l:"Hoy"},{id:"pendientes",l:"⏳ Pendientes"},{id:"clientes",l:"Clientes"},{id:"abonados",l:"Abonados"},{id:"caja",l:"Caja"},{id:"stock",l:"Stock"},{id:"stats",l:"Stats"},{id:"whatsapp",l:"💬 WA"},{id:"config",l:"Config"}];
+  const TABS=[
+    {id:"agenda",l:"Agenda",ic:"📅"},
+    {id:"hoy",l:"Hoy",ic:"🕐"},
+    {id:"pendientes",l:"Pendientes",ic:"⏳"},
+    {id:"clientes",l:"Clientes",ic:"👥"},
+    {id:"abonados",l:"Abonados",ic:"⭐"},
+    {id:"caja",l:"Caja",ic:"💰"},
+    {id:"stock",l:"Stock",ic:"📦"},
+    {id:"stats",l:"Stats",ic:"📊"},
+    {id:"whatsapp",l:"WhatsApp",ic:"wa"},
+    {id:"config",l:"Config",ic:"⚙️"},
+  ];
 
   // ── VISTAS ADMIN ──
   const Hoy=()=>{
@@ -1915,17 +1932,17 @@ export default function App() {
       return txt.length>45?txt.slice(0,45)+"…":txt;
     };
 
-    // ── BURBUJA ──────────────────────────────────────────────────────────────
-    const Burbuja=({m,showSep,showAvatar})=>{
+    // ── BURBUJA (función pura, no componente — evita remount) ───────────────
+    const renderBurbuja=(m,showSep)=>{
       const out=m.direccion==="saliente";
-      return <>
+      return <React.Fragment key={m.id}>
         {showSep&&<div style={{display:"flex",alignItems:"center",gap:8,margin:"16px 20px 10px"}}>
           <div style={{flex:1,height:"1px",background:WA_BORDER}}/>
           <span style={{fontSize:11,color:C.t3,background:"rgba(255,255,255,0.04)",border:`1px solid ${WA_BORDER}`,padding:"3px 12px",borderRadius:20,letterSpacing:0.3}}>{fmtSep(m.created_at)}</span>
           <div style={{flex:1,height:"1px",background:WA_BORDER}}/>
         </div>}
         <div style={{display:"flex",flexDirection:"column",alignItems:out?"flex-end":"flex-start",marginBottom:2,padding:"0 16px"}}>
-          <div style={{maxWidth:"68%",minWidth:80}}>
+          <div style={{maxWidth:"min(68%, 380px)",minWidth:80}}>
             <div style={{background:out?WA_BUBBLE_OUT:WA_BUBBLE_IN,borderRadius:out?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",border:`1px solid ${out?"rgba(37,211,102,0.15)":WA_BORDER}`,boxShadow:"0 2px 8px rgba(0,0,0,0.25)",position:"relative"}}>
               {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
                 ?<audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",maxWidth:220,height:36,accentColor:WA_GREEN,display:"block"}}/>
@@ -1940,17 +1957,18 @@ export default function App() {
             </div>
           </div>
         </div>
-      </>;
+      </React.Fragment>;
     };
 
-    // ── SIDEBAR ───────────────────────────────────────────────────────────────
-    const Sidebar=()=><div style={{display:"flex",flexDirection:"column",height:"100%",background:C.bgCard,borderRight:`1px solid ${WA_BORDER}`}}>
-      {/* Header sidebar */}
+    const msgsOrdenados=convActual?convActual.mensajes.slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)):[];
+
+    // ── SIDEBAR JSX (inline, no componente) ──────────────────────────────────
+    const sidebarJSX=<div style={{display:"flex",flexDirection:"column",height:"100%",background:C.bgCard,borderRight:`1px solid ${WA_BORDER}`,minHeight:0}}>
       <div style={{padding:"14px 16px 10px",borderBottom:`1px solid ${WA_BORDER}`,flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:8,height:8,borderRadius:"50%",background:WA_GREEN,boxShadow:`0 0 6px ${WA_GREEN}`}}/>
-            <span style={{fontSize:15,fontWeight:700,color:C.t1,letterSpacing:-0.3}}>Mensajes</span>
+            <WhatsAppIcon size={18}/>
+            <span style={{fontSize:15,fontWeight:700,color:C.t1,letterSpacing:-0.3}}>WhatsApp</span>
             {noLeidosTotal>0&&<span style={{background:WA_GREEN,color:"#fff",borderRadius:20,padding:"1px 7px",fontSize:11,fontWeight:700,lineHeight:"18px"}}>{noLeidosTotal}</span>}
           </div>
           <div style={{display:"flex",gap:4}}>
@@ -1958,17 +1976,14 @@ export default function App() {
             <button onClick={cargar} title="Actualizar" style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:15,padding:"4px 6px",borderRadius:6,fontFamily:"var(--font-sans)"}}>↻</button>
           </div>
         </div>
-        {/* Buscador */}
         <div style={{position:"relative"}}>
           <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:C.t3,pointerEvents:"none"}}>🔍</span>
-          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar…"
+          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar conversación…"
             style={{width:"100%",boxSizing:"border-box",padding:"8px 10px 8px 32px",background:C.bgElev,border:`1px solid ${WA_BORDER}`,borderRadius:20,fontSize:13,color:C.t1,fontFamily:"var(--font-sans)",outline:"none"}}/>
           {busqueda&&<button onClick={()=>setBusqueda("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:14,fontFamily:"var(--font-sans)"}}>×</button>}
         </div>
       </div>
-
-      {/* Lista */}
-      <div style={{flex:1,overflowY:"auto"}}>
+      <div style={{flex:1,minHeight:0,overflowY:"auto"}}>
         {loadingMsgs
           ?[...Array(4)].map((_,i)=><div key={i} style={{display:"flex",gap:12,padding:"14px 16px",borderBottom:`1px solid ${WA_BORDER}`,opacity:1-i*0.2}}>
               <div style={{width:44,height:44,borderRadius:"50%",background:C.bgElev,flexShrink:0}}/>
@@ -1981,7 +1996,7 @@ export default function App() {
           ?<div style={{padding:24,textAlign:"center",color:C.red,fontSize:13}}>{error}</div>
           :convsFiltradas.length===0
           ?<div style={{padding:48,textAlign:"center"}}>
-              <div style={{fontSize:36,marginBottom:10,opacity:0.3}}>💬</div>
+              <div style={{marginBottom:10,opacity:0.3,display:"flex",justifyContent:"center"}}><WhatsAppIcon size={36}/></div>
               <div style={{color:C.t3,fontSize:13}}>{busqueda?"Sin resultados para \""+busqueda+"\"":"Aún no hay mensajes"}</div>
             </div>
           :convsFiltradas.map(conv=>{
@@ -1995,7 +2010,7 @@ export default function App() {
               onMouseLeave={e=>{if(!activa)e.currentTarget.style.background=C.bgCard;}}>
               <div style={{position:"relative",flexShrink:0}}>
                 <Avatar nombre={conv.nombre} size={44}/>
-                {conv.noLeidos>0&&<div style={{position:"absolute",top:-2,right:-2,background:WA_GREEN,color:"#fff",borderRadius:"50%",minWidth:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,padding:"0 3px"}}>{conv.noLeidos}</div>}
+                {conv.noLeidos>0&&<div style={{position:"absolute",top:-2,right:-2,background:WA_GREEN,color:"#fff",borderRadius:"50%",minWidth:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,padding:"0 3px",border:`2px solid ${C.bgCard}`}}>{conv.noLeidos}</div>}
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
@@ -2013,20 +2028,17 @@ export default function App() {
       </div>
     </div>;
 
-    // ── CHAT ─────────────────────────────────────────────────────────────────
-    const Chat=()=>{
-      if(!convActual) return <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,background:WA_BG}}>
-        <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(37,211,102,0.08)",border:`1px solid rgba(37,211,102,0.15)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>💬</div>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.t2,marginBottom:4}}>Seleccioná una conversación</div>
-          <div style={{fontSize:12,color:C.t3}}>Los mensajes aparecen acá</div>
+    // ── CHAT JSX (inline, no componente) ─────────────────────────────────────
+    const chatJSX=!convActual
+      ?<div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,background:`linear-gradient(135deg, ${WA_BG} 0%, #0d1b2e 100%)`,position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",inset:0,backgroundImage:`radial-gradient(circle at 20% 30%, rgba(37,211,102,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(37,211,102,0.05) 0%, transparent 50%)`,pointerEvents:"none"}}/>
+          <div style={{width:96,height:96,borderRadius:"50%",background:"rgba(37,211,102,0.1)",border:`1px solid rgba(37,211,102,0.2)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1}}><WhatsAppIcon size={44}/></div>
+          <div style={{textAlign:"center",position:"relative",zIndex:1}}>
+            <div style={{fontSize:16,fontWeight:600,color:C.t1,marginBottom:6}}>Centro de mensajes</div>
+            <div style={{fontSize:13,color:C.t3,maxWidth:280,lineHeight:1.5}}>Seleccioná una conversación de la izquierda para ver los mensajes.</div>
+          </div>
         </div>
-      </div>;
-
-      const msgsOrdenados=convActual.mensajes.slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-
-      return <div style={{display:"flex",flexDirection:"column",height:"100%",background:WA_BG}}>
-        {/* Header chat */}
+      :<div style={{display:"flex",flexDirection:"column",height:"100%",background:WA_BG,minHeight:0}}>
         <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",background:C.bgCard,borderBottom:`1px solid ${WA_BORDER}`,flexShrink:0,boxShadow:"0 1px 8px rgba(0,0,0,0.2)"}}>
           {isMobile&&<button onClick={()=>setConvAbierta(null)} style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:"0 6px 0 0",fontFamily:"var(--font-sans)"}}>‹</button>}
           <Avatar nombre={convActual.nombre} size={40}/>
@@ -2036,7 +2048,8 @@ export default function App() {
           </div>
           <button onClick={()=>window.open(`https://wa.me/${convActual.tel}`,"_blank")}
             style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:20,fontSize:12.5,cursor:"pointer",background:WA_GREEN,color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,flexShrink:0}}>
-            <span>Abrir en WA</span>
+            <WhatsAppIcon size={13} color="#fff"/>
+            <span>WhatsApp</span>
           </button>
           <button onClick={async()=>{
             if(!window.confirm(`¿Eliminar la conversación con ${convActual.nombre}?`))return;
@@ -2048,24 +2061,22 @@ export default function App() {
           </button>
         </div>
 
-        {/* Mensajes */}
         <div ref={chatRef} style={{flex:1,minHeight:0,overflowY:"auto",padding:"8px 0 12px",display:"flex",flexDirection:"column"}}>
           {msgsOrdenados.length===0
             ?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13}}>Sin mensajes</div>
             :msgsOrdenados.map((m,i)=>{
               const prev=msgsOrdenados[i-1];
               const showSep=!prev||new Date(m.created_at).toISOString().slice(0,10)!==new Date(prev.created_at).toISOString().slice(0,10);
-              return <Burbuja key={m.id} m={m} showSep={showSep}/>;
+              return renderBurbuja(m,showSep);
             })
           }
         </div>
 
-        {/* Input */}
         <div style={{padding:"10px 14px 12px",background:C.bgCard,borderTop:`1px solid ${WA_BORDER}`,flexShrink:0}}>
           <div style={{display:"flex",gap:10,alignItems:"flex-end",background:C.bgElev,borderRadius:26,padding:"6px 6px 6px 16px",border:`1px solid ${WA_BORDER}`,transition:"border-color 0.15s"}}>
             <textarea ref={inputRef} value={respuesta}
               onChange={e=>{setRespuesta(e.target.value);e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}
-              onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta();}}
+              onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();enviarRespuesta();}}}
               placeholder="Escribí un mensaje…"
               rows={1} disabled={enviando}
               style={{flex:1,background:"transparent",border:"none",outline:"none",resize:"none",fontSize:14,color:C.t1,fontFamily:"var(--font-sans)",lineHeight:1.5,padding:"4px 0",maxHeight:120,overflowY:"auto"}}/>
@@ -2077,47 +2088,84 @@ export default function App() {
           <div style={{fontSize:10,color:C.t3,textAlign:"center",marginTop:5}}>Ctrl + Enter para enviar</div>
         </div>
       </div>;
-    };
 
     // ── LAYOUT ────────────────────────────────────────────────────────────────
     if(isMobile){
-      if(convAbierta&&convActual) return <div style={{height:"calc(100vh - 130px)"}}><Chat/></div>;
-      return <Sidebar/>;
+      if(convAbierta&&convActual) return <div style={{height:"calc(100vh - 130px)",display:"flex",flexDirection:"column"}}>{chatJSX}</div>;
+      return <div style={{height:"calc(100vh - 130px)",display:"flex",flexDirection:"column"}}>{sidebarJSX}</div>;
     }
-    return <div style={{display:"grid",gridTemplateColumns:"320px 1fr",height:"calc(100vh - 155px)",borderRadius:16,overflow:"hidden",border:`1px solid ${WA_BORDER}`,boxShadow:"0 4px 40px rgba(0,0,0,0.4)"}}>
-      <Sidebar/>
-      <Chat/>
+    return <div style={{display:"grid",gridTemplateColumns:"320px 1fr",height:"calc(100vh - 95px)",borderRadius:16,overflow:"hidden",border:`1px solid ${WA_BORDER}`,boxShadow:"0 4px 40px rgba(0,0,0,0.4)"}}>
+      {sidebarJSX}
+      {chatJSX}
     </div>;
   };
 
-  return <div style={{fontFamily:"var(--font-sans)",maxWidth:isMobile?"100%":960,margin:"0 auto",background:C.bg,minHeight:"100vh",paddingTop:isMobile?68:0}}>
-    <div style={{position:isMobile?"fixed":"relative",top:0,left:0,right:0,zIndex:1000,background:C.bgCard,boxShadow:"0 2px 20px rgba(0,0,0,0.4)",borderBottom:`1px solid ${C.border}`,paddingTop:isMobile?"max(8px, env(safe-area-inset-top))":"0"}}>
-      <div style={{display:"flex",alignItems:"center",padding:`0 8px ${isMobile?"8px":"0"} 8px`}}>
-        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,objectFit:"contain",marginRight:8,flexShrink:0,padding:"8px 0"}}/>
-        <div style={{display:"flex",flex:1,overflowX:"auto"}}>
-          {TABS.map(t=>{
-            const pendientesN=t.id==="pendientes"?turnos.filter(x=>x.estado==="pendiente_pago").length:0;
-            const waN=t.id==="whatsapp"?waNoLeidos:0;
-            const badge=pendientesN||waN;
-            return <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"13px 14px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:tab===t.id?C.t1:C.t3,borderBottom:tab===t.id?`2px solid ${C.coral}`:"2px solid transparent",fontWeight:tab===t.id?700:400,fontFamily:"var(--font-sans)",transition:"color 0.15s",position:"relative"}}>
-              {t.l}
-              {badge>0&&<span style={{position:"absolute",top:6,right:2,background:t.id==="whatsapp"?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 5px",fontSize:10,fontWeight:700,lineHeight:1.4,minWidth:16,textAlign:"center"}}>{badge}</span>}
-            </button>;
-          })}
-        </div>
-        <button onClick={doLogout} style={{padding:"6px 12px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:8,paddingLeft:8,borderLeft:`1px solid ${C.border}`,opacity:isRefreshing?1:0.4,transition:"opacity 0.3s"}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:isRefreshing?C.coral:C.t3,animation:isRefreshing?"pulse 1s infinite":"none"}}/>
-          <span style={{fontSize:10,color:C.t3,whiteSpace:"nowrap"}}>Auto-sync</span>
-        </div>
-      </div>
-    </div>
+  const navBtn=(t,vertical)=>{
+    const activa=tab===t.id;
+    const pendientesN=t.id==="pendientes"?turnos.filter(x=>x.estado==="pendiente_pago").length:0;
+    const waN=t.id==="whatsapp"?waNoLeidos:0;
+    const badge=pendientesN||waN;
+    const isWA=t.id==="whatsapp";
+    const icon=t.ic==="wa"?<WhatsAppIcon size={vertical?18:14} color={isWA&&activa?"#25D366":isWA?"#25D366":"#25D366"}/>:<span style={{fontSize:vertical?16:14,lineHeight:1}}>{t.ic}</span>;
+    if(vertical){
+      return <button key={t.id} onClick={()=>setTab(t.id)}
+        onMouseEnter={e=>{if(!activa)e.currentTarget.style.background=C.bgElev;}}
+        onMouseLeave={e=>{if(!activa)e.currentTarget.style.background="transparent";}}
+        style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",marginBottom:3,background:activa?"rgba(224,91,40,0.10)":"transparent",border:"none",borderLeft:`3px solid ${activa?C.coral:"transparent"}`,borderRadius:"0 10px 10px 0",cursor:"pointer",color:activa?C.t1:C.t2,fontFamily:"var(--font-sans)",fontSize:13.5,fontWeight:activa?700:500,position:"relative",transition:"background 0.15s, color 0.15s",textAlign:"left"}}>
+        <span style={{width:22,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>{icon}</span>
+        <span style={{flex:1}}>{t.l}</span>
+        {badge>0&&<span style={{background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10.5,fontWeight:700,minWidth:18,textAlign:"center",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}>{badge}</span>}
+      </button>;
+    }
+    return <button key={t.id} onClick={()=>setTab(t.id)}
+      style={{padding:"12px 11px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:activa?C.t1:C.t3,borderBottom:activa?`2px solid ${C.coral}`:"2px solid transparent",fontWeight:activa?700:500,fontFamily:"var(--font-sans)",transition:"color 0.15s",position:"relative",display:"inline-flex",alignItems:"center",gap:6}}>
+      {icon}
+      <span>{t.l}</span>
+      {badge>0&&<span style={{position:"absolute",top:3,right:-2,background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 5px",fontSize:10,fontWeight:700,lineHeight:1.4,minWidth:16,textAlign:"center"}}>{badge}</span>}
+    </button>;
+  };
 
-    <div style={{padding:"18px 12px",paddingBottom:"env(safe-area-inset-bottom)"}}>
-      {loading?<div style={{textAlign:"center",padding:80,color:C.t2,fontSize:13}}>Cargando...</div>:(
-        <>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="whatsapp"&&<WhatsApp/>}{tab==="config"&&<Config/>}</>
-      )}
-    </div>
+  const contenidoTab=loading
+    ?<div style={{textAlign:"center",padding:80,color:C.t2,fontSize:13}}>Cargando...</div>
+    :<>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="whatsapp"&&<WhatsApp/>}{tab==="config"&&<Config/>}</>;
+
+  return <div style={{fontFamily:"var(--font-sans)",background:C.bg,minHeight:"100vh",...(isMobile?{paddingTop:64}:{display:"flex",alignItems:"stretch"})}}>
+
+    {/* DESKTOP: sidebar vertical */}
+    {!isMobile&&<aside style={{width:224,flexShrink:0,position:"sticky",top:0,height:"100vh",background:C.bgCard,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",zIndex:50,boxShadow:"2px 0 24px rgba(0,0,0,0.25)"}}>
+      <div style={{padding:"20px 18px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:38,objectFit:"contain"}}/>
+        <span style={{fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
+      </div>
+      <nav style={{flex:1,overflowY:"auto",padding:"12px 0 12px 0"}}>
+        {TABS.map(t=>navBtn(t,true))}
+      </nav>
+      <div style={{borderTop:`1px solid ${C.border}`,padding:"12px 14px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10,opacity:isRefreshing?1:0.55,transition:"opacity 0.3s"}}>
+          <div style={{width:7,height:7,borderRadius:"50%",background:isRefreshing?C.coral:C.t3,animation:isRefreshing?"pulse 1s infinite":"none"}}/>
+          <span style={{fontSize:10.5,color:C.t3,letterSpacing:0.2}}>Auto-sync</span>
+        </div>
+        <button onClick={doLogout} style={{width:"100%",padding:"9px 12px",borderRadius:9,fontSize:12.5,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:600,background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`}}>Cerrar sesión</button>
+      </div>
+    </aside>}
+
+    {/* MOBILE: barra superior */}
+    {isMobile&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:1000,background:C.bgCard,boxShadow:"0 2px 20px rgba(0,0,0,0.4)",borderBottom:`1px solid ${C.border}`,paddingTop:"max(8px, env(safe-area-inset-top))"}}>
+      <div style={{display:"flex",alignItems:"center",padding:"0 8px 6px 8px"}}>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:30,objectFit:"contain",marginRight:6,flexShrink:0,padding:"6px 0"}}/>
+        <div style={{display:"flex",flex:1,overflowX:"auto"}}>
+          {TABS.map(t=>navBtn(t,false))}
+        </div>
+        <button onClick={doLogout} style={{padding:"6px 10px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
+      </div>
+    </div>}
+
+    {/* CONTENIDO */}
+    <main style={{flex:1,minWidth:0,...(isMobile?{}:{maxWidth:"calc(100% - 224px)"})}}>
+      <div style={{maxWidth:1040,margin:"0 auto",padding:isMobile?"14px 12px":"24px 28px",paddingBottom:"env(safe-area-inset-bottom)"}}>
+        {contenidoTab}
+      </div>
+    </main>
 
     {/* MODALES */}
     <Modal show={modal==="turno"} onClose={closeM} title="Nueva reserva">
