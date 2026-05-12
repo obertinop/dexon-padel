@@ -68,14 +68,28 @@ export default async function handler(req, res) {
     };
   }
 
+  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
   if (templateCliente) {
     const r = await enviarTemplate(PHONE_ID, TOKEN, telCliente, templateCliente);
     resultados.push({ destino: "cliente", tel: telCliente, ...r });
+
+    // Guardar en whatsapp_mensajes para verlo en el panel
+    if (r.ok) {
+      const textoLegible = (tipo === "pago_confirmado" || tipo === "confirmacion_manual")
+        ? `✅ Reserva confirmada\n📅 ${fecha || "-"} a las ${horarios || "-"}\n💰 ${monto || "-"}\n💳 ${forma_pago || "Pago online"}`
+        : `⏳ Reserva pendiente de confirmación\n📅 ${fecha || "-"} a las ${horarios || "-"}\n💰 ${monto || "-"}`;
+      try {
+        await sb.from("whatsapp_mensajes").insert({
+          de: telCliente, nombre, mensaje: textoLegible,
+          tipo: "text", meta_id: r.message_id || null, leido: true, direccion: "saliente",
+        });
+      } catch (e) { console.error("[enviar] Error guardando en DB:", e.message); }
+    }
   }
 
   // ── Notificación al ADMIN (texto libre, lee teléfono desde config) ─────
   try {
-    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     const { data: cfgRows } = await sb.from("config").select("wa_admin_tel").limit(1);
     const adminTel = cfgRows?.[0]?.wa_admin_tel || process.env.WHATSAPP_ADMIN_NOTIFY || "595981086046";
 
