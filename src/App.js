@@ -1150,6 +1150,7 @@ export default function App() {
   if(!esAdmin) return <LandingPage onAdmin={()=>window.location.href="/admin"}/>;
 
   const [tab,setTab] = useState("agenda");
+  const [navOpen,setNavOpen] = useState(false);
   const [cajaFechaIni,setCajaFechaIni] = useState("");
   const [cajaFechaFin,setCajaFechaFin] = useState("");
   const [cajaTipo,setCajaTipo] = useState("");
@@ -2100,45 +2101,50 @@ export default function App() {
     </div>;
   };
 
-  const navBtn=(t,vertical)=>{
+  const navBtn=(t)=>{
     const activa=tab===t.id;
     const pendientesN=t.id==="pendientes"?turnos.filter(x=>x.estado==="pendiente_pago").length:0;
     const waN=t.id==="whatsapp"?waNoLeidos:0;
     const badge=pendientesN||waN;
     const isWA=t.id==="whatsapp";
-    const icon=t.ic==="wa"?<WhatsAppIcon size={vertical?18:14} color={isWA&&activa?"#25D366":isWA?"#25D366":"#25D366"}/>:<span style={{fontSize:vertical?16:14,lineHeight:1}}>{t.ic}</span>;
-    if(vertical){
-      return <button key={t.id} onClick={()=>setTab(t.id)}
-        onMouseEnter={e=>{if(!activa)e.currentTarget.style.background=C.bgElev;}}
-        onMouseLeave={e=>{if(!activa)e.currentTarget.style.background="transparent";}}
-        style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",marginBottom:3,background:activa?"rgba(224,91,40,0.10)":"transparent",border:"none",borderLeft:`3px solid ${activa?C.coral:"transparent"}`,borderRadius:"0 10px 10px 0",cursor:"pointer",color:activa?C.t1:C.t2,fontFamily:"var(--font-sans)",fontSize:13.5,fontWeight:activa?700:500,position:"relative",transition:"background 0.15s, color 0.15s",textAlign:"left"}}>
-        <span style={{width:22,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>{icon}</span>
-        <span style={{flex:1}}>{t.l}</span>
-        {badge>0&&<span style={{background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10.5,fontWeight:700,minWidth:18,textAlign:"center",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}>{badge}</span>}
-      </button>;
-    }
-    return <button key={t.id} onClick={()=>setTab(t.id)}
-      style={{padding:"12px 11px",fontSize:13,border:"none",background:"none",cursor:"pointer",whiteSpace:"nowrap",color:activa?C.t1:C.t3,borderBottom:activa?`2px solid ${C.coral}`:"2px solid transparent",fontWeight:activa?700:500,fontFamily:"var(--font-sans)",transition:"color 0.15s",position:"relative",display:"inline-flex",alignItems:"center",gap:6}}>
-      {icon}
-      <span>{t.l}</span>
-      {badge>0&&<span style={{position:"absolute",top:3,right:-2,background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 5px",fontSize:10,fontWeight:700,lineHeight:1.4,minWidth:16,textAlign:"center"}}>{badge}</span>}
+    const icon=t.ic==="wa"?<WhatsAppIcon size={18}/>:<span style={{fontSize:16,lineHeight:1}}>{t.ic}</span>;
+    const pick=()=>{setTab(t.id);setNavOpen(false);};
+    return <button key={t.id} onClick={pick}
+      onMouseEnter={e=>{if(!activa)e.currentTarget.style.background=C.bgElev;}}
+      onMouseLeave={e=>{if(!activa)e.currentTarget.style.background="transparent";}}
+      style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 14px",marginBottom:3,background:activa?"rgba(224,91,40,0.10)":"transparent",border:"none",borderLeft:`3px solid ${activa?C.coral:"transparent"}`,borderRadius:"0 10px 10px 0",cursor:"pointer",color:activa?C.t1:C.t2,fontFamily:"var(--font-sans)",fontSize:13.5,fontWeight:activa?700:500,position:"relative",transition:"background 0.15s, color 0.15s",textAlign:"left"}}>
+      <span style={{width:22,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>{icon}</span>
+      <span style={{flex:1}}>{t.l}</span>
+      {badge>0&&<span style={{background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10.5,fontWeight:700,minWidth:18,textAlign:"center",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}>{badge}</span>}
     </button>;
   };
+
+  const tabActual=TABS.find(t=>t.id===tab);
 
   const contenidoTab=loading
     ?<div style={{textAlign:"center",padding:80,color:C.t2,fontSize:13}}>Cargando...</div>
     :<>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="whatsapp"&&<WhatsApp/>}{tab==="config"&&<Config/>}</>;
 
-  return <div style={{fontFamily:"var(--font-sans)",background:C.bg,minHeight:"100vh",...(isMobile?{paddingTop:64}:{display:"flex",alignItems:"stretch"})}}>
+  return <div style={{fontFamily:"var(--font-sans)",background:C.bg,minHeight:"100vh",...(isMobile?{paddingTop:"calc(56px + env(safe-area-inset-top))"}:{display:"flex",alignItems:"stretch"})}}>
 
-    {/* DESKTOP: sidebar vertical */}
-    {!isMobile&&<aside style={{width:224,flexShrink:0,position:"sticky",top:0,height:"100vh",background:C.bgCard,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",zIndex:50,boxShadow:"2px 0 24px rgba(0,0,0,0.25)"}}>
-      <div style={{padding:"20px 18px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
-        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:38,objectFit:"contain"}}/>
-        <span style={{fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
+    {/* SIDEBAR (desktop: sticky · mobile: drawer) */}
+    {isMobile&&navOpen&&<div onClick={()=>setNavOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:1500,backdropFilter:"blur(2px)",animation:"fadeIn 0.18s ease-out"}}/>}
+    <aside style={{
+      width:isMobile?276:224,
+      flexShrink:0,
+      ...(isMobile
+        ?{position:"fixed",top:0,left:0,height:"100vh",zIndex:1501,transform:navOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)",boxShadow:navOpen?"4px 0 32px rgba(0,0,0,0.5)":"none"}
+        :{position:"sticky",top:0,height:"100vh",boxShadow:"2px 0 24px rgba(0,0,0,0.25)"}),
+      background:C.bgCard,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",zIndex:isMobile?1501:50,
+      paddingTop:isMobile?"env(safe-area-inset-top)":0
+    }}>
+      <div style={{padding:"18px 18px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:36,objectFit:"contain"}}/>
+        <span style={{flex:1,fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
+        {isMobile&&<button onClick={()=>setNavOpen(false)} aria-label="Cerrar menú" style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:4,fontFamily:"var(--font-sans)",lineHeight:1}}>×</button>}
       </div>
-      <nav style={{flex:1,overflowY:"auto",padding:"12px 0 12px 0"}}>
-        {TABS.map(t=>navBtn(t,true))}
+      <nav style={{flex:1,overflowY:"auto",padding:"12px 0"}}>
+        {TABS.map(t=>navBtn(t))}
       </nav>
       <div style={{borderTop:`1px solid ${C.border}`,padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10,opacity:isRefreshing?1:0.55,transition:"opacity 0.3s"}}>
@@ -2147,16 +2153,23 @@ export default function App() {
         </div>
         <button onClick={doLogout} style={{width:"100%",padding:"9px 12px",borderRadius:9,fontSize:12.5,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:600,background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`}}>Cerrar sesión</button>
       </div>
-    </aside>}
+    </aside>
 
-    {/* MOBILE: barra superior */}
-    {isMobile&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:1000,background:C.bgCard,boxShadow:"0 2px 20px rgba(0,0,0,0.4)",borderBottom:`1px solid ${C.border}`,paddingTop:"max(8px, env(safe-area-inset-top))"}}>
-      <div style={{display:"flex",alignItems:"center",padding:"0 8px 6px 8px"}}>
-        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:30,objectFit:"contain",marginRight:6,flexShrink:0,padding:"6px 0"}}/>
-        <div style={{display:"flex",flex:1,overflowX:"auto"}}>
-          {TABS.map(t=>navBtn(t,false))}
+    {/* MOBILE: barra superior compacta */}
+    {isMobile&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:1000,background:C.bgCard,boxShadow:"0 2px 20px rgba(0,0,0,0.4)",borderBottom:`1px solid ${C.border}`,paddingTop:"max(6px, env(safe-area-inset-top))"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px 10px 8px",minHeight:48}}>
+        <button onClick={()=>setNavOpen(true)} aria-label="Abrir menú" style={{width:38,height:38,borderRadius:9,background:"transparent",border:`1px solid ${C.border}`,color:C.t1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"var(--font-sans)",position:"relative"}}>
+          <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          {(turnos.filter(x=>x.estado==="pendiente_pago").length+waNoLeidos)>0&&<span style={{position:"absolute",top:-3,right:-3,width:9,height:9,borderRadius:"50%",background:C.coral,border:`2px solid ${C.bgCard}`}}/>}
+        </button>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:28,objectFit:"contain",flexShrink:0}}/>
+        <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:7,overflow:"hidden"}}>
+          {tabActual?.ic==="wa"?<WhatsAppIcon size={15}/>:<span style={{fontSize:15,lineHeight:1,flexShrink:0}}>{tabActual?.ic}</span>}
+          <span style={{fontSize:15,fontWeight:700,color:C.t1,letterSpacing:-0.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tabActual?.l}</span>
         </div>
-        <button onClick={doLogout} style={{padding:"6px 10px",margin:"0 4px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:"var(--font-sans)",background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`,whiteSpace:"nowrap",flexShrink:0}}>Salir</button>
+        <div style={{display:"flex",alignItems:"center",gap:5,opacity:isRefreshing?1:0.5,transition:"opacity 0.3s",flexShrink:0}}>
+          <div style={{width:6,height:6,borderRadius:"50%",background:isRefreshing?C.coral:C.t3,animation:isRefreshing?"pulse 1s infinite":"none"}}/>
+        </div>
       </div>
     </div>}
 
