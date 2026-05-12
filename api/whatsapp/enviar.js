@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   // ── Mensaje al CLIENTE ───────────────────────────────────────────────────
   let templateCliente = null;
 
-  if (tipo === "pago_confirmado") {
+  if (tipo === "pago_confirmado" || tipo === "confirmacion_manual") {
     // Template: dexon_pago_confirmado
     // {{1}} nombre, {{2}} fecha, {{3}} horarios, {{4}} monto, {{5}} forma_pago
     templateCliente = {
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
 
     const metodo = tipo === "pago_confirmado"
       ? `Pagopar - ${forma_pago || "online"}`
-      : "Transferencia bancaria";
+      : forma_pago || "Transferencia bancaria";
 
     const textoAdmin =
       `📋 Nueva reserva\n\n` +
