@@ -692,14 +692,13 @@ const PortalCliente = () => {
                   if(!r.ok){setMsg(d.error||"Error al guardar. Intentalo de nuevo.");setSaving(false);return;}
                   setMiCodigo(d.referrer_code||"");
                   const horasStr=slotsSel.map(h=>`${h}:00`).join(", ");
-                  window.open(`https://wa.me/${ADMIN_TEL}?text=${encodeURIComponent(`COMPROBANTE DE PAGO\n\nNombre: ${form.nombre.trim()}\nTelefono: ${form.telefono.trim()}\n\nFecha: ${fmtFechaLegible(fecha)}\nHorarios: ${horasStr}hs\nTotal: ${gs(d.total||totalSel)}\n\nAdjunto: Foto de la transferencia al alias 80168039-5`)}`,"_blank");
                   fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
                   setPaso("confirmado");
                 } catch(e){console.error(e);setMsg("Error de conexion. Intenta de nuevo.");}
                 setSaving(false);
               }} disabled={saving}
-                style={{width:"100%",padding:"15px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(37,211,102,0.3)",opacity:saving?0.7:1}}>
-                {saving?"Guardando...":"Enviar comprobante por WhatsApp"}
+                style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)",opacity:saving?0.7:1}}>
+                {saving?"Guardando...":"Confirmar reserva →"}
               </button>
             ):(
               <button onClick={async()=>{
@@ -728,11 +727,11 @@ const PortalCliente = () => {
               {metodoPago==="transferencia"?"⏳":"✓"}
             </div>
             <div style={{fontSize:22,fontWeight:800,color:C.t1,marginBottom:8}}>
-              {metodoPago==="transferencia"?"Pago enviado":"Pago confirmado"}
+              {metodoPago==="transferencia"?"¡Reserva recibida!":"¡Pago confirmado!"}
             </div>
             <div style={{fontSize:14,color:C.t2,lineHeight:1.7,maxWidth:320,margin:"0 auto"}}>
               {metodoPago==="transferencia"
-                ? `Tu reserva para ${fmtFechaLegible(fecha)} a las ${slotsSel.map(h=>`${h}:00`).join(" — ")}hs esta pendiente de confirmacion.`
+                ? `Te enviamos un WhatsApp con los datos de tu reserva. Una vez que verifiquemos tu transferencia, te confirmamos.`
                 : `Tu reserva esta confirmada. Te esperamos en DEXON Padel.`}
             </div>
           </div>
@@ -749,7 +748,7 @@ const PortalCliente = () => {
           {metodoPago==="transferencia"&&(
             <div style={{...card,marginBottom:12,background:C.greenBg,border:`1px solid ${C.greenBd}`}}>
               <div style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:6}}>Proximo paso</div>
-              <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Recibiras una confirmacion por WhatsApp una vez que verifiquemos tu pago.</div>
+              <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Realizá la transferencia al alias <strong>80168039-5</strong> (UENO) y enviá el comprobante respondiendo el WhatsApp que te acabamos de mandar.</div>
             </div>
           )}
 
