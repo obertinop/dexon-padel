@@ -1446,13 +1446,16 @@ export default function App() {
     const vencidos=abonos.filter(a=>a.fecha_vencimiento<h&&a.estado==="activo");
     const stockBajo=stock.filter(s=>s.minimo>0&&s.cantidad<=s.minimo);
     return <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-        <div><div style={{fontSize:22,fontWeight:700,color:C.t1}}>{cfg.nombre_club}</div><div style={{fontSize:13,color:C.t2,marginTop:2}}>{new Date().toLocaleDateString("es-PY",{weekday:"long",day:"numeric",month:"long"})}</div></div>
-        <Btn v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>+ Reservar</Btn>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?14:20,gap:10}}>
+        <div style={{minWidth:0,flex:1}}>
+          <div style={{fontSize:isMobile?17:22,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cfg.nombre_club}</div>
+          <div style={{fontSize:isMobile?11:13,color:C.t2,marginTop:2}}>{new Date().toLocaleDateString("es-PY",{weekday:"long",day:"numeric",month:"long"})}</div>
+        </div>
+        <Btn v="primary" sm={isMobile} onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>{isMobile?"+ Reservar":"+ Reservar"}</Btn>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:isMobile?8:10,marginBottom:16}}>
         {[{l:"Ingresos hoy",v:gs(ingH)},{l:"Ingresos mes",v:gs(ingM)},{l:"Balance mes",v:gs(ingM-egrM),c:ingM-egrM>=0?C.green:C.red},{l:"Turnos hoy",v:tHoy.length,sub:pendCobro.length>0?`${pendCobro.length} pendientes`:null}].map((m,i)=>
-          <div key={i} style={metric}><div style={{fontSize:12,color:C.t2,marginBottom:6}}>{m.l}</div><div style={{fontSize:21,fontWeight:600,color:m.c||C.t1}}>{m.v}</div>{m.sub&&<div style={{fontSize:11,color:C.yellow,marginTop:3}}>{m.sub}</div>}</div>
+          <div key={i} style={{...metric,padding:isMobile?"12px 14px":metric.padding,minWidth:0}}><div style={{fontSize:isMobile?11:12,color:C.t2,marginBottom:4}}>{m.l}</div><div style={{fontSize:isMobile?17:21,fontWeight:700,color:m.c||C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.v}</div>{m.sub&&<div style={{fontSize:11,color:C.yellow,marginTop:3}}>{m.sub}</div>}</div>
         )}
       </div>
       {clima&&<div style={{...card,marginBottom:16}}>
@@ -1535,34 +1538,38 @@ export default function App() {
 
   const Agenda=()=>{
     const dias=getSemana();const h=hoy();const extra=turnosAbonados();const all=[...turnos,...extra];
+    const timeCol=isMobile?30:52;
+    const cellMinH=isMobile?32:40;
     return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style={{fontSize:16,fontWeight:600,color:C.t1}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
-        <div style={{display:"flex",gap:8}}>
-          <Btn onClick={()=>setSemOff(o=>o-1)}>← Ant.</Btn><Btn onClick={()=>setSemOff(0)}>Hoy</Btn><Btn onClick={()=>setSemOff(o=>o+1)}>Sig. →</Btn>
-          <Btn v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>+ Reservar</Btn>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?10:16,gap:6,flexWrap:isMobile?"wrap":"nowrap"}}>
+        <div style={{fontSize:isMobile?13:16,fontWeight:600,color:C.t1,whiteSpace:"nowrap"}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
+        <div style={{display:"flex",gap:isMobile?4:8,alignItems:"center",flexWrap:"nowrap"}}>
+          <Btn sm={isMobile} onClick={()=>setSemOff(o=>o-1)} style={isMobile?{padding:"6px 9px",minWidth:32}:{}}>←</Btn>
+          <Btn sm={isMobile} onClick={()=>setSemOff(0)}>Hoy</Btn>
+          <Btn sm={isMobile} onClick={()=>setSemOff(o=>o+1)} style={isMobile?{padding:"6px 9px",minWidth:32}:{}}>→</Btn>
+          <Btn sm={isMobile} v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>{isMobile?"+ Nueva":"+ Reservar"}</Btn>
         </div>
       </div>
-      <div style={{overflowX:"auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:`52px repeat(7,1fr)`,gap:1,background:C.border,borderRadius:10,overflow:"hidden",minWidth:600}}>
+      <div style={isMobile?{}:{overflowX:"auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:`${timeCol}px repeat(7,1fr)`,gap:1,background:C.border,borderRadius:10,overflow:"hidden",...(isMobile?{}:{minWidth:600})}}>
           <div style={{background:C.bg}}/>
-          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?C.bgElev:C.bg,padding:"10px 4px",textAlign:"center"}}>
-            <div style={{fontSize:11,fontWeight:500,color:isH?C.coral:C.t2}}>{DIAS[d.getDay()]}</div>
-            <div style={{fontSize:16,fontWeight:700,color:isH?C.coral:C.t1,margin:"2px 0"}}>{d.getDate()}</div>
-            {cnt>0?<div style={{fontSize:10,color:C.coral,fontWeight:600}}>{cnt}t</div>:<div style={{height:14}}/>}
+          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?C.bgElev:C.bg,padding:isMobile?"6px 2px":"10px 4px",textAlign:"center"}}>
+            <div style={{fontSize:isMobile?9.5:11,fontWeight:500,color:isH?C.coral:C.t2,letterSpacing:isMobile?-0.2:0}}>{isMobile?DIAS[d.getDay()].slice(0,1):DIAS[d.getDay()]}</div>
+            <div style={{fontSize:isMobile?13:16,fontWeight:700,color:isH?C.coral:C.t1,margin:isMobile?"1px 0":"2px 0"}}>{d.getDate()}</div>
+            {cnt>0?<div style={{fontSize:isMobile?9:10,color:C.coral,fontWeight:600}}>{cnt}t</div>:<div style={{height:isMobile?10:14}}/>}
           </div>;})}
-          {horas.map(h=><React.Fragment key={h}>
-            <div style={{background:C.bg,padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:11,color:C.t3,minHeight:40}}>{h}:00</div>
-            {dias.map((d,di)=>{const fs=fmtD(d);const t=all.find(t=>t.fecha===fs&&t.hora===h&&t.estado!=="cancelado");const c=t?cById(t.cliente_id):null;const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;return<div key={`${h}-${di}`} onClick={()=>t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:h,tipo:"ocasional"})} style={{background:t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPico?"rgba(224,91,40,0.06)":C.bg),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",minHeight:40,transition:"background 0.1s"}}>
-              {t&&<span style={{fontSize:11,fontWeight:600,color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,borderRadius:5,padding:"2px 7px",maxWidth:"92%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c?.nombre?.split(" ")[0]||"?"}</span>}
+          {horas.map(hr=><React.Fragment key={hr}>
+            <div style={{background:C.bg,padding:isMobile?"0 3px":"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:isMobile?9.5:11,color:C.t3,minHeight:cellMinH}}>{isMobile?hr:`${hr}:00`}</div>
+            {dias.map((d,di)=>{const fs=fmtD(d);const t=all.find(t=>t.fecha===fs&&t.hora===hr&&t.estado!=="cancelado");const c=t?cById(t.cliente_id):null;const isPico=hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin;return<div key={`${hr}-${di}`} onClick={()=>t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"})} style={{background:t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPico?"rgba(224,91,40,0.06)":C.bg),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",minHeight:cellMinH,transition:"background 0.1s",padding:isMobile?"0 1px":"0 2px"}}>
+              {t&&<span style={{fontSize:isMobile?9:11,fontWeight:600,color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>{isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}</span>}
             </div>;})}
           </React.Fragment>)}
         </div>
       </div>
-      <div style={{display:"flex",gap:12,marginTop:10,fontSize:12,color:C.t3}}>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:4}}/>Ocasional</span>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:4}}/>Abonado</span>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:4}}/>Clase</span>
+      <div style={{display:"flex",gap:isMobile?10:12,marginTop:10,fontSize:isMobile?10.5:12,color:C.t3,flexWrap:"wrap"}}>
+        <span><span style={{width:10,height:10,borderRadius:2,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Ocasional</span>
+        <span><span style={{width:10,height:10,borderRadius:2,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Abonado</span>
+        <span><span style={{width:10,height:10,borderRadius:2,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Clase</span>
       </div>
     </div>;
   };
