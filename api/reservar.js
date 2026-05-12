@@ -5,12 +5,20 @@ import crypto from "crypto";
 
 const genCode = (nombre = "", telefono = "") => {
   const limpiar = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z]/g, "");
+  const shuffle = arr => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = crypto.randomInt(i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
   const letras = [...limpiar(nombre || "X")];
   const digitos = [...(telefono.replace(/\D/g, "") || "0000")];
   const padL = "XYZWQK";
   while (letras.length < 3) letras.push(padL[letras.length % padL.length]);
   while (digitos.length < 4) digitos.push(String(digitos.length % 10));
-  return `${letras.slice(0, 3).join("")}-${digitos.slice(-4).join("")}`;
+  return `${shuffle(letras).slice(0, 3).join("")}-${shuffle(digitos).slice(0, 4).join("")}`;
 };
 
 async function sb(path, opts = {}) {
@@ -113,7 +121,13 @@ export default async function handler(req, res) {
 
   // Nuevo cliente
   if (!clienteId) {
-    codigoCliente = genCode(nombre, telefono);
+    let intentos = 0;
+    do {
+      codigoCliente = genCode(nombre, telefono);
+      const existe = await sb(`clientes?referrer_code=eq.${encodeURIComponent(codigoCliente)}&select=id&limit=1`);
+      if (existe.ok && Array.isArray(existe.data) && existe.data.length === 0) break;
+      intentos++;
+    } while (intentos < 5);
     const ins = await sb("clientes", {
       method: "POST",
       body: JSON.stringify({ nombre: nombre.trim(), telefono: telefono.trim(), nivel: "intermedio", notas: "Registrado desde portal", referrer_code: codigoCliente }),
