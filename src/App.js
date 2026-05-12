@@ -1810,6 +1810,13 @@ export default function App() {
   </div>;
 
   const WhatsApp=()=>{
+    const WA_GREEN="#25D366";
+    const WA_GREEN_DARK="#128C7E";
+    const WA_BG="#0A1628";
+    const WA_BUBBLE_OUT="#0D3320";
+    const WA_BUBBLE_IN=C.bgElev;
+    const WA_BORDER="rgba(255,255,255,0.06)";
+
     const [msgs,setMsgs]=useState([]);
     const [loadingMsgs,setLoadingMsgs]=useState(true);
     const [error,setError]=useState(null);
@@ -1820,6 +1827,7 @@ export default function App() {
     const [enviado,setEnviado]=useState(false);
     const [busqueda,setBusqueda]=useState("");
     const chatRef=useRef(null);
+    const inputRef=useRef(null);
 
     const cargar=useCallback(async()=>{
       setLoadingMsgs(true);setError(null);
@@ -1830,8 +1838,12 @@ export default function App() {
     useEffect(()=>{cargar();},[cargar]);
 
     useEffect(()=>{
-      if(convAbierta&&chatRef.current) setTimeout(()=>{chatRef.current.scrollTop=chatRef.current.scrollHeight;},50);
+      if(convAbierta&&chatRef.current) setTimeout(()=>{chatRef.current.scrollTop=chatRef.current.scrollHeight;},80);
     },[convAbierta,msgs]);
+
+    useEffect(()=>{
+      if(convAbierta&&inputRef.current) inputRef.current.focus();
+    },[convAbierta]);
 
     const marcarLeido=async(ids)=>{
       if(!ids.length)return;
@@ -1860,162 +1872,217 @@ export default function App() {
         const tel=m.de;
         if(!mapa[tel]) mapa[tel]={tel,nombre:m.nombre||tel,mensajes:[],noLeidos:0,ultimo:null};
         mapa[tel].mensajes.push(m);
-        if(!m.leido) mapa[tel].noLeidos++;
+        if(!m.leido&&m.direccion!=="saliente") mapa[tel].noLeidos++;
         if(!mapa[tel].ultimo||new Date(m.created_at)>new Date(mapa[tel].ultimo.created_at)) mapa[tel].ultimo=m;
       });
       return Object.values(mapa).sort((a,b)=>new Date(b.ultimo.created_at)-new Date(a.ultimo.created_at));
     },[msgs]);
 
-    const noLeidosTotal=msgs.filter(m=>!m.leido).length;
+    const noLeidosTotal=msgs.filter(m=>!m.leido&&m.direccion!=="saliente").length;
     const convActual=conversaciones.find(c=>c.tel===convAbierta);
-    const convsFiltradas=conversaciones.filter(c=>c.nombre.toLowerCase().includes(busqueda.toLowerCase())||c.tel.includes(busqueda));
+    const convsFiltradas=conversaciones.filter(c=>
+      c.nombre.toLowerCase().includes(busqueda.toLowerCase())||c.tel.includes(busqueda)
+    );
 
-    const fmtHora=d=>new Date(d).toLocaleString("es-PY",{hour:"2-digit",minute:"2-digit"});
-    const fmtFechaSep=d=>{
-      const hoyStr=new Date().toISOString().slice(0,10);
-      const ayerStr=new Date(Date.now()-86400000).toISOString().slice(0,10);
-      const dStr=new Date(d).toISOString().slice(0,10);
-      if(dStr===hoyStr)return"Hoy";
-      if(dStr===ayerStr)return"Ayer";
-      return new Date(d).toLocaleDateString("es-PY",{day:"2-digit",month:"long"});
+    const fmtHora=d=>new Date(d).toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit"});
+    const fmtTs=d=>{
+      const hoy=new Date().toISOString().slice(0,10);
+      const ayer=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      const ds=new Date(d).toISOString().slice(0,10);
+      if(ds===hoy) return fmtHora(d);
+      if(ds===ayer) return"Ayer";
+      return new Date(d).toLocaleDateString("es-PY",{day:"2-digit",month:"2-digit"});
+    };
+    const fmtSep=d=>{
+      const hoy=new Date().toISOString().slice(0,10);
+      const ayer=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      const ds=new Date(d).toISOString().slice(0,10);
+      if(ds===hoy) return"Hoy";
+      if(ds===ayer) return"Ayer";
+      return new Date(d).toLocaleDateString("es-PY",{weekday:"long",day:"numeric",month:"long"});
     };
 
-    const MensajeBurbuja=({m,showSep})=>{
-      const saliente=m.direccion==="saliente";
+    const previewTexto=(m)=>{
+      if(!m) return"";
+      if(m.tipo==="image"||m.tipo==="sticker") return"📷 Imagen";
+      if(m.tipo==="audio"||m.tipo==="voice") return"🎤 Audio";
+      if(m.tipo==="document") return"📄 Documento";
+      const txt=m.mensaje||"";
+      return txt.length>45?txt.slice(0,45)+"…":txt;
+    };
+
+    // ── BURBUJA ──────────────────────────────────────────────────────────────
+    const Burbuja=({m,showSep,showAvatar})=>{
+      const out=m.direccion==="saliente";
       return <>
-        {showSep&&<div style={{display:"flex",alignItems:"center",gap:10,margin:"12px 0"}}>
-          <div style={{flex:1,height:1,background:C.border}}/>
-          <span style={{fontSize:11,color:C.t3,background:C.bgElev,padding:"2px 10px",borderRadius:20,border:`1px solid ${C.border}`}}>{fmtFechaSep(m.created_at)}</span>
-          <div style={{flex:1,height:1,background:C.border}}/>
+        {showSep&&<div style={{display:"flex",alignItems:"center",gap:8,margin:"16px 20px 10px"}}>
+          <div style={{flex:1,height:"1px",background:WA_BORDER}}/>
+          <span style={{fontSize:11,color:C.t3,background:"rgba(255,255,255,0.04)",border:`1px solid ${WA_BORDER}`,padding:"3px 12px",borderRadius:20,letterSpacing:0.3}}>{fmtSep(m.created_at)}</span>
+          <div style={{flex:1,height:"1px",background:WA_BORDER}}/>
         </div>}
-        <div style={{display:"flex",justifyContent:saliente?"flex-end":"flex-start",marginBottom:4}}>
-          <div style={{maxWidth:"72%",background:saliente?"#0D2E12":C.bgElev,borderRadius:saliente?"16px 16px 4px 16px":"16px 16px 16px 4px",padding:"9px 13px",border:`1px solid ${saliente?"rgba(37,211,102,0.2)":C.border}`,boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>
-            {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
-              ?<audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:200,height:32,accentColor:"#25D366"}}/>
-              :m.tipo==="image"&&m.media_id
-              ?<img src={`/api/whatsapp/media?id=${m.media_id}`} alt="img" style={{maxWidth:220,maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
-              :<div style={{fontSize:13.5,color:saliente?"#a8e6b8":C.t1,lineHeight:1.55,whiteSpace:"pre-wrap"}}>{m.mensaje}</div>
-            }
-            <div style={{fontSize:10,color:saliente?"rgba(168,230,184,0.6)":C.t3,marginTop:4,textAlign:"right"}}>{fmtHora(m.created_at)}</div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:out?"flex-end":"flex-start",marginBottom:2,padding:"0 16px"}}>
+          <div style={{maxWidth:"68%",minWidth:80}}>
+            <div style={{background:out?WA_BUBBLE_OUT:WA_BUBBLE_IN,borderRadius:out?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",border:`1px solid ${out?"rgba(37,211,102,0.15)":WA_BORDER}`,boxShadow:"0 2px 8px rgba(0,0,0,0.25)",position:"relative"}}>
+              {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
+                ?<audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",maxWidth:220,height:36,accentColor:WA_GREEN,display:"block"}}/>
+                :m.tipo==="image"&&m.media_id
+                ?<img src={`/api/whatsapp/media?id=${m.media_id}`} alt="" style={{maxWidth:240,maxHeight:220,borderRadius:10,display:"block",cursor:"pointer",objectFit:"cover"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
+                :<p style={{margin:0,fontSize:14,color:out?"#c8f0d8":C.t1,lineHeight:1.55,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{m.mensaje}</p>
+              }
+              <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:4,marginTop:5}}>
+                <span style={{fontSize:10,color:out?"rgba(200,240,216,0.5)":C.t3}}>{fmtHora(m.created_at)}</span>
+                {out&&<span style={{fontSize:11,color:WA_GREEN,lineHeight:1}}>✓✓</span>}
+              </div>
+            </div>
           </div>
         </div>
       </>;
     };
 
-    // Panel izquierdo
-    const PanelLista=()=><div style={{display:"flex",flexDirection:"column",height:"100%",borderRight:`1px solid ${C.border}`}}>
-      <div style={{padding:"16px 16px 12px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+    // ── SIDEBAR ───────────────────────────────────────────────────────────────
+    const Sidebar=()=><div style={{display:"flex",flexDirection:"column",height:"100%",background:C.bgCard,borderRight:`1px solid ${WA_BORDER}`}}>
+      {/* Header sidebar */}
+      <div style={{padding:"14px 16px 10px",borderBottom:`1px solid ${WA_BORDER}`,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:16,fontWeight:700,color:C.t1}}>Mensajes</span>
-            {noLeidosTotal>0&&<span style={{background:"#25D366",color:"#fff",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700}}>{noLeidosTotal}</span>}
+            <div style={{width:8,height:8,borderRadius:"50%",background:WA_GREEN,boxShadow:`0 0 6px ${WA_GREEN}`}}/>
+            <span style={{fontSize:15,fontWeight:700,color:C.t1,letterSpacing:-0.3}}>Mensajes</span>
+            {noLeidosTotal>0&&<span style={{background:WA_GREEN,color:"#fff",borderRadius:20,padding:"1px 7px",fontSize:11,fontWeight:700,lineHeight:"18px"}}>{noLeidosTotal}</span>}
           </div>
-          <div style={{display:"flex",gap:6}}>
-            <Btn sm v="ghost" onClick={cargar}>↻</Btn>
-            {noLeidosTotal>0&&<Btn sm v="ghost" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Leer todo</Btn>}
+          <div style={{display:"flex",gap:4}}>
+            {noLeidosTotal>0&&<button onClick={()=>marcarLeido(msgs.filter(m=>!m.leido&&m.direccion!=="saliente").map(m=>m.id))} title="Marcar todo leído" style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:13,padding:"4px 6px",borderRadius:6,fontFamily:"var(--font-sans)"}}>✓✓</button>}
+            <button onClick={cargar} title="Actualizar" style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:15,padding:"4px 6px",borderRadius:6,fontFamily:"var(--font-sans)"}}>↻</button>
           </div>
         </div>
+        {/* Buscador */}
         <div style={{position:"relative"}}>
-          <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.t3,fontSize:14}}>🔍</span>
-          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar conversación…" style={{...inp,paddingLeft:32,fontSize:13,borderRadius:20,width:"100%",boxSizing:"border-box"}}/>
+          <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:C.t3,pointerEvents:"none"}}>🔍</span>
+          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar…"
+            style={{width:"100%",boxSizing:"border-box",padding:"8px 10px 8px 32px",background:C.bgElev,border:`1px solid ${WA_BORDER}`,borderRadius:20,fontSize:13,color:C.t1,fontFamily:"var(--font-sans)",outline:"none"}}/>
+          {busqueda&&<button onClick={()=>setBusqueda("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:14,fontFamily:"var(--font-sans)"}}>×</button>}
         </div>
       </div>
+
+      {/* Lista */}
       <div style={{flex:1,overflowY:"auto"}}>
-        {loadingMsgs?<div style={{padding:40,textAlign:"center",color:C.t3,fontSize:13}}>Cargando…</div>
-        :error?<div style={{padding:16,color:C.red,fontSize:13}}>{error}</div>
-        :convsFiltradas.length===0?<div style={{padding:40,textAlign:"center"}}>
-            <div style={{fontSize:28,marginBottom:8}}>💬</div>
-            <div style={{color:C.t3,fontSize:13}}>{busqueda?"Sin resultados":"Sin mensajes aún"}</div>
-          </div>
-        :convsFiltradas.map(conv=>{
-          const ult=conv.ultimo;
-          const activa=conv.tel===convAbierta;
-          const ts=new Date(ult.created_at).toLocaleString("es-PY",{hour:"2-digit",minute:"2-digit"});
-          const preview=ult.mensaje?ult.mensaje.length>40?ult.mensaje.slice(0,40)+"…":ult.mensaje:ult.tipo==="image"?"📷 Imagen":ult.tipo==="audio"?"🎤 Audio":"—";
-          return <div key={conv.tel} onClick={()=>{setConvAbierta(conv.tel);if(conv.noLeidos)marcarLeido(conv.mensajes.filter(m=>!m.leido).map(m=>m.id));}}
-            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer",background:activa?"rgba(37,211,102,0.06)":C.bg,borderLeft:`3px solid ${activa?"#25D366":conv.noLeidos>0?C.coral:"transparent"}`,transition:"all 0.1s"}}
-            onMouseEnter={e=>{if(!activa)e.currentTarget.style.background=C.bgElev;}}
-            onMouseLeave={e=>{if(!activa)e.currentTarget.style.background=C.bg;}}>
-            <div style={{position:"relative",flexShrink:0}}>
-              <Avatar nombre={conv.nombre} size={42}/>
-              {conv.noLeidos>0&&<div style={{position:"absolute",top:-3,right:-3,background:"#25D366",color:"#fff",borderRadius:"50%",width:17,height:17,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{conv.noLeidos}</div>}
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:2}}>
-                <span style={{fontWeight:conv.noLeidos>0?700:500,fontSize:13.5,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{conv.nombre}</span>
-                <span style={{fontSize:10,color:conv.noLeidos>0?C.t2:C.t3,flexShrink:0,marginLeft:8}}>{ts}</span>
+        {loadingMsgs
+          ?[...Array(4)].map((_,i)=><div key={i} style={{display:"flex",gap:12,padding:"14px 16px",borderBottom:`1px solid ${WA_BORDER}`,opacity:1-i*0.2}}>
+              <div style={{width:44,height:44,borderRadius:"50%",background:C.bgElev,flexShrink:0}}/>
+              <div style={{flex:1,display:"flex",flexDirection:"column",gap:8,justifyContent:"center"}}>
+                <div style={{height:12,borderRadius:6,background:C.bgElev,width:"60%"}}/>
+                <div style={{height:10,borderRadius:6,background:C.bgElev,width:"80%"}}/>
               </div>
-              <div style={{fontSize:12,color:conv.noLeidos>0?C.t2:C.t3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {ult.direccion==="saliente"&&<span style={{color:"#25D366",marginRight:3}}>✓</span>}
-                {preview}
-              </div>
+            </div>)
+          :error
+          ?<div style={{padding:24,textAlign:"center",color:C.red,fontSize:13}}>{error}</div>
+          :convsFiltradas.length===0
+          ?<div style={{padding:48,textAlign:"center"}}>
+              <div style={{fontSize:36,marginBottom:10,opacity:0.3}}>💬</div>
+              <div style={{color:C.t3,fontSize:13}}>{busqueda?"Sin resultados para \""+busqueda+"\"":"Aún no hay mensajes"}</div>
             </div>
-          </div>;
-        })}
+          :convsFiltradas.map(conv=>{
+            const activa=conv.tel===convAbierta;
+            const preview=previewTexto(conv.ultimo);
+            const saliente=conv.ultimo?.direccion==="saliente";
+            return <div key={conv.tel}
+              onClick={()=>{setConvAbierta(conv.tel);if(conv.noLeidos)marcarLeido(conv.mensajes.filter(m=>!m.leido&&m.direccion!=="saliente").map(m=>m.id));}}
+              style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer",background:activa?`rgba(37,211,102,0.07)`:C.bgCard,borderBottom:`1px solid ${WA_BORDER}`,borderLeft:`3px solid ${activa?WA_GREEN:conv.noLeidos>0?C.coral:"transparent"}`,transition:"background 0.12s"}}
+              onMouseEnter={e=>{if(!activa)e.currentTarget.style.background=C.bgElev;}}
+              onMouseLeave={e=>{if(!activa)e.currentTarget.style.background=C.bgCard;}}>
+              <div style={{position:"relative",flexShrink:0}}>
+                <Avatar nombre={conv.nombre} size={44}/>
+                {conv.noLeidos>0&&<div style={{position:"absolute",top:-2,right:-2,background:WA_GREEN,color:"#fff",borderRadius:"50%",minWidth:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,padding:"0 3px"}}>{conv.noLeidos}</div>}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                  <span style={{fontWeight:conv.noLeidos>0?700:500,fontSize:14,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"65%"}}>{conv.nombre}</span>
+                  <span style={{fontSize:10.5,color:conv.noLeidos>0?WA_GREEN:C.t3,flexShrink:0}}>{fmtTs(conv.ultimo.created_at)}</span>
+                </div>
+                <div style={{fontSize:12.5,color:conv.noLeidos>0?C.t2:C.t3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",display:"flex",alignItems:"center",gap:3}}>
+                  {saliente&&<span style={{color:WA_GREEN,fontSize:11}}>✓✓</span>}
+                  <span>{preview||"—"}</span>
+                </div>
+              </div>
+            </div>;
+          })
+        }
       </div>
     </div>;
 
-    // Panel derecho
-    const PanelChat=()=>{
-      if(!convActual) return <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,color:C.t3}}>
-        <div style={{fontSize:48,opacity:0.3}}>💬</div>
-        <div style={{fontSize:14}}>Seleccioná una conversación</div>
+    // ── CHAT ─────────────────────────────────────────────────────────────────
+    const Chat=()=>{
+      if(!convActual) return <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,background:WA_BG}}>
+        <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(37,211,102,0.08)",border:`1px solid rgba(37,211,102,0.15)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>💬</div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:15,fontWeight:600,color:C.t2,marginBottom:4}}>Seleccioná una conversación</div>
+          <div style={{fontSize:12,color:C.t3}}>Los mensajes aparecen acá</div>
+        </div>
       </div>;
+
       const msgsOrdenados=convActual.mensajes.slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-      return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:C.bgCard}}>
-          {isMobile&&<button onClick={()=>setConvAbierta(null)} style={{background:"none",border:"none",color:C.t2,fontSize:20,cursor:"pointer",padding:"0 4px",fontFamily:"var(--font-sans)"}}>←</button>}
-          <Avatar nombre={convActual.nombre} size={38}/>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:700,fontSize:14,color:C.t1}}>{convActual.nombre}</div>
-            <div style={{fontSize:11,color:C.t3}}>{convActual.tel}</div>
+
+      return <div style={{display:"flex",flexDirection:"column",height:"100%",background:WA_BG}}>
+        {/* Header chat */}
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",background:C.bgCard,borderBottom:`1px solid ${WA_BORDER}`,flexShrink:0,boxShadow:"0 1px 8px rgba(0,0,0,0.2)"}}>
+          {isMobile&&<button onClick={()=>setConvAbierta(null)} style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:"0 6px 0 0",fontFamily:"var(--font-sans)"}}>‹</button>}
+          <Avatar nombre={convActual.nombre} size={40}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:14,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{convActual.nombre}</div>
+            <div style={{fontSize:11,color:C.t3}}>{convActual.tel} · {convActual.mensajes.length} mensaje{convActual.mensajes.length!==1?"s":""}</div>
           </div>
-          <button onClick={()=>window.open(`https://wa.me/${convActual.tel}`,"_blank")} style={{padding:"6px 12px",borderRadius:20,fontSize:12,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600}}>
-            Abrir WA
+          <button onClick={()=>window.open(`https://wa.me/${convActual.tel}`,"_blank")}
+            style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:20,fontSize:12.5,cursor:"pointer",background:WA_GREEN,color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600,flexShrink:0}}>
+            <span>Abrir en WA</span>
           </button>
           <button onClick={async()=>{
-            if(!window.confirm(`¿Eliminar toda la conversación con ${convActual.nombre}?`))return;
+            if(!window.confirm(`¿Eliminar la conversación con ${convActual.nombre}?`))return;
             await fetch("/api/whatsapp/mensajes",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({de:convActual.tel})});
             setConvAbierta(null);await cargar();
-          }} style={{padding:"6px 10px",borderRadius:20,fontSize:12,cursor:"pointer",background:"transparent",color:C.t3,border:`1px solid ${C.border}`,fontFamily:"var(--font-sans)"}}>🗑</button>
+          }} title="Eliminar conversación"
+            style={{width:34,height:34,borderRadius:"50%",background:"transparent",border:`1px solid ${WA_BORDER}`,color:C.t3,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"var(--font-sans)"}}>
+            🗑
+          </button>
         </div>
+
         {/* Mensajes */}
-        <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",background:"linear-gradient(180deg,rgba(0,0,0,0.1) 0%,transparent 100%)"}}>
-          {msgsOrdenados.map((m,i)=>{
-            const prev=msgsOrdenados[i-1];
-            const showSep=!prev||new Date(m.created_at).toISOString().slice(0,10)!==new Date(prev.created_at).toISOString().slice(0,10);
-            return <MensajeBurbuja key={m.id} m={m} showSep={showSep}/>;
-          })}
+        <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"8px 0 12px",display:"flex",flexDirection:"column"}}>
+          {msgsOrdenados.length===0
+            ?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13}}>Sin mensajes</div>
+            :msgsOrdenados.map((m,i)=>{
+              const prev=msgsOrdenados[i-1];
+              const showSep=!prev||new Date(m.created_at).toISOString().slice(0,10)!==new Date(prev.created_at).toISOString().slice(0,10);
+              return <Burbuja key={m.id} m={m} showSep={showSep}/>;
+            })
+          }
         </div>
+
         {/* Input */}
-        <div style={{padding:"12px 16px",borderTop:`1px solid ${C.border}`,background:C.bgCard,flexShrink:0}}>
-          <div style={{display:"flex",gap:8,alignItems:"flex-end",background:C.bgElev,borderRadius:24,padding:"8px 8px 8px 16px",border:`1px solid ${C.border}`}}>
-            <textarea value={respuesta} onChange={e=>setRespuesta(e.target.value)}
+        <div style={{padding:"10px 14px 12px",background:C.bgCard,borderTop:`1px solid ${WA_BORDER}`,flexShrink:0}}>
+          <div style={{display:"flex",gap:10,alignItems:"flex-end",background:C.bgElev,borderRadius:26,padding:"6px 6px 6px 16px",border:`1px solid ${WA_BORDER}`,transition:"border-color 0.15s"}}>
+            <textarea ref={inputRef} value={respuesta}
+              onChange={e=>{setRespuesta(e.target.value);e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}
               onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta();}}
-              placeholder="Escribí un mensaje… (Ctrl+Enter para enviar)"
+              placeholder="Escribí un mensaje…"
               rows={1} disabled={enviando}
-              style={{flex:1,background:"transparent",border:"none",outline:"none",resize:"none",fontSize:13.5,color:C.t1,fontFamily:"var(--font-sans)",lineHeight:1.5,maxHeight:100,overflowY:"auto",padding:0}}/>
+              style={{flex:1,background:"transparent",border:"none",outline:"none",resize:"none",fontSize:14,color:C.t1,fontFamily:"var(--font-sans)",lineHeight:1.5,padding:"4px 0",maxHeight:120,overflowY:"auto"}}/>
             <button onClick={enviarRespuesta} disabled={enviando||!respuesta.trim()}
-              style={{width:38,height:38,borderRadius:"50%",background:respuesta.trim()?"#25D366":"transparent",color:respuesta.trim()?"#fff":C.t3,border:respuesta.trim()?"none":`1px solid ${C.border}`,cursor:respuesta.trim()?"pointer":"default",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s",fontFamily:"var(--font-sans)"}}>
+              style={{width:40,height:40,borderRadius:"50%",background:respuesta.trim()?WA_GREEN:"transparent",color:respuesta.trim()?"#fff":C.t3,border:respuesta.trim()?"none":`1px solid ${WA_BORDER}`,cursor:respuesta.trim()?"pointer":"default",fontSize:17,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.18s",fontFamily:"var(--font-sans)"}}>
               {enviando?"…":enviado?"✓":"➤"}
             </button>
           </div>
-          <div style={{fontSize:10,color:C.t3,marginTop:6,textAlign:"center"}}>Ctrl+Enter para enviar</div>
+          <div style={{fontSize:10,color:C.t3,textAlign:"center",marginTop:5}}>Ctrl + Enter para enviar</div>
         </div>
       </div>;
     };
 
-    // Layout
+    // ── LAYOUT ────────────────────────────────────────────────────────────────
     if(isMobile){
-      return convAbierta&&convActual
-        ?<div style={{height:"calc(100vh - 140px)"}}><PanelChat/></div>
-        :<PanelLista/>;
+      if(convAbierta&&convActual) return <div style={{height:"calc(100vh - 130px)"}}><Chat/></div>;
+      return <Sidebar/>;
     }
-
-    return <div style={{display:"grid",gridTemplateColumns:"300px 1fr",height:"calc(100vh - 160px)",border:`1px solid ${C.border}`,borderRadius:16,overflow:"hidden",background:C.bg}}>
-      <PanelLista/>
-      <PanelChat/>
+    return <div style={{display:"grid",gridTemplateColumns:"320px 1fr",height:"calc(100vh - 155px)",borderRadius:16,overflow:"hidden",border:`1px solid ${WA_BORDER}`,boxShadow:"0 4px 40px rgba(0,0,0,0.4)"}}>
+      <Sidebar/>
+      <Chat/>
     </div>;
   };
 
