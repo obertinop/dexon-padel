@@ -1854,16 +1854,20 @@ export default function App() {
 
     const enviarRespuesta=async()=>{
       if(!respuesta.trim()||!convAbierta)return;
+      const texto=respuesta.trim();
+      setRespuesta("");
+      if(inputRef.current){inputRef.current.style.height="auto";}
       setEnviando(true);
       try{
-        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:convAbierta,mensaje:respuesta.trim()})});
+        const r=await fetch("/api/whatsapp/responder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telefono:convAbierta,mensaje:texto})});
         const data=await r.json();
         if(!r.ok)throw new Error(data.error||"Error enviando");
-        setEnviado(true);setRespuesta("");
-        await cargar();
+        const optimista={id:`opt-${Date.now()}`,de:convAbierta,nombre:"DEXON",mensaje:texto,tipo:"text",meta_id:data.message_id||null,leido:true,direccion:"saliente",created_at:new Date().toISOString()};
+        setMsgs(prev=>[...prev,optimista]);
+        setEnviado(true);
         setTimeout(()=>setEnviado(false),2000);
-      }catch(e){alert("Error al enviar: "+e.message);}
-      finally{setEnviando(false);}
+      }catch(e){setRespuesta(texto);alert("Error al enviar: "+e.message);}
+      finally{setEnviando(false);if(inputRef.current)inputRef.current.focus();}
     };
 
     const conversaciones=React.useMemo(()=>{
@@ -1926,7 +1930,7 @@ export default function App() {
               {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
                 ?<audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:"100%",maxWidth:220,height:36,accentColor:WA_GREEN,display:"block"}}/>
                 :m.tipo==="image"&&m.media_id
-                ?<img src={`/api/whatsapp/media?id=${m.media_id}`} alt="" style={{maxWidth:240,maxHeight:220,borderRadius:10,display:"block",cursor:"pointer",objectFit:"cover"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
+                ?<img src={`/api/whatsapp/media?id=${m.media_id}`} alt="" style={{width:"100%",maxWidth:240,maxHeight:220,height:"auto",borderRadius:10,display:"block",cursor:"pointer",objectFit:"contain"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
                 :<p style={{margin:0,fontSize:14,color:out?"#c8f0d8":C.t1,lineHeight:1.55,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{m.mensaje}</p>
               }
               <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:4,marginTop:5}}>
@@ -2045,7 +2049,7 @@ export default function App() {
         </div>
 
         {/* Mensajes */}
-        <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"8px 0 12px",display:"flex",flexDirection:"column"}}>
+        <div ref={chatRef} style={{flex:1,minHeight:0,overflowY:"auto",padding:"8px 0 12px",display:"flex",flexDirection:"column"}}>
           {msgsOrdenados.length===0
             ?<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13}}>Sin mensajes</div>
             :msgsOrdenados.map((m,i)=>{
