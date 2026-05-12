@@ -1813,12 +1813,12 @@ export default function App() {
     const [msgs,setMsgs]=useState([]);
     const [loadingMsgs,setLoadingMsgs]=useState(true);
     const [error,setError]=useState(null);
-    // convAbierta vive en App para sobrevivir re-renders del auto-refresh
     const convAbierta=waConvAbierta;
     const setConvAbierta=setWaConvAbierta;
     const [respuesta,setRespuesta]=useState("");
     const [enviando,setEnviando]=useState(false);
     const [enviado,setEnviado]=useState(false);
+    const [busqueda,setBusqueda]=useState("");
     const chatRef=useRef(null);
 
     const cargar=useCallback(async()=>{
@@ -1829,7 +1829,6 @@ export default function App() {
 
     useEffect(()=>{cargar();},[cargar]);
 
-    // Scroll al final cuando se abre una conversación
     useEffect(()=>{
       if(convAbierta&&chatRef.current) setTimeout(()=>{chatRef.current.scrollTop=chatRef.current.scrollHeight;},50);
     },[convAbierta,msgs]);
@@ -1855,8 +1854,7 @@ export default function App() {
       finally{setEnviando(false);}
     };
 
-    // Agrupar mensajes por número de teléfono (conversaciones)
-    const conversaciones = React.useMemo(()=>{
+    const conversaciones=React.useMemo(()=>{
       const mapa={};
       msgs.forEach(m=>{
         const tel=m.de;
@@ -1870,117 +1868,154 @@ export default function App() {
 
     const noLeidosTotal=msgs.filter(m=>!m.leido).length;
     const convActual=conversaciones.find(c=>c.tel===convAbierta);
+    const convsFiltradas=conversaciones.filter(c=>c.nombre.toLowerCase().includes(busqueda.toLowerCase())||c.tel.includes(busqueda));
 
-    const MensajeBurbuja=({m})=>{
-      const saliente=m.direccion==="saliente";
-      return <div style={{display:"flex",justifyContent:saliente?"flex-end":"flex-start",marginBottom:6}}>
-        <div style={{maxWidth:"78%",background:saliente?"#1A4A1A":C.bgElev,borderRadius:saliente?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"8px 12px",border:`1px solid ${saliente?C.greenBd:C.border}`}}>
-          {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
-            ?<audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:200,height:32,accentColor:"#25D366"}}/>
-            :m.tipo==="image"&&m.media_id
-            ?<img src={`/api/whatsapp/media?id=${m.media_id}`} alt="img" style={{maxWidth:220,maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
-            :<div style={{fontSize:13,color:saliente?C.green:C.t1,lineHeight:1.5}}>{m.mensaje}</div>
-          }
-          <div style={{fontSize:10,color:saliente?"#5ABDA8":C.t3,marginTop:4,textAlign:"right"}}>
-            {new Date(m.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
-          </div>
-        </div>
-      </div>;
+    const fmtHora=d=>new Date(d).toLocaleString("es-PY",{hour:"2-digit",minute:"2-digit"});
+    const fmtFechaSep=d=>{
+      const hoyStr=new Date().toISOString().slice(0,10);
+      const ayerStr=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      const dStr=new Date(d).toISOString().slice(0,10);
+      if(dStr===hoyStr)return"Hoy";
+      if(dStr===ayerStr)return"Ayer";
+      return new Date(d).toLocaleDateString("es-PY",{day:"2-digit",month:"long"});
     };
 
-    // Vista de conversación abierta
-    if(convAbierta&&convActual){
-      const idsNoLeidos=convActual.mensajes.filter(m=>!m.leido).map(m=>m.id);
-      if(idsNoLeidos.length) marcarLeido(idsNoLeidos);
-      return <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 160px)",minHeight:400}}>
-        {/* Header conversación */}
-        <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:C.bgCard,borderRadius:12,marginBottom:8,border:`1px solid ${C.border}`}}>
-          <button onClick={()=>setConvAbierta(null)} style={{background:"none",border:"none",color:C.t2,fontSize:20,cursor:"pointer",padding:"0 4px",fontFamily:"var(--font-sans)"}}>←</button>
+    const MensajeBurbuja=({m,showSep})=>{
+      const saliente=m.direccion==="saliente";
+      return <>
+        {showSep&&<div style={{display:"flex",alignItems:"center",gap:10,margin:"12px 0"}}>
+          <div style={{flex:1,height:1,background:C.border}}/>
+          <span style={{fontSize:11,color:C.t3,background:C.bgElev,padding:"2px 10px",borderRadius:20,border:`1px solid ${C.border}`}}>{fmtFechaSep(m.created_at)}</span>
+          <div style={{flex:1,height:1,background:C.border}}/>
+        </div>}
+        <div style={{display:"flex",justifyContent:saliente?"flex-end":"flex-start",marginBottom:4}}>
+          <div style={{maxWidth:"72%",background:saliente?"#0D2E12":C.bgElev,borderRadius:saliente?"16px 16px 4px 16px":"16px 16px 16px 4px",padding:"9px 13px",border:`1px solid ${saliente?"rgba(37,211,102,0.2)":C.border}`,boxShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>
+            {(m.tipo==="audio"||m.tipo==="voice")&&m.media_id
+              ?<audio controls src={`/api/whatsapp/media?id=${m.media_id}`} style={{width:200,height:32,accentColor:"#25D366"}}/>
+              :m.tipo==="image"&&m.media_id
+              ?<img src={`/api/whatsapp/media?id=${m.media_id}`} alt="img" style={{maxWidth:220,maxHeight:200,borderRadius:8,display:"block",cursor:"pointer"}} onClick={()=>window.open(`/api/whatsapp/media?id=${m.media_id}`,"_blank")}/>
+              :<div style={{fontSize:13.5,color:saliente?"#a8e6b8":C.t1,lineHeight:1.55,whiteSpace:"pre-wrap"}}>{m.mensaje}</div>
+            }
+            <div style={{fontSize:10,color:saliente?"rgba(168,230,184,0.6)":C.t3,marginTop:4,textAlign:"right"}}>{fmtHora(m.created_at)}</div>
+          </div>
+        </div>
+      </>;
+    };
+
+    // Panel izquierdo
+    const PanelLista=()=><div style={{display:"flex",flexDirection:"column",height:"100%",borderRight:`1px solid ${C.border}`}}>
+      <div style={{padding:"16px 16px 12px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16,fontWeight:700,color:C.t1}}>Mensajes</span>
+            {noLeidosTotal>0&&<span style={{background:"#25D366",color:"#fff",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700}}>{noLeidosTotal}</span>}
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <Btn sm v="ghost" onClick={cargar}>↻</Btn>
+            {noLeidosTotal>0&&<Btn sm v="ghost" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Leer todo</Btn>}
+          </div>
+        </div>
+        <div style={{position:"relative"}}>
+          <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.t3,fontSize:14}}>🔍</span>
+          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar conversación…" style={{...inp,paddingLeft:32,fontSize:13,borderRadius:20,width:"100%",boxSizing:"border-box"}}/>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto"}}>
+        {loadingMsgs?<div style={{padding:40,textAlign:"center",color:C.t3,fontSize:13}}>Cargando…</div>
+        :error?<div style={{padding:16,color:C.red,fontSize:13}}>{error}</div>
+        :convsFiltradas.length===0?<div style={{padding:40,textAlign:"center"}}>
+            <div style={{fontSize:28,marginBottom:8}}>💬</div>
+            <div style={{color:C.t3,fontSize:13}}>{busqueda?"Sin resultados":"Sin mensajes aún"}</div>
+          </div>
+        :convsFiltradas.map(conv=>{
+          const ult=conv.ultimo;
+          const activa=conv.tel===convAbierta;
+          const ts=new Date(ult.created_at).toLocaleString("es-PY",{hour:"2-digit",minute:"2-digit"});
+          const preview=ult.mensaje?ult.mensaje.length>40?ult.mensaje.slice(0,40)+"…":ult.mensaje:ult.tipo==="image"?"📷 Imagen":ult.tipo==="audio"?"🎤 Audio":"—";
+          return <div key={conv.tel} onClick={()=>{setConvAbierta(conv.tel);if(conv.noLeidos)marcarLeido(conv.mensajes.filter(m=>!m.leido).map(m=>m.id));}}
+            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer",background:activa?"rgba(37,211,102,0.06)":C.bg,borderLeft:`3px solid ${activa?"#25D366":conv.noLeidos>0?C.coral:"transparent"}`,transition:"all 0.1s"}}
+            onMouseEnter={e=>{if(!activa)e.currentTarget.style.background=C.bgElev;}}
+            onMouseLeave={e=>{if(!activa)e.currentTarget.style.background=C.bg;}}>
+            <div style={{position:"relative",flexShrink:0}}>
+              <Avatar nombre={conv.nombre} size={42}/>
+              {conv.noLeidos>0&&<div style={{position:"absolute",top:-3,right:-3,background:"#25D366",color:"#fff",borderRadius:"50%",width:17,height:17,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{conv.noLeidos}</div>}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:2}}>
+                <span style={{fontWeight:conv.noLeidos>0?700:500,fontSize:13.5,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{conv.nombre}</span>
+                <span style={{fontSize:10,color:conv.noLeidos>0?C.t2:C.t3,flexShrink:0,marginLeft:8}}>{ts}</span>
+              </div>
+              <div style={{fontSize:12,color:conv.noLeidos>0?C.t2:C.t3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {ult.direccion==="saliente"&&<span style={{color:"#25D366",marginRight:3}}>✓</span>}
+                {preview}
+              </div>
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>;
+
+    // Panel derecho
+    const PanelChat=()=>{
+      if(!convActual) return <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,color:C.t3}}>
+        <div style={{fontSize:48,opacity:0.3}}>💬</div>
+        <div style={{fontSize:14}}>Seleccioná una conversación</div>
+      </div>;
+      const msgsOrdenados=convActual.mensajes.slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+      return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0,background:C.bgCard}}>
+          {isMobile&&<button onClick={()=>setConvAbierta(null)} style={{background:"none",border:"none",color:C.t2,fontSize:20,cursor:"pointer",padding:"0 4px",fontFamily:"var(--font-sans)"}}>←</button>}
           <Avatar nombre={convActual.nombre} size={38}/>
           <div style={{flex:1}}>
             <div style={{fontWeight:700,fontSize:14,color:C.t1}}>{convActual.nombre}</div>
-            <div style={{fontSize:11,color:C.t3}}>{convActual.tel} · {convActual.mensajes.length} mensaje{convActual.mensajes.length!==1?"s":""}</div>
+            <div style={{fontSize:11,color:C.t3}}>{convActual.tel}</div>
           </div>
-          <button onClick={()=>window.open(`https://wa.me/${convActual.tel}`,"_blank")} style={{padding:"6px 12px",borderRadius:8,fontSize:12,cursor:"pointer",background:C.greenBg,color:"#25D366",border:`1px solid ${C.greenBd}`,fontFamily:"var(--font-sans)",fontWeight:600}}>
+          <button onClick={()=>window.open(`https://wa.me/${convActual.tel}`,"_blank")} style={{padding:"6px 12px",borderRadius:20,fontSize:12,cursor:"pointer",background:"#25D366",color:"#fff",border:"none",fontFamily:"var(--font-sans)",fontWeight:600}}>
             Abrir WA
           </button>
           <button onClick={async()=>{
             if(!window.confirm(`¿Eliminar toda la conversación con ${convActual.nombre}?`))return;
             await fetch("/api/whatsapp/mensajes",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({de:convActual.tel})});
-            setConvAbierta(null);
-            await cargar();
-          }} style={{padding:"6px 10px",borderRadius:8,fontSize:12,cursor:"pointer",background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,fontFamily:"var(--font-sans)",fontWeight:600}}>
-            Eliminar
-          </button>
+            setConvAbierta(null);await cargar();
+          }} style={{padding:"6px 10px",borderRadius:20,fontSize:12,cursor:"pointer",background:"transparent",color:C.t3,border:`1px solid ${C.border}`,fontFamily:"var(--font-sans)"}}>🗑</button>
         </div>
         {/* Mensajes */}
-        <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"8px 4px",display:"flex",flexDirection:"column"}}>
-          {convActual.mensajes.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(m=><MensajeBurbuja key={m.id} m={m}/>)}
+        <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",background:"linear-gradient(180deg,rgba(0,0,0,0.1) 0%,transparent 100%)"}}>
+          {msgsOrdenados.map((m,i)=>{
+            const prev=msgsOrdenados[i-1];
+            const showSep=!prev||new Date(m.created_at).toISOString().slice(0,10)!==new Date(prev.created_at).toISOString().slice(0,10);
+            return <MensajeBurbuja key={m.id} m={m} showSep={showSep}/>;
+          })}
         </div>
-        {/* Input respuesta */}
-        <div style={{display:"flex",gap:8,alignItems:"flex-end",padding:"10px 0 0"}}>
-          <textarea
-            value={respuesta}
-            onChange={e=>setRespuesta(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta();}}
-            placeholder="Escribí tu respuesta… (Ctrl+Enter para enviar)"
-            rows={2}
-            style={{...inp,resize:"none",flex:1,fontSize:13,borderRadius:10}}
-            disabled={enviando}
-          />
-          <button onClick={enviarRespuesta} disabled={enviando||!respuesta.trim()}
-            style={{padding:"10px 18px",borderRadius:10,fontSize:13,cursor:"pointer",background:enviado?"#1A4A1A":"#25D366",color:enviado?C.green:"#fff",border:enviado?`1px solid ${C.greenBd}`:"none",fontFamily:"var(--font-sans)",fontWeight:700,whiteSpace:"nowrap",flexShrink:0,opacity:(enviando||!respuesta.trim())?0.6:1,transition:"all 0.15s"}}>
-            {enviando?"Enviando…":enviado?"✓ Enviado":"Enviar"}
-          </button>
+        {/* Input */}
+        <div style={{padding:"12px 16px",borderTop:`1px solid ${C.border}`,background:C.bgCard,flexShrink:0}}>
+          <div style={{display:"flex",gap:8,alignItems:"flex-end",background:C.bgElev,borderRadius:24,padding:"8px 8px 8px 16px",border:`1px solid ${C.border}`}}>
+            <textarea value={respuesta} onChange={e=>setRespuesta(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))enviarRespuesta();}}
+              placeholder="Escribí un mensaje… (Ctrl+Enter para enviar)"
+              rows={1} disabled={enviando}
+              style={{flex:1,background:"transparent",border:"none",outline:"none",resize:"none",fontSize:13.5,color:C.t1,fontFamily:"var(--font-sans)",lineHeight:1.5,maxHeight:100,overflowY:"auto",padding:0}}/>
+            <button onClick={enviarRespuesta} disabled={enviando||!respuesta.trim()}
+              style={{width:38,height:38,borderRadius:"50%",background:respuesta.trim()?"#25D366":"transparent",color:respuesta.trim()?"#fff":C.t3,border:respuesta.trim()?"none":`1px solid ${C.border}`,cursor:respuesta.trim()?"pointer":"default",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s",fontFamily:"var(--font-sans)"}}>
+              {enviando?"…":enviado?"✓":"➤"}
+            </button>
+          </div>
+          <div style={{fontSize:10,color:C.t3,marginTop:6,textAlign:"center"}}>Ctrl+Enter para enviar</div>
         </div>
       </div>;
+    };
+
+    // Layout
+    if(isMobile){
+      return convAbierta&&convActual
+        ?<div style={{height:"calc(100vh - 140px)"}}><PanelChat/></div>
+        :<PanelLista/>;
     }
 
-    // Lista de conversaciones
-    return <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div>
-          <span style={{fontSize:16,fontWeight:600,color:C.t1}}>WhatsApp</span>
-          {noLeidosTotal>0&&<span style={{marginLeft:10,background:C.coral,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:600}}>{noLeidosTotal} nuevos</span>}
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <Btn sm v="ghost" onClick={cargar}>Actualizar</Btn>
-          {noLeidosTotal>0&&<Btn sm v="primary" onClick={()=>marcarLeido(msgs.filter(m=>!m.leido).map(m=>m.id))}>Marcar todos leídos</Btn>}
-        </div>
-      </div>
-      {error&&<div style={{...card,background:C.redBg,color:C.red,marginBottom:12,fontSize:13}}>{error}</div>}
-      {loadingMsgs?<div style={{textAlign:"center",padding:60,color:C.t2,fontSize:13}}>Cargando...</div>
-      :conversaciones.length===0?<div style={{...card,textAlign:"center",padding:40}}>
-          <div style={{fontSize:32,marginBottom:10}}>💬</div>
-          <div style={{color:C.t2,fontSize:14}}>No hay mensajes recibidos aún</div>
-        </div>
-      :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {conversaciones.map(conv=>{
-          const ult=conv.ultimo;
-          const ts=new Date(ult.created_at).toLocaleString("es-PY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-          const preview=ult.mensaje&&ult.mensaje.length>55?ult.mensaje.slice(0,55)+"…":ult.mensaje;
-          return <div key={conv.tel} onClick={()=>setConvAbierta(conv.tel)}
-            style={{...card,display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer",borderLeft:`3px solid ${conv.noLeidos>0?C.coral:C.border}`,transition:"background 0.1s"}}
-            onMouseEnter={e=>e.currentTarget.style.background=C.bgHover}
-            onMouseLeave={e=>e.currentTarget.style.background=C.bgCard}>
-            <div style={{position:"relative",flexShrink:0}}>
-              <Avatar nombre={conv.nombre} size={44}/>
-              {conv.noLeidos>0&&<div style={{position:"absolute",top:-4,right:-4,background:C.coral,color:"#fff",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>{conv.noLeidos}</div>}
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:3}}>
-                <div style={{fontWeight:conv.noLeidos>0?700:500,fontSize:14,color:C.t1}}>{conv.nombre}</div>
-                <div style={{fontSize:11,color:C.t3,flexShrink:0,marginLeft:8}}>{ts}</div>
-              </div>
-              <div style={{fontSize:12,color:conv.noLeidos>0?C.t2:C.t3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {ult.direccion==="saliente"&&<span style={{color:C.green,marginRight:4}}>Tú:</span>}
-                {preview||"—"}
-              </div>
-            </div>
-            {conv.mensajes.length>1&&<div style={{fontSize:11,color:C.t3,flexShrink:0,background:C.bgElev,padding:"2px 7px",borderRadius:10,border:`1px solid ${C.border}`}}>{conv.mensajes.length}</div>}
-          </div>;
-        })}
-      </div>}
+    return <div style={{display:"grid",gridTemplateColumns:"300px 1fr",height:"calc(100vh - 160px)",border:`1px solid ${C.border}`,borderRadius:16,overflow:"hidden",background:C.bg}}>
+      <PanelLista/>
+      <PanelChat/>
     </div>;
   };
 
