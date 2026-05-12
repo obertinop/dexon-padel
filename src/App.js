@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 const SUPA_URL = "https://wirsrkuxzltedqdkrdak.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpcnNya3V4emx0ZWRxZGtyZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjEzMjMsImV4cCI6MjA5MjYzNzMyM30.BjxD2R5bgBUHyalpwFhRzsGEzOnCx4PH9Sb65d609VI";
 const ADMIN_TEL = "595994952201";
-const LOGO = "/logo.png";
+const LOGO = "/logo192.png";
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
