@@ -760,7 +760,7 @@ const PortalCliente = () => {
                 <button onClick={()=>{navigator.clipboard.writeText(miCodigo);setMsg("Copiado!");setTimeout(()=>setMsg(""),1500);}} style={{padding:"12px 16px",background:C.yellowBg,color:C.yellow,border:`1px solid ${C.yellowBd}`,borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",whiteSpace:"nowrap"}}>Copiar</button>
               </div>
               <div style={{fontSize:12,color:"#E8C898",lineHeight:1.6,marginBottom:12}}>Compartilo con amigos. Cuando reserven con tu codigo, ambos obtienen descuento.</div>
-              <button onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent(`Reserva en ${cfg.nombre_club} usando mi codigo ${miCodigo} y obtene descuento!`)}`,"_blank")}
+              <button onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent(`🎾 ¡Jugá pádel conmigo en ${cfg.nombre_club}!\n\nUsá mi código *${miCodigo}* al reservar y obtenés un descuento en tu primera reserva.\n\n👉 Reservá acá: https://www.dexon.com.py`)}`,"_blank")}
                 style={{width:"100%",padding:"11px",background:"#25D366",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
                 Compartir por WhatsApp
               </button>
