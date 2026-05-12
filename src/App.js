@@ -1168,6 +1168,14 @@ export default function App() {
   const [dlg,setDlg] = useState(null);
   const [form,setForm] = useState({});
   const [msg,setMsg] = useState("");
+  const [msgType,setMsgType] = useState("info");
+  const msgTimerRef = useRef(null);
+  const notify = useCallback((text,type="info")=>{
+    setMsg(text);
+    setMsgType(type);
+    if(msgTimerRef.current) clearTimeout(msgTimerRef.current);
+    msgTimerRef.current=setTimeout(()=>setMsg(""), type==="error"?4000:2600);
+  },[]);
   const [reprogramFecha,setReprogramFecha] = useState("");
   const [reprogramHora,setReprogramHora] = useState("");
   const [clima,setClima] = useState(null);
@@ -1279,7 +1287,7 @@ export default function App() {
   // ── ACCIONES ──
   const guardarTurno = async()=>{
     if(!form.cliente_id||!form.fecha||form.hora===undefined)return;
-    if(turnos.find(t=>t.fecha===form.fecha&&t.hora===Number(form.hora)&&t.estado!=="cancelado")){alert("Ese horario ya está ocupado.");return;}
+    if(turnos.find(t=>t.fecha===form.fecha&&t.hora===Number(form.hora)&&t.estado!=="cancelado")){notify("Ese horario ya está ocupado","error");return;}
     setSaving(true);
     try {
       const precio=form.tipo==="clase"?Number(form.precio_clase||0):precioTurno(Number(form.hora));
@@ -1289,7 +1297,7 @@ export default function App() {
       await load();closeM();
       const c=cById(Number(form.cliente_id));
       if(c?.telefono){const wm=`¡Hola ${c.nombre}! 🎾\nTu reserva en *${cfg.nombre_club}* está confirmada:\n📅 *${form.fecha}* a las *${Number(form.hora)}:00hs*\n💰 *${gs(precio)}*\n¡Te esperamos!`;setDlg({type:"wsp",cliente:c,msg:wm});}
-    } catch(e){alert(e.message);}
+    } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
 
@@ -1298,25 +1306,25 @@ export default function App() {
     try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
     const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
     setDlg(null);await load();}
-    catch(e){alert(e.message);}
+    catch(e){notify(e.message,"error");}
     setSaving(false);
   };
   const cancelarTurno = async t=>{
     setSaving(true);
     try{await db.patch("turnos",t.id,{estado:"cancelado"},tk);if(t.sena>0)await db.post("caja",{descripcion:`Dev. seña - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"egreso",categoria:"reserva",monto:t.sena,fecha:hoy(),turno_id:t.id},tk);setDlg(null);closeM();await load();}
-    catch(e){alert(e.message);}
+    catch(e){notify(e.message,"error");}
     setSaving(false);
   };
-  const noShow = async t=>{setSaving(true);try{await db.patch("turnos",t.id,{estado:"no_show"},tk);setDlg(null);closeM();await load();}catch(e){alert(e.message);}setSaving(false);};
+  const noShow = async t=>{setSaving(true);try{await db.patch("turnos",t.id,{estado:"no_show"},tk);setDlg(null);closeM();await load();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarCliente = async()=>{
     if(!form.nombre?.trim())return;setSaving(true);
     try{const p={nombre:form.nombre.trim(),telefono:form.telefono||"",nivel:form.nivel||"intermedio",notas:form.notas||"",referrer_code:form.referrer_code||null,saldo_favor:Number(form.saldo_favor||0)};if(form.id)await db.patch("clientes",form.id,p,tk);else await db.post("clientes",p,tk);await load();closeM();}
-    catch(e){alert(e.message);}setSaving(false);
+    catch(e){notify(e.message,"error");}setSaving(false);
   };
-  const eliminarCliente = async id=>{setSaving(true);try{await db.del("clientes",id,tk);await load();setDlg(null);closeM();}catch(e){alert(e.message);}setSaving(false);};
+  const eliminarCliente = async id=>{setSaving(true);try{await db.del("clientes",id,tk);await load();setDlg(null);closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarAbono = async()=>{
     if(!form.cliente_id||!form.plan_id||!form.fecha_inicio)return;
-    if(!form.slots||form.slots.length===0){alert("Agregá al menos un turno fijo.");return;}
+    if(!form.slots||form.slots.length===0){notify("Agregá al menos un turno fijo","error");return;}
     setSaving(true);
     try{
       const plan=pById(Number(form.plan_id));
@@ -1329,7 +1337,7 @@ export default function App() {
       // Materializar turnos reales para las próximas 5 semanas
       await materilarizarTurnosAbono(ab.id,Number(form.cliente_id),form.slots,fmtD(venc));
       await load();closeM();
-    }catch(e){alert(e.message);}setSaving(false);
+    }catch(e){notify(e.message,"error");}setSaving(false);
   };
 
   const materilarizarTurnosAbono = async(abonoId,clienteId,slots,fechaVenc)=>{
@@ -1350,18 +1358,18 @@ export default function App() {
     }
     if(turnosACrear.length>0) await db.post("turnos",turnosACrear,tk);
   };
-  const cancelarAbono = async id=>{setSaving(true);try{await db.patch("abonos",id,{estado:"cancelado"},tk);await load();setDlg(null);}catch(e){alert(e.message);}setSaving(false);};
-  const guardarPlan = async()=>{if(!form.nombre||!form.horas_semana||!form.precio)return;setSaving(true);try{if(form.id)await db.patch("planes",form.id,{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);else await db.post("planes",{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
-  const guardarInstructor = async()=>{if(!form.nombre?.trim())return;setSaving(true);try{await db.post("instructores",{nombre:form.nombre.trim(),telefono:form.telefono||"",tarifa_clase:Number(form.tarifa_clase||0)},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
-  const guardarMovCaja = async()=>{if(!form.descripcion||!form.monto)return;setSaving(true);try{await db.post("caja",{descripcion:form.descripcion,tipo:form.tipo||"egreso",categoria:form.categoria||"gasto",monto:Number(form.monto),fecha:form.fecha||hoy()},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
-  const eliminarMovCaja = async id=>{setSaving(true);try{await db.del("caja",id,tk);await load();setDlg(null);}catch(e){alert(e.message);}setSaving(false);};
-  const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
-  const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="salida"&&item.precio_venta>0)await db.post("caja",{descripcion:`Venta - ${item.nombre} x${form.cantidad_mov}`,tipo:"ingreso",categoria:"stock",monto:item.precio_venta*Number(form.cantidad_mov),fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){alert(e.message);}setSaving(false);};
+  const cancelarAbono = async id=>{setSaving(true);try{await db.patch("abonos",id,{estado:"cancelado"},tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
+  const guardarPlan = async()=>{if(!form.nombre||!form.horas_semana||!form.precio)return;setSaving(true);try{if(form.id)await db.patch("planes",form.id,{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);else await db.post("planes",{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const guardarInstructor = async()=>{if(!form.nombre?.trim())return;setSaving(true);try{await db.post("instructores",{nombre:form.nombre.trim(),telefono:form.telefono||"",tarifa_clase:Number(form.tarifa_clase||0)},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const guardarMovCaja = async()=>{if(!form.descripcion||!form.monto)return;setSaving(true);try{await db.post("caja",{descripcion:form.descripcion,tipo:form.tipo||"egreso",categoria:form.categoria||"gasto",monto:Number(form.monto),fecha:form.fecha||hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const eliminarMovCaja = async id=>{setSaving(true);try{await db.del("caja",id,tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
+  const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="salida"&&item.precio_venta>0)await db.post("caja",{descripcion:`Venta - ${item.nombre} x${form.cantidad_mov}`,tipo:"ingreso",categoria:"stock",monto:item.precio_venta*Number(form.cantidad_mov),fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarConfig = async()=>{setSaving(true);try{
     const dias=Array.isArray(form.desc_martes_jueves_dias)?form.desc_martes_jueves_dias:(typeof form.desc_martes_jueves_dias==="string"?(()=>{try{return JSON.parse(form.desc_martes_jueves_dias);}catch{return[2,4];}})():[2,4]);
     await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_percent:Number(form.referral_discount_percent||10)},tk);
     await load();closeM();
-  }catch(e){alert(e.message);}setSaving(false);};
+  }catch(e){notify(e.message,"error");}setSaving(false);};
 
   const enviarWsp = (tel,msg)=>{const t=(tel||"").replace(/\D/g,"");const n=t.startsWith("595")?t:t.startsWith("0")?"595"+t.slice(1):"595"+t;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");};
 
@@ -1374,10 +1382,10 @@ export default function App() {
       if(form.id) await db.patch("codigos_referido",form.id,p,tk);
       else { p.usos_actuales=0; await db.post("codigos_referido",p,tk); }
       await load(); closeM();
-    } catch(e){alert(e.message);}
+    } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
-  const eliminarCodigoRef = async id=>{setSaving(true);try{await db.del("codigos_referido",id,tk);await load();setDlg(null);}catch(e){alert(e.message);}setSaving(false);};
+  const eliminarCodigoRef = async id=>{setSaving(true);try{await db.del("codigos_referido",id,tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
 
   // ── Items vendidos en turno (pendiente de cobro — no registra caja hasta cobro manual) ──
   const agregarItemTurno = async()=>{
@@ -1393,7 +1401,7 @@ export default function App() {
       await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad-cant)},tk);
       await load();
       setForm(f=>({...f,item_stock_id:"",item_cantidad:1,item_precio_unit:""}));
-    } catch(e){alert(e.message);}
+    } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
   const cobrarItemsTurno = async(turnoId)=>{
@@ -1408,7 +1416,7 @@ export default function App() {
         await db.patch("turno_items",i.id,{cobrado:true},tk);
       }
       await load();
-    } catch(e){alert(e.message);}
+    } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
   const eliminarItemTurno = async(itemId,stockId,cant)=>{
@@ -1418,7 +1426,7 @@ export default function App() {
       await db.del("turno_items",itemId,tk);
       if(item) await db.patch("stock",stockId,{cantidad:item.cantidad+cant},tk);
       await load();
-    } catch(e){alert(e.message);}
+    } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
 
@@ -1521,11 +1529,11 @@ export default function App() {
               {t.metodo_pago==="pagopar"&&t.pagopar_hash&&<Btn sm onClick={async e=>{
                 e.stopPropagation();
                 try{const r=await fetch(`/api/pagopar/consultar?hash=${t.pagopar_hash}`);const d=await r.json();const res=d?.resultado?.[0];
-                if(!res){alert("No se pudo consultar el estado");return;}
-                if(res.pagado){alert(`✓ Pagado el ${res.fecha_pago}\nMétodo: ${res.forma_pago}\nComprob: ${res.numero_pedido}`);load();}
-                else if(res.cancelado){alert(`✗ Pago cancelado/expirado en Pagopar`);}
-                else{alert(`⏳ Pendiente: ${res.mensaje_resultado_pago?.titulo||"Esperando pago"}`);}}
-                catch(err){alert("Error consultando Pagopar");}
+                if(!res){notify("No se pudo consultar el estado","error");return;}
+                if(res.pagado){notify(`Pagado el ${res.fecha_pago} · ${res.forma_pago}`,"ok");load();}
+                else if(res.cancelado){notify("Pago cancelado/expirado en Pagopar","error");}
+                else{notify(res.mensaje_resultado_pago?.titulo||"Pago aún pendiente","info");}}
+                catch(err){notify("Error consultando Pagopar","error");}
               }}>🔍 Verificar</Btn>}
               <Btn v="success" sm onClick={e=>{e.stopPropagation();setDlg({type:"confirmar",t});}}>💰 Confirmar</Btn>
               <Btn v="danger" sm onClick={e=>{e.stopPropagation();setDlg({type:"cancelar",t});}}>✗</Btn>
@@ -1891,7 +1899,7 @@ export default function App() {
         setMsgs(prev=>[...prev,optimista]);
         setEnviado(true);
         setTimeout(()=>setEnviado(false),2000);
-      }catch(e){setRespuesta(texto);alert("Error al enviar: "+e.message);}
+      }catch(e){setRespuesta(texto);notify("Error al enviar: "+e.message,"error");}
       finally{setEnviando(false);if(inputRef.current)inputRef.current.focus();}
     };
 
@@ -2182,10 +2190,31 @@ export default function App() {
 
     {/* CONTENIDO */}
     <main style={{flex:1,minWidth:0,...(isMobile?{}:{maxWidth:"calc(100% - 224px)"})}}>
-      <div style={{maxWidth:1040,margin:"0 auto",padding:isMobile?"14px 12px":"24px 28px",paddingBottom:"env(safe-area-inset-bottom)"}}>
+      <div style={{maxWidth:1040,margin:"0 auto",padding:isMobile?"14px 12px":"24px 28px",paddingBottom:isMobile?"calc(env(safe-area-inset-bottom) + 88px)":"env(safe-area-inset-bottom)"}}>
         {contenidoTab}
       </div>
     </main>
+
+    {/* FAB (mobile) */}
+    {(()=>{
+      if(!isMobile||navOpen||modal||dlg) return null;
+      const fabs={
+        agenda:{l:"Reservar",a:()=>openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional"})},
+        hoy:{l:"Reservar",a:()=>openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional"})},
+        pendientes:{l:"Reservar",a:()=>openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional"})},
+        clientes:{l:"Cliente",a:()=>openM("cliente",{nivel:"intermedio"})},
+        abonados:{l:"Abono",a:()=>openM("abono",{fecha_inicio:hoy(),slots:[]})},
+        caja:{l:"Movimiento",a:()=>openM("movCaja",{tipo:"egreso",categoria:"gasto",fecha:hoy()})},
+        stock:{l:"Producto",a:()=>openM("stockItem",{categoria:"pelotas",cantidad:"0",minimo:"0"})},
+      };
+      const f=fabs[tab];
+      if(!f) return null;
+      return <button onClick={f.a} aria-label={`Nuevo: ${f.l}`} style={{position:"fixed",right:18,bottom:`calc(20px + env(safe-area-inset-bottom))`,width:58,height:58,borderRadius:"50%",background:`linear-gradient(135deg, ${C.coral}, ${C.coralD})`,color:"#fff",border:"none",cursor:"pointer",boxShadow:"0 8px 24px rgba(224,91,40,0.5), 0 2px 6px rgba(0,0,0,0.3)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-sans)",transition:"transform 0.15s ease-out, box-shadow 0.15s"}}
+        onTouchStart={e=>{e.currentTarget.style.transform="scale(0.92)";}}
+        onTouchEnd={e=>{e.currentTarget.style.transform="scale(1)";}}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+      </button>;
+    })()}
 
     {/* MODALES */}
     <Modal show={modal==="turno"} onClose={closeM} title="Nueva reserva">
@@ -2233,15 +2262,15 @@ export default function App() {
         </select></FG>
         <Btn v="primary" onClick={async()=>{
           const nF=reprogramFecha||form.fecha;const nH=reprogramHora||form.hora;
-          if(!form.id||!nF||!nH){setMsg("Completá todos los datos");return;}
+          if(!form.id||!nF||!nH){notify("Completá todos los datos","error");return;}
           const existe=turnos.find(t=>t.id!==form.id&&t.fecha===nF&&t.hora===Number(nH)&&t.estado!=="cancelado");
-          if(existe){setMsg("❌ Ese horario ya está ocupado");return;}
+          if(existe){notify("Ese horario ya está ocupado","error");return;}
           setSaving(true);
           try{
             await db.patch("turnos",form.id,{fecha:nF,hora:Number(nH),motivo_reprog:form.motivo_reprog||""},tk);
             if(form.cliente?.telefono){const motivos={cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};const razon=motivos[form.motivo_reprog]||"";enviarWsp(form.cliente.telefono,`¡Hola ${form.cliente.nombre}! Tu turno ha sido reprogramado ${razon}.\n\n📅 Nuevo turno:\nFecha: ${nF}\nHora: ${nH}:00\n\n¿Alguna duda? Nos contactamos 😊`);}
-            await load();setMsg("✓ Turno reprogramado");setTimeout(()=>{closeM();setMsg("");setReprogramFecha("");setReprogramHora("");},800);
-          }catch(e){console.error(e);setMsg("Error al reprogramar");}
+            await load();notify("Turno reprogramado","ok");setTimeout(()=>{closeM();setReprogramFecha("");setReprogramHora("");},700);
+          }catch(e){console.error(e);notify("Error al reprogramar","error");}
           setSaving(false);
         }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"Reprogramar y avisar"}</Btn>
       </div>}
@@ -2416,8 +2445,8 @@ export default function App() {
         <Btn onClick={closeM}>Cancelar</Btn>
         <Btn v="primary" onClick={async()=>{
           setSaving(true);
-          try{const cfgId=cfg?.id;if(!cfgId){setSaving(false);return;}await db.patch("config",cfgId,{horarios_por_dia:form.horarios_por_dia||"{}"},tk);await load();setMsg("✓ Horarios guardados");setTimeout(()=>{closeM();setMsg("");},800);}
-          catch(e){console.error(e);setMsg("Error al guardar");}
+          try{const cfgId=cfg?.id;if(!cfgId){setSaving(false);return;}await db.patch("config",cfgId,{horarios_por_dia:form.horarios_por_dia||"{}"},tk);await load();notify("Horarios guardados","ok");setTimeout(()=>closeM(),700);}
+          catch(e){console.error(e);notify("Error al guardar","error");}
           setSaving(false);
         }} disabled={saving}>{saving?"Guardando...":"Guardar horarios"}</Btn>
       </div>
@@ -2503,6 +2532,17 @@ export default function App() {
       </div>
     </div>}
 
-    {msg&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:C.bgCard,color:C.t1,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 20px",fontSize:14,fontWeight:500,zIndex:99998,boxShadow:"0 4px 20px rgba(0,0,0,0.4)"}}>{msg}</div>}
+    {msg&&(()=>{
+      const palette={
+        ok:{bg:C.greenBg,bd:C.greenBd,fg:C.green,icon:"✓"},
+        error:{bg:C.redBg,bd:C.redBd,fg:C.red,icon:"✕"},
+        info:{bg:C.bgCard,bd:C.border,fg:C.t1,icon:"ℹ"},
+      };
+      const p=palette[msgType]||palette.info;
+      return <div onClick={()=>{setMsg("");if(msgTimerRef.current)clearTimeout(msgTimerRef.current);}} style={{position:"fixed",bottom:`calc(${isMobile?92:24}px + env(safe-area-inset-bottom))`,left:"50%",transform:"translateX(-50%)",background:p.bg,color:p.fg,border:`1px solid ${p.bd}`,borderRadius:12,padding:"11px 18px",fontSize:14,fontWeight:500,zIndex:99998,boxShadow:"0 6px 28px rgba(0,0,0,0.45)",display:"flex",alignItems:"center",gap:10,cursor:"pointer",maxWidth:"calc(100vw - 32px)",animation:"fadeIn 0.18s ease-out"}}>
+        <span style={{fontSize:14,fontWeight:700,flexShrink:0,width:20,height:20,borderRadius:"50%",background:p.fg,color:p.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>{p.icon}</span>
+        <span style={{lineHeight:1.4,wordBreak:"break-word"}}>{msg}</span>
+      </div>;
+    })()}
   </div>;
 }
