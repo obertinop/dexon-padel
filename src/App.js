@@ -1181,6 +1181,13 @@ export default function App() {
   const [clima,setClima] = useState(null);
   const [waConvAbierta,setWaConvAbierta] = useState(null);
   const [waNoLeidos,setWaNoLeidos] = useState(0);
+  const [pendSel,setPendSel] = useState(new Set());
+  const [pendFiltro,setPendFiltro] = useState("todos");
+  const [cmdOpen,setCmdOpen] = useState(false);
+  const [cmdQ,setCmdQ] = useState("");
+  const [draggingId,setDraggingId] = useState(null);
+  const [dragOver,setDragOver] = useState(null);
+  const [nowTime,setNowTime] = useState(()=>new Date());
   const tk = session?.token;
 
   const load = useCallback(async()=>{
@@ -1232,6 +1239,20 @@ export default function App() {
     const interval=setInterval(()=>{load();loadWaBadge();},10*1000);
     return()=>clearInterval(interval);
   },[tk,load]);
+
+  useEffect(()=>{
+    const h=(e)=>{
+      if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(o=>{if(!o)setCmdQ("");return !o;});}
+      if(e.key==="Escape")setCmdOpen(false);
+    };
+    window.addEventListener("keydown",h);
+    return()=>window.removeEventListener("keydown",h);
+  },[]);
+
+  useEffect(()=>{
+    const t=setInterval(()=>setNowTime(new Date()),60000);
+    return()=>clearInterval(t);
+  },[]);
 
   const doLogout = async()=>{
     if(session?.token) await auth.logout(session.token);
@@ -1316,6 +1337,33 @@ export default function App() {
     setSaving(false);
   };
   const noShow = async t=>{setSaving(true);try{await db.patch("turnos",t.id,{estado:"no_show"},tk);setDlg(null);closeM();await load();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const confirmarBulk = async ids=>{
+    setSaving(true);
+    try{
+      await Promise.all(ids.map(async id=>{
+        const t=turnos.find(x=>x.id===id);if(!t)return;
+        const saldo=t.precio-(t.sena||0);
+        await db.patch("turnos",id,{estado:"confirmado",cobrado:true,saldo:0},tk);
+        if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
+      }));
+      await load();notify(`${ids.length} turno${ids.length!==1?"s":""} confirmado${ids.length!==1?"s":""}!`,"ok");
+      setPendSel(new Set());
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
+  const cancelarBulk = async ids=>{
+    setSaving(true);
+    try{
+      await Promise.all(ids.map(async id=>{
+        const t=turnos.find(x=>x.id===id);if(!t)return;
+        await db.patch("turnos",id,{estado:"cancelado"},tk);
+        if(t.sena>0)await db.post("caja",{descripcion:`Dev. seña - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"egreso",categoria:"reserva",monto:t.sena,fecha:hoy(),turno_id:t.id},tk);
+      }));
+      await load();notify(`${ids.length} turno${ids.length!==1?"s":""} cancelado${ids.length!==1?"s":""}!`,"ok");
+      setPendSel(new Set());
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
   const guardarCliente = async()=>{
     if(!form.nombre?.trim())return;setSaving(true);
     try{const p={nombre:form.nombre.trim(),telefono:form.telefono||"",nivel:form.nivel||"intermedio",notas:form.notas||"",referrer_code:form.referrer_code||null,saldo_favor:Number(form.saldo_favor||0)};if(form.id)await db.patch("clientes",form.id,p,tk);else await db.post("clientes",p,tk);await load();closeM();}
@@ -1500,14 +1548,54 @@ export default function App() {
   };
 
   const Pendientes=()=>{
-    const pendientes=turnos.filter(t=>t.estado==="pendiente_pago").sort((a,b)=>{if(a.fecha!==b.fecha)return a.fecha.localeCompare(b.fecha);return a.hora-b.hora;});
+    const h=hoy();
+    const sem=getSemana();const semIni=fmtD(sem[0]);const semFin=fmtD(sem[6]);
+    const pending_raw=turnos.filter(t=>t.estado==="pendiente_pago").sort((a,b)=>a.fecha!==b.fecha?a.fecha.localeCompare(b.fecha):a.hora-b.hora);
+    const filtered=pending_raw.filter(t=>{
+      if(pendFiltro==="hoy") return t.fecha===h;
+      if(pendFiltro==="semana") return t.fecha>=semIni&&t.fecha<=semFin;
+      if(pendFiltro==="pagopar") return t.metodo_pago==="pagopar";
+      if(pendFiltro==="transferencia") return t.metodo_pago==="transferencia";
+      return true;
+    });
+    const toggleSel=id=>setPendSel(prev=>{const s=new Set(prev);s.has(id)?s.delete(id):s.add(id);return s;});
+    const selAll=filtered.length>0&&pendSel.size>=filtered.length;
+    const selSome=pendSel.size>0&&pendSel.size<filtered.length;
+    const chips=[
+      {id:"todos",l:"Todos",n:pending_raw.length},
+      {id:"hoy",l:"Hoy",n:pending_raw.filter(t=>t.fecha===h).length},
+      {id:"semana",l:"Esta semana",n:pending_raw.filter(t=>t.fecha>=semIni&&t.fecha<=semFin).length},
+      {id:"pagopar",l:"Pagopar",n:pending_raw.filter(t=>t.metodo_pago==="pagopar").length},
+      {id:"transferencia",l:"Transferencia",n:pending_raw.filter(t=>t.metodo_pago==="transferencia").length},
+    ];
     return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Reservas pendientes de confirmación</span>
-        <span style={{fontSize:12,color:C.t2,background:C.bgElev,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`}}>{pendientes.length} pendiente{pendientes.length!==1?"s":""}</span>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Pendientes de confirmación</span>
+        <span style={{fontSize:12,color:C.t2,background:C.bgElev,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`}}>{pending_raw.length} pendiente{pending_raw.length!==1?"s":""}</span>
       </div>
-      {pendientes.length===0?<Empty t="Sin reservas pendientes"/>:<div style={{display:"grid",gap:8}}>
-        {pendientes.map(t=>{const c=cById(t.cliente_id);const fechaStr=fmtFechaLegible(t.fecha);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,background:C.bg,border:`1px solid ${C.borderL}`,cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c})}>
+      {/* Filter chips */}
+      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+        {chips.map(c=>{const act=pendFiltro===c.id;return<button key={c.id} onClick={()=>{setPendFiltro(c.id);setPendSel(new Set());}} style={{padding:"5px 11px",borderRadius:20,fontSize:12,fontWeight:act?700:500,border:`1px solid ${act?C.coral:C.border}`,background:act?"rgba(224,91,40,0.12)":"transparent",color:act?C.coral:C.t2,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all 0.15s"}}>
+          {c.l}{c.n>0&&<span style={{fontSize:10,fontWeight:700,background:act?C.coral:C.bgElev,color:act?"#fff":C.t3,borderRadius:10,padding:"0 5px",minWidth:16,textAlign:"center"}}>{c.n}</span>}
+        </button>;})}
+      </div>
+      {/* Bulk action bar */}
+      {pendSel.size>0&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:10,background:"rgba(224,91,40,0.08)",border:`1px solid ${C.coralD}`,marginBottom:12}}>
+        <span style={{fontSize:13,color:C.coral,fontWeight:600,flex:1}}>{pendSel.size} seleccionado{pendSel.size!==1?"s":""}</span>
+        <Btn v="success" sm onClick={()=>confirmarBulk([...pendSel])} disabled={saving}>✓ Confirmar ({pendSel.size})</Btn>
+        <Btn v="danger" sm onClick={()=>cancelarBulk([...pendSel])} disabled={saving}>✗ Cancelar ({pendSel.size})</Btn>
+        <button onClick={()=>setPendSel(new Set())} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>×</button>
+      </div>}
+      {filtered.length===0?<Empty t="Sin resultados"/>:<div style={{display:"grid",gap:8}}>
+        {/* Select-all row */}
+        {filtered.length>1&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 10px"}}>
+          <input type="checkbox" checked={selAll} ref={el=>{if(el)el.indeterminate=selSome;}} onChange={()=>selAll?setPendSel(new Set()):setPendSel(new Set(filtered.map(t=>t.id)))} style={{width:15,height:15,accentColor:C.coral,cursor:"pointer"}}/>
+          <span style={{fontSize:11,color:C.t3}}>Seleccionar todos ({filtered.length})</span>
+        </div>}
+        {filtered.map(t=>{const c=cById(t.cliente_id);const fechaStr=fmtFechaLegible(t.fecha);const isSel=pendSel.has(t.id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:10,background:isSel?"rgba(224,91,40,0.07)":C.bg,border:`1px solid ${isSel?C.coralD:C.borderL}`,cursor:"pointer",transition:"all 0.15s"}} onClick={()=>openM("verTurno",{...t,cliente:c})}>
+          <div onClick={e=>{e.stopPropagation();toggleSel(t.id);}} style={{flexShrink:0,padding:"2px 4px",cursor:"pointer"}}>
+            <input type="checkbox" checked={isSel} onChange={()=>toggleSel(t.id)} onClick={e=>e.stopPropagation()} style={{width:15,height:15,accentColor:C.coral,cursor:"pointer"}}/>
+          </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",minWidth:50,gap:2}}>
             <div style={{fontSize:11,color:C.t2}}>📅</div>
             <div style={{fontSize:13,fontWeight:700,color:C.coral}}>{fechaStr.split(" ")[0]}</div>
@@ -1548,6 +1636,8 @@ export default function App() {
     const dias=getSemana();const h=hoy();const extra=turnosAbonados();const all=[...turnos,...extra];
     const timeCol=isMobile?30:52;
     const cellMinH=isMobile?32:40;
+    const nowHr=nowTime.getHours();
+    const nowPct=(nowTime.getMinutes()/60)*100;
     return<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?10:16,gap:6,flexWrap:isMobile?"wrap":"nowrap"}}>
         <div style={{fontSize:isMobile?13:16,fontWeight:600,color:C.t1,whiteSpace:"nowrap"}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
@@ -1568,9 +1658,48 @@ export default function App() {
           </div>;})}
           {horas.map(hr=><React.Fragment key={hr}>
             <div style={{background:C.bg,padding:isMobile?"0 3px":"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:isMobile?9.5:11,color:C.t3,minHeight:cellMinH}}>{isMobile?hr:`${hr}:00`}</div>
-            {dias.map((d,di)=>{const fs=fmtD(d);const t=all.find(t=>t.fecha===fs&&t.hora===hr&&t.estado!=="cancelado");const c=t?cById(t.cliente_id):null;const isPico=hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin;return<div key={`${hr}-${di}`} onClick={()=>t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"})} style={{background:t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPico?"rgba(224,91,40,0.06)":C.bg),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",minHeight:cellMinH,transition:"background 0.1s",padding:isMobile?"0 1px":"0 2px"}}>
-              {t&&<span style={{fontSize:isMobile?9:11,fontWeight:600,color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>{isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}</span>}
-            </div>;})}
+            {dias.map((d,di)=>{
+              const fs=fmtD(d);
+              const t=all.find(t=>t.fecha===fs&&t.hora===hr&&t.estado!=="cancelado");
+              const c=t?cById(t.cliente_id):null;
+              const isPico=hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin;
+              const isToday=fs===h;
+              const isNowHr=isToday&&hr===nowHr;
+              const isDragTarget=!t&&dragOver?.fecha===fs&&dragOver?.hora===hr&&draggingId;
+              return<div key={`${hr}-${di}`}
+                onClick={()=>!draggingId&&(t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"}))}
+                onDragOver={e=>{if(draggingId&&!t){e.preventDefault();setDragOver({fecha:fs,hora:hr});}}}
+                onDragLeave={()=>setDragOver(null)}
+                onDrop={e=>{
+                  e.preventDefault();
+                  if(!draggingId)return;
+                  const orig=turnos.find(x=>x.id===draggingId);
+                  if(orig&&(orig.fecha!==fs||orig.hora!==hr)&&!t){
+                    setDlg({type:"dragReprogram",turnoId:draggingId,newFecha:fs,newHora:hr,nombre:cById(orig.cliente_id)?.nombre||"?"});
+                  }
+                  setDraggingId(null);setDragOver(null);
+                }}
+                style={{
+                  background:isDragTarget?"rgba(224,91,40,0.15)":t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPico?"rgba(224,91,40,0.06)":C.bg),
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  cursor:draggingId?(t?"not-allowed":"copy"):"pointer",
+                  minHeight:cellMinH,transition:"background 0.1s",padding:isMobile?"0 1px":"0 2px",
+                  position:"relative",
+                  outline:isDragTarget?`2px dashed ${C.coral}`:"none",outlineOffset:-2,
+                }}>
+                {t&&!t._gen&&<span
+                  draggable
+                  onDragStart={e=>{e.stopPropagation();setDraggingId(t.id);e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(t.id));}}
+                  onDragEnd={()=>{setDraggingId(null);setDragOver(null);}}
+                  style={{fontSize:isMobile?9:11,fontWeight:600,color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2,cursor:"grab"}}>
+                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}
+                </span>}
+                {t&&t._gen&&<span style={{fontSize:isMobile?9:11,fontWeight:600,color:C.purple,background:C.purpleBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>
+                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}
+                </span>}
+                {isNowHr&&<div style={{position:"absolute",top:`${nowPct}%`,left:0,right:0,height:2,background:C.red,zIndex:3,pointerEvents:"none",borderRadius:1,boxShadow:"0 0 6px rgba(240,96,96,0.7)"}}/>}
+              </div>;
+            })}
           </React.Fragment>)}
         </div>
       </div>
@@ -1578,6 +1707,7 @@ export default function App() {
         <span><span style={{width:10,height:10,borderRadius:2,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Ocasional</span>
         <span><span style={{width:10,height:10,borderRadius:2,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Abonado</span>
         <span><span style={{width:10,height:10,borderRadius:2,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Clase</span>
+        {!isMobile&&<span>· Arrastrá un turno para reprogramarlo</span>}
       </div>
     </div>;
   };
@@ -2156,6 +2286,7 @@ export default function App() {
       <div style={{padding:"18px 18px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
         <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:36,objectFit:"contain"}}/>
         <span style={{flex:1,fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
+        {!isMobile&&<button onClick={()=>{setCmdOpen(true);setCmdQ("");}} title="Búsqueda rápida (⌘K)" style={{fontSize:10,color:C.t3,background:C.bgElev,border:`1px solid ${C.border}`,borderRadius:5,padding:"3px 7px",cursor:"pointer",fontFamily:"var(--font-sans)",flexShrink:0,transition:"color 0.15s"}}>⌘K</button>}
         {isMobile&&<button onClick={()=>setNavOpen(false)} aria-label="Cerrar menú" style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:4,fontFamily:"var(--font-sans)",lineHeight:1}}>×</button>}
       </div>
       <nav style={{flex:1,overflowY:"auto",padding:"12px 0"}}>
@@ -2197,7 +2328,7 @@ export default function App() {
 
     {/* FAB (mobile) */}
     {(()=>{
-      if(!isMobile||navOpen||modal||dlg) return null;
+      if(!isMobile||navOpen||modal||dlg||cmdOpen) return null;
       const fabs={
         agenda:{l:"Reservar",a:()=>openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional"})},
         hoy:{l:"Reservar",a:()=>openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional"})},
@@ -2519,6 +2650,7 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
     <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
+    <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
 
     {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
       <div style={{backgroundColor:C.bgCard,borderRadius:16,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:`1px solid ${C.border}`}}>
@@ -2531,6 +2663,62 @@ export default function App() {
         </div>
       </div>
     </div>}
+
+    {cmdOpen&&(()=>{
+      const q=cmdQ.toLowerCase().trim();
+      const acciones=[
+        {ic:"📅",l:"Nueva reserva hoy",k:"reserva turno",a:()=>{setCmdOpen(false);openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional"});}},
+        {ic:"👥",l:"Nuevo cliente",k:"cliente agregar",a:()=>{setCmdOpen(false);openM("cliente",{nivel:"intermedio"});}},
+        {ic:"⭐",l:"Nuevo abono",k:"abono plan",a:()=>{setCmdOpen(false);openM("abono",{fecha_inicio:hoy(),slots:[]});}},
+        {ic:"💰",l:"Registrar gasto",k:"caja egreso gasto",a:()=>{setCmdOpen(false);openM("movCaja",{tipo:"egreso",categoria:"gasto",fecha:hoy()});}},
+        {ic:"📦",l:"Nuevo producto / stock",k:"stock producto",a:()=>{setCmdOpen(false);openM("stockItem",{categoria:"pelotas",cantidad:"0",minimo:"0"});}},
+      ].filter(a=>!q||a.k.includes(q)||a.l.toLowerCase().includes(q));
+      const tabsFilt=TABS.filter(t=>!q||t.l.toLowerCase().includes(q)||t.id.includes(q));
+      const clientesFilt=clientes.filter(c=>c.nombre.toLowerCase().includes(q)||(c.telefono||"").includes(q)).slice(0,5);
+      const ItemRow=({ic,l,sub,onClick,badge})=>(
+        <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 18px",background:"transparent",border:"none",color:C.t1,cursor:"pointer",textAlign:"left",transition:"background 0.1s",borderBottom:`1px solid rgba(255,255,255,0.04)`,fontFamily:"var(--font-sans)"}}
+          onMouseEnter={e=>e.currentTarget.style.background=C.bgHover}
+          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+          <span style={{width:28,height:28,borderRadius:8,background:C.bgElev,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{ic}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:500,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l}</div>
+            {sub&&<div style={{fontSize:11,color:C.t3}}>{sub}</div>}
+          </div>
+          {badge&&<span style={{fontSize:10,color:C.t3,background:C.bgElev,padding:"2px 7px",borderRadius:5,border:`1px solid ${C.border}`,flexShrink:0}}>{badge}</span>}
+        </button>
+      );
+      const SectionHead=({l})=>(
+        <div style={{padding:"8px 18px 4px",fontSize:10,fontWeight:700,color:C.t3,letterSpacing:1,textTransform:"uppercase"}}>{l}</div>
+      );
+      return <div style={{position:"fixed",inset:0,zIndex:99997,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:isMobile?24:80,paddingLeft:16,paddingRight:16,background:"rgba(0,0,0,0.72)",backdropFilter:"blur(5px)",animation:"fadeIn 0.12s ease-out"}} onClick={()=>setCmdOpen(false)}>
+        <div style={{width:"100%",maxWidth:580,background:C.bgCard,borderRadius:16,border:`1px solid ${C.borderL}`,boxShadow:"0 24px 80px rgba(0,0,0,0.65)",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 18px",borderBottom:`1px solid ${C.border}`}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><circle cx="11" cy="11" r="8" stroke={C.t3} strokeWidth="2"/><path d="M21 21l-4.35-4.35" stroke={C.t3} strokeWidth="2" strokeLinecap="round"/></svg>
+            <input autoFocus value={cmdQ} onChange={e=>setCmdQ(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setCmdOpen(false);}} placeholder="Buscar clientes, acciones, secciones..." style={{flex:1,background:"transparent",border:"none",color:C.t1,fontSize:15,outline:"none",fontFamily:"var(--font-sans)"}}/>
+            <span onClick={()=>setCmdOpen(false)} style={{fontSize:11,color:C.t3,background:C.bgElev,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,flexShrink:0,cursor:"pointer"}}>ESC</span>
+          </div>
+          <div style={{maxHeight:420,overflowY:"auto"}}>
+            {acciones.length>0&&<><SectionHead l="Acciones rápidas"/>
+              {acciones.map((a,i)=><ItemRow key={i} ic={a.ic} l={a.l} onClick={a.a}/>)}
+            </>}
+            {tabsFilt.length>0&&<><SectionHead l="Secciones"/>
+              {tabsFilt.map(t=><ItemRow key={t.id} ic={t.ic==="wa"?<WhatsAppIcon size={14}/>:<span>{t.ic}</span>} l={t.l} onClick={()=>{setTab(t.id);setCmdOpen(false);}} badge={tab===t.id?"Activa":null}/>)}
+            </>}
+            {clientesFilt.length>0&&q.length>0&&<><SectionHead l="Clientes"/>
+              {clientesFilt.map(c=><ItemRow key={c.id} ic={<Avatar nombre={c.nombre} size={22}/>} l={c.nombre} sub={c.telefono} onClick={()=>{setCmdOpen(false);openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional",cliente_id:c.id});}}/>)}
+            </>}
+            {acciones.length===0&&tabsFilt.length===0&&(clientesFilt.length===0||q.length===0)&&q.length>0&&(
+              <div style={{padding:"32px",textAlign:"center",color:C.t3,fontSize:13}}>Sin resultados para "{cmdQ}"</div>
+            )}
+          </div>
+          {!isMobile&&<div style={{padding:"8px 18px",borderTop:`1px solid ${C.border}`,display:"flex",gap:16,fontSize:11,color:C.t3}}>
+            <span>↵ seleccionar</span>
+            <span>ESC cerrar</span>
+            <span style={{marginLeft:"auto"}}>⌘K para abrir / cerrar</span>
+          </div>}
+        </div>
+      </div>;
+    })()}
 
     {msg&&(()=>{
       const palette={
