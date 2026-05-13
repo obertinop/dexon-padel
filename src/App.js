@@ -486,9 +486,12 @@ const PortalCliente = () => {
 
   return (
     <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)",background:C.bg}}>
+      <style>{`@keyframes pSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}`}</style>
       {/* HEADER */}
-      <div style={{background:`linear-gradient(180deg, #0A1830 0%, ${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`}}>
-        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"14px 16px":"18px 20px"}}>
+      <div style={{background:`linear-gradient(180deg, #0A1830 0%, ${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-60,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle, rgba(224,91,40,0.18) 0%, transparent 60%)",pointerEvents:"none",zIndex:0}}/>
+        <div style={{position:"absolute",top:10,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle, rgba(52,212,144,0.10) 0%, transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"14px 16px":"18px 20px",position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?36:44,objectFit:"contain"}}/>
@@ -508,6 +511,7 @@ const PortalCliente = () => {
 
       {/* CONTENIDO */}
       <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"20px 14px 40px":"24px 16px 48px"}}>
+       <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
 
         {/* PASO LISTA */}
         {paso==="lista"&&<>
@@ -559,12 +563,17 @@ const PortalCliente = () => {
 
           {/* Horarios disponibles */}
           <div style={{...card,overflow:"hidden",marginBottom:12,padding:0}}>
-            <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
+            <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+              <div style={{minWidth:0,flex:1}}>
                 <div style={{fontSize:14,fontWeight:600,color:C.t1}}>Horarios disponibles</div>
-                <div style={{fontSize:12,color:C.t3,marginTop:2}}>{libres.length} libre{libres.length!==1?"s":""} · {ocupados.length} ocupado{ocupados.length!==1?"s":""}</div>
+                <div style={{fontSize:12,color:C.t3,marginTop:3,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{color:libres.length<=3&&libres.length>0?C.red:C.green,fontWeight:700}}>{libres.length}</span>
+                  <span>de</span>
+                  <span style={{color:C.t2,fontWeight:600}}>{horasArr.length}</span>
+                  <span>disponibles</span>
+                </div>
               </div>
-              {slotsSel.length>0&&<div style={{fontSize:12,color:C.coral,fontWeight:600}}>{slotsSel.length} seleccionado{slotsSel.length>1?"s":""}</div>}
+              {slotsSel.length>0&&<div style={{background:"rgba(224,91,40,0.12)",color:C.coral,fontSize:12,fontWeight:700,padding:"5px 11px",borderRadius:20,border:`1px solid ${C.coralD}`,flexShrink:0}}>{slotsSel.length} seleccionado{slotsSel.length>1?"s":""}</div>}
             </div>
             {libres.length===0&&<div style={{padding:"32px",textAlign:"center",color:C.t3,fontSize:13}}>Sin horarios disponibles para este dia.</div>}
             {libres.map(h=>{
@@ -642,10 +651,22 @@ const PortalCliente = () => {
           <div style={{...card,padding:"24px"}}>
             <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:18}}>Tus datos</div>
             {/* Resumen */}
-            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"14px 16px",marginBottom:20,border:`1px solid ${C.borderL}`}}>
+            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${C.borderL}`}}>
               <div style={{fontSize:15,fontWeight:700,color:C.t1}}>{fmtFechaLegible(fecha)}</div>
               <div style={{fontSize:13,color:C.t2,marginTop:4}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs · {gs(totalSel)}</div>
             </div>
+            {/* Welcome card cliente reconocido */}
+            {clienteEncontrado&&<div style={{background:`linear-gradient(135deg,rgba(52,212,144,0.10),rgba(52,212,144,0.02))`,border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"14px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:12,animation:"pSlide 0.25s ease-out"}}>
+              <div style={{width:44,height:44,borderRadius:"50%",background:avatarBg(clienteEncontrado.nombre),color:avatarFg(clienteEncontrado.nombre),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:16,flexShrink:0,border:`2px solid ${avatarFg(clienteEncontrado.nombre)}40`}}>{initials(clienteEncontrado.nombre)}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:C.green,marginBottom:2}}>¡Hola de nuevo, {clienteEncontrado.nombre.split(" ")[0]}!</div>
+                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.5}}>
+                  {(()=>{const tu=turnos.filter(t=>t.cliente_id===clienteEncontrado.id).length;return tu>0?`Ya tenés ${tu} turno${tu!==1?"s":""} con nosotros.`:"Bienvenido al portal.";})()}
+                  {clienteEncontrado.saldo_favor>0&&<span> Tenés <strong>{gs(clienteEncontrado.saldo_favor)}</strong> a favor.</span>}
+                </div>
+              </div>
+              <span style={{fontSize:18}}>👋</span>
+            </div>}
             <div style={{marginBottom:16}}>
               <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Nombre completo</label>
               <input type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={inpP} placeholder="Tu nombre y apellido"/>
@@ -825,10 +846,27 @@ const PortalCliente = () => {
                   </div>
                 ))}
               </div>
-              {metodoPago==="transferencia"&&<div style={{background:"rgba(52,212,144,0.06)",border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"12px 16px"}}>
+              {metodoPago==="transferencia"&&<div style={{background:"rgba(52,212,144,0.06)",border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"12px 16px",marginBottom:12}}>
                 <div style={{fontSize:12,fontWeight:700,color:C.green,marginBottom:4}}>Próximo paso</div>
                 <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.6}}>Transferí al alias <strong>80168039-5</strong> (UENO) y enviá el comprobante respondiendo el WhatsApp que te mandamos.</div>
               </div>}
+              {/* Botón compartir */}
+              {(()=>{
+                const txt=`🎾 Reservé en ${cfg.nombre_club}\n📅 ${fmtFechaLegible(fecha)}\n🕐 ${slotsSel.map(h=>`${h}:00`).join(" — ")} hs\n💰 ${gs(totalSel)}\n\n👉 https://www.dexon.com.py`;
+                const share=async()=>{
+                  if(navigator.share){
+                    try{await navigator.share({title:"Mi reserva en DEXON Padel",text:txt});}catch(e){}
+                  } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,"_blank");
+                  }
+                };
+                return <button onClick={share} style={{width:"100%",padding:"12px",background:C.bgElev,color:C.t1,border:`1px solid ${C.border}`,borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all 0.15s"}}
+                  onMouseEnter={e=>{e.currentTarget.style.background=C.bgHover;e.currentTarget.style.borderColor=C.coralD;}}
+                  onMouseLeave={e=>{e.currentTarget.style.background=C.bgElev;e.currentTarget.style.borderColor=C.border;}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                  Compartir mi turno
+                </button>;
+              })()}
             </div>
           </div>
 
@@ -852,6 +890,7 @@ const PortalCliente = () => {
             Volver al inicio
           </button>
         </>}
+       </div>
       </div>
     </div>
   );
@@ -1262,6 +1301,8 @@ export default function App() {
   const [draggingId,setDraggingId] = useState(null);
   const [dragOver,setDragOver] = useState(null);
   const [nowTime,setNowTime] = useState(()=>new Date());
+  const [sidebarCol,setSidebarCol] = useState(()=>localStorage.getItem("dx_sidebarCol")==="1");
+  useEffect(()=>{localStorage.setItem("dx_sidebarCol",sidebarCol?"1":"0");},[sidebarCol]);
   const tk = session?.token;
 
   const load = useCallback(async()=>{
@@ -1760,7 +1801,8 @@ export default function App() {
       <div style={isMobile?{}:{overflowX:"auto"}}>
         <div style={{display:"grid",gridTemplateColumns:`${timeCol}px repeat(7,1fr)`,gap:1,background:C.border,borderRadius:10,overflow:"hidden",...(isMobile?{}:{minWidth:600})}}>
           <div style={{background:C.bg}}/>
-          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?C.bgElev:C.bg,padding:isMobile?"6px 2px":"10px 4px",textAlign:"center"}}>
+          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?C.bgElev:C.bg,padding:isMobile?"6px 2px":"10px 4px",textAlign:"center",position:"relative"}}>
+            {isH&&<div style={{position:"absolute",top:isMobile?2:4,right:isMobile?2:4,fontSize:isMobile?7.5:9,fontWeight:700,color:"#fff",background:C.coral,padding:isMobile?"1px 4px":"2px 6px",borderRadius:10,letterSpacing:0.2,boxShadow:"0 1px 3px rgba(224,91,40,0.4)"}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
             <div style={{fontSize:isMobile?9.5:11,fontWeight:500,color:isH?C.coral:C.t2,letterSpacing:isMobile?-0.2:0}}>{isMobile?DIAS[d.getDay()].slice(0,1):DIAS[d.getDay()]}</div>
             <div style={{fontSize:isMobile?13:16,fontWeight:700,color:isH?C.coral:C.t1,margin:isMobile?"1px 0":"2px 0"}}>{d.getDate()}</div>
             {cnt>0?<div>
@@ -1830,21 +1872,30 @@ export default function App() {
 
   const Clientes=()=>{
     const [q,setQ]=useState("");
-    const lista=clientes.filter(c=>c.nombre.toLowerCase().includes(q.toLowerCase()));
+    const qLow=q.trim().toLowerCase();
+    const qTel=q.trim().replace(/\D/g,"");
+    const lista=clientes.filter(c=>!qLow||c.nombre.toLowerCase().includes(qLow)||(qTel&&(c.telefono||"").replace(/\D/g,"").includes(qTel)));
+    const highlight=(text,query)=>{
+      if(!query||!text) return text;
+      const idx=text.toLowerCase().indexOf(query.toLowerCase());
+      if(idx===-1) return text;
+      return <>{text.slice(0,idx)}<mark style={{background:"rgba(224,91,40,0.25)",color:C.coral,padding:"0 2px",borderRadius:3}}>{text.slice(idx,idx+query.length)}</mark>{text.slice(idx+query.length)}</>;
+    };
     return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Clientes <span style={{fontSize:13,color:C.t2,fontWeight:400}}>({clientes.length})</span></span>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Clientes <span style={{fontSize:13,color:C.t2,fontWeight:400}}>({lista.length}{q?` de ${clientes.length}`:""})</span></span>
         <div style={{display:"flex",gap:8}}>
-          <input style={{...inp,width:200}} placeholder="Buscar..." value={q} onChange={e=>setQ(e.target.value)}/>
+          <input style={{...inp,width:200}} placeholder="Buscar nombre o teléfono..." value={q} onChange={e=>setQ(e.target.value)}/>
           <Btn v="primary" onClick={()=>openM("cliente",{nivel:"intermedio"})}>+ Agregar</Btn>
         </div>
       </div>
       <div style={{display:"grid",gap:8}}>
+        {lista.length===0&&q&&<Empty t={`Sin resultados para "${q}"`}/>}
         {lista.map(c=>{const ab=abonos.find(a=>a.cliente_id===c.id&&a.estado==="activo");const resC=turnos.filter(t=>t.cliente_id===c.id).length;return<div key={c.id} style={{...card,display:"flex",alignItems:"center",gap:14,padding:"12px 16px",cursor:"pointer"}} onClick={()=>openM("cliente",{...c})}>
           <Avatar nombre={c.nombre} size={40}/>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:600,fontSize:14,color:C.t1}}>{c.nombre}</div>
-            <div style={{fontSize:12,color:C.t2,marginTop:2}}>{c.telefono||"Sin teléfono"} · {resC} turnos · {c.nivel}</div>
+            <div style={{fontWeight:600,fontSize:14,color:C.t1}}>{qLow?highlight(c.nombre,q.trim()):c.nombre}</div>
+            <div style={{fontSize:12,color:C.t2,marginTop:2}}>{qTel&&c.telefono?highlight(c.telefono,qTel):(c.telefono||"Sin teléfono")} · {resC} turnos · {c.nivel}</div>
             <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
               {c.referrer_code&&<span style={{fontSize:11,color:C.yellow,background:C.yellowBg,padding:"2px 7px",borderRadius:5,letterSpacing:.5,border:`1px solid ${C.yellowBd}`}}>{c.referrer_code}</span>}
               {c.saldo_favor>0&&<span style={{fontSize:11,color:C.green,background:C.greenBg,padding:"2px 7px",borderRadius:5,border:`1px solid ${C.greenBd}`}}>Saldo: {gs(c.saldo_favor)}</span>}
@@ -1912,6 +1963,22 @@ export default function App() {
         <Btn v="primary" onClick={()=>openM("movCaja",{tipo:"egreso",categoria:"gasto",fecha:hoy()})}>+ Registrar gasto</Btn>
       </div>
       <div style={{...card,marginBottom:14}}>
+        {(()=>{
+          const ayer=fmtD(new Date(Date.now()-86400000));
+          const hace7=fmtD(new Date(Date.now()-7*86400000));
+          const hace30=fmtD(new Date(Date.now()-30*86400000));
+          const inicioMes=h.slice(0,8)+"01";
+          const chips=[
+            {l:"Hoy",act:cajaFechaIni===h&&cajaFechaFin===h,a:()=>{setCajaFechaIni(h);setCajaFechaFin(h);}},
+            {l:"Ayer",act:cajaFechaIni===ayer&&cajaFechaFin===ayer,a:()=>{setCajaFechaIni(ayer);setCajaFechaFin(ayer);}},
+            {l:"7 días",act:cajaFechaIni===hace7&&cajaFechaFin===h,a:()=>{setCajaFechaIni(hace7);setCajaFechaFin(h);}},
+            {l:"Este mes",act:cajaFechaIni===inicioMes&&cajaFechaFin===h,a:()=>{setCajaFechaIni(inicioMes);setCajaFechaFin(h);}},
+            {l:"30 días",act:cajaFechaIni===hace30&&cajaFechaFin===h,a:()=>{setCajaFechaIni(hace30);setCajaFechaFin(h);}},
+          ];
+          return <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+            {chips.map(c=><button key={c.l} onClick={c.a} style={{padding:"5px 11px",borderRadius:20,fontSize:12,fontWeight:c.act?700:500,border:`1px solid ${c.act?C.coral:C.border}`,background:c.act?"rgba(224,91,40,0.12)":"transparent",color:c.act?C.coral:C.t2,cursor:"pointer",fontFamily:"var(--font-sans)",transition:"all 0.15s"}}>{c.l}</button>)}
+          </div>;
+        })()}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"flex-end"}}>
           <div><label style={lbl}>Desde</label><input type="date" value={cajaFechaIni} onChange={e=>setCajaFechaIni(e.target.value)} style={{...inp,fontSize:13}}/></div>
           <div><label style={lbl}>Hasta</label><input type="date" value={cajaFechaFin} onChange={e=>setCajaFechaFin(e.target.value)} style={{...inp,fontSize:13}}/></div>
@@ -1963,6 +2030,10 @@ export default function App() {
     const topC=clientes.map(c=>({...c,n:turnos.filter(t=>t.cliente_id===c.id&&t.estado==="confirmado").length})).sort((a,b)=>b.n-a.n).slice(0,5);
     const hPico=horas.map(h=>({h,n:turnos.filter(t=>t.hora===h&&t.estado!=="cancelado").length})).sort((a,b)=>b.n-a.n).slice(0,6);
     const maxH=Math.max(...hPico.map(x=>x.n),1);
+    const porDow=Array.from({length:7},(_,d)=>({d,n:turnos.filter(t=>t.estado!=="cancelado"&&new Date(t.fecha+"T00:00:00").getDay()===d).length}));
+    const dowPop=[...porDow].sort((a,b)=>b.n-a.n)[0];
+    const maxDow=Math.max(...porDow.map(x=>x.n),1);
+    const ordenDow=[1,2,3,4,5,6,0]; // Lun→Dom
     return<div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
         {[{l:"Ingresos mes",v:gs(ingM)},{l:"Proyección",v:gs(proy),c:C.info},{l:"Total reservas",v:turnos.length},{l:"Abonados activos",v:abonos.filter(a=>a.estado==="activo"&&a.fecha_vencimiento>=h).length}].map((m,i)=>
@@ -1976,6 +2047,19 @@ export default function App() {
             <div style={{width:"100%",background:d.v>0?C.coral:C.border,borderRadius:"4px 4px 0 0",height:Math.max(d.v/maxV*80,4),transition:"height 0.3s"}}/>
             <div style={{fontSize:10,color:C.t3}}>{d.f.slice(8)}/{d.f.slice(5,7)}</div>
           </div>)}
+        </div>
+      </div>
+      <div style={{...card,marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <span style={{fontWeight:600,fontSize:14,color:C.t1}}>Día más popular</span>
+          <span style={{fontSize:12,color:C.coral,fontWeight:700}}>{DIAS_FULL[dowPop.d]} · {dowPop.n} turnos</span>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:8,height:70}}>
+          {ordenDow.map(d=>{const x=porDow[d];const isMax=d===dowPop.d&&x.n>0;return<div key={d} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+            <div style={{fontSize:10,color:isMax?C.coral:C.t3,fontWeight:isMax?700:500}}>{x.n}</div>
+            <div style={{width:"100%",background:isMax?C.coral:x.n>0?C.coralD:C.border,borderRadius:"4px 4px 0 0",height:Math.max(x.n/maxDow*46,3),transition:"height 0.3s",opacity:isMax?1:0.55}}/>
+            <div style={{fontSize:10,color:isMax?C.t1:C.t3,fontWeight:isMax?600:400}}>{DIAS[d]}</div>
+          </div>;})}
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
@@ -2368,15 +2452,18 @@ export default function App() {
     const waN=t.id==="whatsapp"?waNoLeidos:0;
     const badge=pendientesN||waN;
     const isWA=t.id==="whatsapp";
+    const collapsed=sidebarCol&&!isMobile;
     const icon=t.ic==="wa"?<WhatsAppIcon size={18}/>:<span style={{fontSize:16,lineHeight:1}}>{t.ic}</span>;
     const pick=()=>{setTab(t.id);setNavOpen(false);};
-    return <button key={t.id} onClick={pick}
+    return <button key={t.id} onClick={pick} title={collapsed?t.l:undefined}
       onMouseEnter={e=>{if(!activa)e.currentTarget.style.background=C.bgElev;}}
       onMouseLeave={e=>{if(!activa)e.currentTarget.style.background="transparent";}}
-      style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 14px",marginBottom:3,background:activa?"rgba(224,91,40,0.10)":"transparent",border:"none",borderLeft:`3px solid ${activa?C.coral:"transparent"}`,borderRadius:"0 10px 10px 0",cursor:"pointer",color:activa?C.t1:C.t2,fontFamily:"var(--font-sans)",fontSize:13.5,fontWeight:activa?700:500,position:"relative",transition:"background 0.15s, color 0.15s",textAlign:"left"}}>
-      <span style={{width:22,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>{icon}</span>
-      <span style={{flex:1}}>{t.l}</span>
-      {badge>0&&<span style={{background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10.5,fontWeight:700,minWidth:18,textAlign:"center",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}>{badge}</span>}
+      style={{display:"flex",alignItems:"center",gap:collapsed?0:12,justifyContent:collapsed?"center":"flex-start",width:"100%",padding:collapsed?"12px 0":"12px 14px",marginBottom:3,background:activa?"rgba(224,91,40,0.10)":"transparent",border:"none",borderLeft:`3px solid ${activa?C.coral:"transparent"}`,borderRadius:"0 10px 10px 0",cursor:"pointer",color:activa?C.t1:C.t2,fontFamily:"var(--font-sans)",fontSize:13.5,fontWeight:activa?700:500,position:"relative",transition:"background 0.15s, color 0.15s",textAlign:"left"}}>
+      <span style={{width:22,display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative"}}>{icon}
+        {collapsed&&badge>0&&<span style={{position:"absolute",top:-5,right:-7,background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:8,padding:"0 4px",fontSize:9,fontWeight:700,minWidth:14,textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.4)",lineHeight:"14px",height:14}}>{badge}</span>}
+      </span>
+      {!collapsed&&<span style={{flex:1}}>{t.l}</span>}
+      {!collapsed&&badge>0&&<span style={{background:isWA?"#25D366":C.coral,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10.5,fontWeight:700,minWidth:18,textAlign:"center",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}>{badge}</span>}
     </button>;
   };
 
@@ -2395,29 +2482,37 @@ export default function App() {
     <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
     {isMobile&&navOpen&&<div onClick={()=>setNavOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:1500,backdropFilter:"blur(2px)",animation:"fadeIn 0.18s ease-out"}}/>}
     <aside style={{
-      width:isMobile?276:224,
+      width:isMobile?276:(sidebarCol?68:224),
       flexShrink:0,
+      transition:isMobile?"transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)":"width 0.22s ease",
       ...(isMobile
-        ?{position:"fixed",top:0,left:0,height:"100vh",zIndex:1501,transform:navOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)",boxShadow:navOpen?"4px 0 32px rgba(0,0,0,0.5)":"none"}
+        ?{position:"fixed",top:0,left:0,height:"100vh",zIndex:1501,transform:navOpen?"translateX(0)":"translateX(-100%)",boxShadow:navOpen?"4px 0 32px rgba(0,0,0,0.5)":"none"}
         :{position:"sticky",top:0,height:"100vh",boxShadow:"2px 0 24px rgba(0,0,0,0.25)"}),
       background:C.bgCard,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",zIndex:isMobile?1501:50,
       paddingTop:isMobile?"env(safe-area-inset-top)":0
     }}>
-      <div style={{padding:"18px 18px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
+      <div style={{padding:sidebarCol&&!isMobile?"18px 12px 14px":"18px 18px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,justifyContent:sidebarCol&&!isMobile?"center":"flex-start"}}>
         <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:36,objectFit:"contain"}}/>
-        <span style={{flex:1,fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
-        {!isMobile&&<button onClick={()=>{setCmdOpen(true);setCmdQ("");}} title="Búsqueda rápida (⌘K)" style={{fontSize:10,color:C.t3,background:C.bgElev,border:`1px solid ${C.border}`,borderRadius:5,padding:"3px 7px",cursor:"pointer",fontFamily:"var(--font-sans)",flexShrink:0,transition:"color 0.15s"}}>⌘K</button>}
-        {isMobile&&<button onClick={()=>setNavOpen(false)} aria-label="Cerrar menú" style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:4,fontFamily:"var(--font-sans)",lineHeight:1}}>×</button>}
+        {!(sidebarCol&&!isMobile)&&<>
+          <span style={{flex:1,fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
+          {!isMobile&&<button onClick={()=>{setCmdOpen(true);setCmdQ("");}} title="Búsqueda rápida (⌘K)" style={{fontSize:10,color:C.t3,background:C.bgElev,border:`1px solid ${C.border}`,borderRadius:5,padding:"3px 7px",cursor:"pointer",fontFamily:"var(--font-sans)",flexShrink:0,transition:"color 0.15s"}}>⌘K</button>}
+          {isMobile&&<button onClick={()=>setNavOpen(false)} aria-label="Cerrar menú" style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:4,fontFamily:"var(--font-sans)",lineHeight:1}}>×</button>}
+        </>}
       </div>
       <nav style={{flex:1,overflowY:"auto",padding:"12px 0"}}>
         {TABS.map(t=>navBtn(t))}
       </nav>
-      <div style={{borderTop:`1px solid ${C.border}`,padding:"12px 14px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10,opacity:isRefreshing?1:0.55,transition:"opacity 0.3s"}}>
+      <div style={{borderTop:`1px solid ${C.border}`,padding:sidebarCol&&!isMobile?"10px 8px":"12px 14px"}}>
+        {!(sidebarCol&&!isMobile)&&<div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10,opacity:isRefreshing?1:0.55,transition:"opacity 0.3s"}}>
           <div style={{width:7,height:7,borderRadius:"50%",background:isRefreshing?C.coral:C.t3,animation:isRefreshing?"pulse 1s infinite":"none"}}/>
           <span style={{fontSize:10.5,color:C.t3,letterSpacing:0.2}}>Auto-sync</span>
-        </div>
-        <button onClick={doLogout} style={{width:"100%",padding:"9px 12px",borderRadius:9,fontSize:12.5,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:600,background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`}}>Cerrar sesión</button>
+        </div>}
+        {!isMobile&&<button onClick={()=>setSidebarCol(s=>!s)} title={sidebarCol?"Expandir menú":"Colapsar menú"} style={{width:"100%",padding:"8px",borderRadius:9,cursor:"pointer",fontFamily:"var(--font-sans)",background:"transparent",color:C.t3,border:`1px solid ${C.border}`,marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontSize:11,fontWeight:600,transition:"all 0.15s"}}
+          onMouseEnter={e=>{e.currentTarget.style.background=C.bgElev;e.currentTarget.style.color=C.t2;}}
+          onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.t3;}}>
+          {sidebarCol?"›":"‹  Colapsar"}
+        </button>}
+        <button onClick={doLogout} title={sidebarCol?"Cerrar sesión":undefined} style={{width:"100%",padding:sidebarCol&&!isMobile?"9px 0":"9px 12px",borderRadius:9,fontSize:sidebarCol&&!isMobile?16:12.5,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:600,background:`rgba(224,91,40,0.08)`,color:C.coral,border:`1px solid ${C.coralD}`}}>{sidebarCol&&!isMobile?"⎋":"Cerrar sesión"}</button>
       </div>
     </aside>
 
@@ -2440,7 +2535,7 @@ export default function App() {
     </div>}
 
     {/* CONTENIDO */}
-    <main style={{flex:1,minWidth:0,...(isMobile?{}:{maxWidth:"calc(100% - 224px)"})}}>
+    <main style={{flex:1,minWidth:0,...(isMobile?{}:{maxWidth:`calc(100% - ${sidebarCol?68:224}px)`})}}>
       <div style={{maxWidth:1040,margin:"0 auto",padding:isMobile?"14px 12px":"24px 28px",paddingBottom:isMobile?"calc(env(safe-area-inset-bottom) + 88px)":"env(safe-area-inset-bottom)"}}>
         {contenidoTab}
       </div>
