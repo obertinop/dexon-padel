@@ -1302,6 +1302,7 @@ export default function App() {
   const [draggingId,setDraggingId] = useState(null);
   const [dragOver,setDragOver] = useState(null);
   const [nowTime,setNowTime] = useState(()=>new Date());
+  const [agendaDiaIdx,setAgendaDiaIdx] = useState(()=>((new Date().getDay()+6)%7));
   const [sidebarCol,setSidebarCol] = useState(()=>localStorage.getItem("dx_sidebarCol")==="1");
   useEffect(()=>{localStorage.setItem("dx_sidebarCol",sidebarCol?"1":"0");},[sidebarCol]);
   const tk = session?.token;
@@ -1794,6 +1795,93 @@ export default function App() {
     const cellMinH=isMobile?32:40;
     const nowHr=nowTime.getHours();
     const nowPct=(nowTime.getMinutes()/60)*100;
+    if(isMobile){
+      const idxSafe=Math.min(Math.max(agendaDiaIdx,0),6);
+      const diaActual=dias[idxSafe];
+      const fsActual=fmtD(diaActual);
+      return<div>
+        {/* Header semana + nav */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:6}}>
+          <div style={{fontSize:13,fontWeight:600,color:C.t1,whiteSpace:"nowrap"}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
+          <div style={{display:"flex",gap:4,alignItems:"center"}}>
+            <Btn sm onClick={()=>setSemOff(o=>o-1)} style={{padding:"6px 9px",minWidth:32}}>←</Btn>
+            <Btn sm onClick={()=>{setSemOff(0);setAgendaDiaIdx((new Date().getDay()+6)%7);}}>Hoy</Btn>
+            <Btn sm onClick={()=>setSemOff(o=>o+1)} style={{padding:"6px 9px",minWidth:32}}>→</Btn>
+          </div>
+        </div>
+        {/* Pills de día */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:14}}>
+          {dias.map((d,i)=>{
+            const fs=fmtD(d);const isSel=i===idxSafe;const isH=fs===h;
+            const cnt=all.filter(t=>t.fecha===fs&&t.estado!=="cancelado").length;
+            return<button key={i} onClick={()=>setAgendaDiaIdx(i)}
+              style={{padding:"8px 2px",borderRadius:10,background:isSel?C.coral:isH?"rgba(224,91,40,0.1)":C.bgElev,border:`1px solid ${isSel?C.coral:isH?C.coralD:C.border}`,color:isSel?"#fff":isH?C.coral:C.t1,cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",flexDirection:"column",alignItems:"center",gap:1,minWidth:0,transition:"all 0.15s"}}>
+              <span style={{fontSize:9,fontWeight:500,opacity:0.85,letterSpacing:0.2}}>{DIAS[d.getDay()].slice(0,3).toUpperCase()}</span>
+              <span style={{fontSize:15,fontWeight:700}}>{d.getDate()}</span>
+              <span style={{fontSize:8,fontWeight:600,opacity:cnt>0?0.9:0,marginTop:1}}>{cnt>0?`${cnt}t`:"·"}</span>
+            </button>;
+          })}
+        </div>
+        {/* Título día seleccionado */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10,gap:8}}>
+          <div style={{fontSize:13,color:C.t2,fontWeight:600}}>
+            {fsActual===h?"Hoy":`${DIAS_FULL[diaActual.getDay()]} ${diaActual.getDate()}`}
+          </div>
+          <div style={{fontSize:11,color:C.t3}}>
+            {all.filter(t=>t.fecha===fsActual&&t.estado!=="cancelado").length} de {horas.length}
+          </div>
+        </div>
+        {/* Lista de horas vertical */}
+        <div style={{display:"grid",gap:5}}>
+          {horas.map(hr=>{
+            const t=all.find(t=>t.fecha===fsActual&&t.hora===hr&&t.estado!=="cancelado");
+            const c=t?cById(t.cliente_id):null;
+            const isPico=hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin;
+            const isToday=fsActual===h;
+            const isNowHr=isToday&&hr===nowHr;
+            const isPast=isToday&&hr<nowHr;
+            const ins=t?iById(t.instructor_id):null;
+            return<div key={hr}
+              onClick={()=>t?openM("verTurno",{...t,cliente:c,instructor:ins}):openM("turno",{fecha:fsActual,hora:hr,tipo:"ocasional"})}
+              style={{
+                display:"flex",alignItems:"center",gap:10,
+                padding:"10px 12px",borderRadius:10,
+                background:t?(t.tipo==="abono"?"rgba(160,128,255,0.06)":t.tipo==="clase"?"rgba(90,160,240,0.06)":"rgba(224,91,40,0.06)"):isPast?C.bg:isPico?"rgba(224,91,40,0.03)":C.bgElev,
+                border:`1px solid ${isNowHr?C.coral:t?(t.tipo==="abono"?C.purpleBd:t.tipo==="clase"?"rgba(90,160,240,0.3)":C.coralD):C.border}`,
+                opacity:isPast&&!t?0.5:1,
+                cursor:"pointer",
+                position:"relative",
+                minHeight:48,
+                overflow:"hidden",
+              }}>
+              <div style={{fontSize:13,fontWeight:700,color:isNowHr?C.coral:t?(t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral):C.t2,minWidth:42,flexShrink:0}}>{hr}:00</div>
+              {t?<>
+                <Avatar nombre={c?.nombre} size={30}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c?.nombre||"?"}</div>
+                  <div style={{fontSize:10,color:C.t2,marginTop:2,display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
+                    {tipoBadge(t.tipo)}
+                    {isPico&&<span style={{color:C.coral,fontWeight:600}}>pico</span>}
+                    {t.estado==="pendiente_pago"&&<span style={{color:C.yellow,fontWeight:600}}>pend. pago</span>}
+                  </div>
+                </div>
+                {t.precio>0&&<div style={{fontSize:11,fontWeight:700,color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,flexShrink:0}}>{gs(t.precio).replace("Gs ","")}</div>}
+              </>:<div style={{flex:1,fontSize:12,color:isPast?C.t3:isPico?C.coral:C.t3,opacity:isPast?0.6:1,display:"flex",alignItems:"center",gap:6}}>
+                <span>{isPast?"—":"Libre"}</span>
+                {!isPast&&isPico&&<span style={{fontSize:10,padding:"1px 5px",background:"rgba(224,91,40,0.1)",border:`1px solid ${C.coralD}`,borderRadius:4,color:C.coral,fontWeight:600}}>pico</span>}
+              </div>}
+              {isNowHr&&<div style={{position:"absolute",left:0,right:0,top:`${nowPct}%`,height:2,background:C.red,pointerEvents:"none",boxShadow:"0 0 6px rgba(240,96,96,0.7)",zIndex:2}}/>}
+            </div>;
+          })}
+        </div>
+        {/* Leyenda */}
+        <div style={{display:"flex",gap:10,marginTop:12,fontSize:10.5,color:C.t3,flexWrap:"wrap",justifyContent:"center"}}>
+          <span><span style={{width:9,height:9,borderRadius:2,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Ocasional</span>
+          <span><span style={{width:9,height:9,borderRadius:2,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Abonado</span>
+          <span><span style={{width:9,height:9,borderRadius:2,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Clase</span>
+        </div>
+      </div>;
+    }
     return<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?10:16,gap:6,flexWrap:isMobile?"wrap":"nowrap"}}>
         <div style={{fontSize:isMobile?13:16,fontWeight:600,color:C.t1,whiteSpace:"nowrap"}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
