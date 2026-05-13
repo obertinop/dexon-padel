@@ -176,15 +176,16 @@ const tipoBadge = t => {
 
 // ── MODAL ──
 const Modal = ({show,onClose,title,children,width=420}) => {
+  const isMobile = useIsMobile();
   if(!show) return null;
   return (
-    <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)",backdropFilter:"blur(4px)",padding:"24px 16px",overflowY:"auto"}}>
-      <div style={{width:"100%",maxWidth:width,background:C.bgCard,borderRadius:18,boxShadow:"0 24px 80px rgba(0,0,0,0.7)",border:`1px solid ${C.borderL}`,flexShrink:0}}>
-        <div style={{padding:"18px 22px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:16,fontWeight:600,color:C.t1}}>{title}</span>
-          <button onClick={onClose} style={{border:"none",background:C.bgElev,cursor:"pointer",fontSize:14,color:C.t2,padding:"5px 10px",borderRadius:8,lineHeight:1}}>X</button>
+    <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)",backdropFilter:"blur(4px)",padding:isMobile?"12px 10px calc(12px + env(safe-area-inset-bottom))":"24px 16px",overflowY:"auto"}}>
+      <div style={{width:"100%",maxWidth:width,background:C.bgCard,borderRadius:isMobile?14:18,boxShadow:"0 24px 80px rgba(0,0,0,0.7)",border:`1px solid ${C.borderL}`,flexShrink:0}}>
+        <div style={{padding:isMobile?"14px 16px 12px":"18px 22px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:isMobile?15:16,fontWeight:600,color:C.t1}}>{title}</span>
+          <button onClick={onClose} aria-label="Cerrar" style={{border:"none",background:C.bgElev,cursor:"pointer",fontSize:14,color:C.t2,padding:"5px 10px",borderRadius:8,lineHeight:1}}>×</button>
         </div>
-        <div style={{padding:22}}>{children}</div>
+        <div style={{padding:isMobile?16:22}}>{children}</div>
       </div>
     </div>
   );
@@ -1683,12 +1684,12 @@ export default function App() {
       <div style={card}>
         <div style={{fontWeight:600,marginBottom:14,fontSize:14,color:C.t1}}>Turnos de hoy</div>
         {tHoy.length===0?<Empty t="Sin turnos para hoy"/>:<div style={{display:"grid",gap:8}}>
-          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:C.bg,border:`1px solid ${C.border}`,cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
-            <div style={{fontSize:16,fontWeight:700,color:C.coral,minWidth:44}}>{t.hora}:00</div>
-            <Avatar nombre={c?.nombre} size={36}/>
-            <div style={{flex:1,minWidth:0}}><div style={{fontWeight:600,fontSize:13,color:C.t1}}>{c?.nombre||"?"}</div><div style={{fontSize:11,color:C.t2,marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>{tipoBadge(t.tipo)} {estadoBadge(t.estado)}{ins&&<span>· {ins.nombre}</span>}{t.sena>0&&<span style={{color:C.green}}>· Seña: {gs(t.sena)}</span>}</div></div>
-            {(t.estado==="reservado"||t.estado==="pendiente_pago")&&<div style={{display:"flex",gap:6,flexShrink:0}} onClick={e=>e.stopPropagation()}>
-              <Btn v="success" sm onClick={()=>setDlg({type:"confirmar",t})}>{t.estado==="pendiente_pago"?"💰 Confirmar pago":`✓ Cobrar ${gs(t.precio-(t.sena||0))}`}</Btn>
+          {tHoy.map(t=>{const c=cById(t.cliente_id);const ins=iById(t.instructor_id);return<div key={t.id} style={{display:"flex",alignItems:"center",gap:isMobile?10:12,padding:isMobile?"10px 12px":"10px 14px",borderRadius:10,background:C.bg,border:`1px solid ${C.border}`,cursor:"pointer"}} onClick={()=>openM("verTurno",{...t,cliente:c,instructor:ins})}>
+            <div style={{fontSize:isMobile?14:16,fontWeight:700,color:C.coral,minWidth:isMobile?38:44,flexShrink:0}}>{t.hora}:00</div>
+            <Avatar nombre={c?.nombre} size={isMobile?32:36}/>
+            <div style={{flex:1,minWidth:0}}><div style={{fontWeight:600,fontSize:13,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c?.nombre||"?"}</div><div style={{fontSize:11,color:C.t2,marginTop:2,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>{tipoBadge(t.tipo)} {!isMobile&&estadoBadge(t.estado)}{ins&&!isMobile&&<span>· {ins.nombre}</span>}{t.sena>0&&!isMobile&&<span style={{color:C.green}}>· Seña: {gs(t.sena)}</span>}</div></div>
+            {(t.estado==="reservado"||t.estado==="pendiente_pago")&&<div style={{display:"flex",gap:5,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+              <Btn v="success" sm onClick={()=>setDlg({type:"confirmar",t})}>{isMobile?"💰":(t.estado==="pendiente_pago"?"💰 Confirmar pago":`✓ Cobrar ${gs(t.precio-(t.sena||0))}`)}</Btn>
               <Btn v="danger" sm onClick={()=>setDlg({type:"cancelar",t})}>✗</Btn>
             </div>}
           </div>;})}
@@ -1730,11 +1731,16 @@ export default function App() {
         </button>;})}
       </div>
       {/* Bulk action bar */}
-      {pendSel.size>0&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:10,background:"rgba(224,91,40,0.08)",border:`1px solid ${C.coralD}`,marginBottom:12}}>
-        <span style={{fontSize:13,color:C.coral,fontWeight:600,flex:1}}>{pendSel.size} seleccionado{pendSel.size!==1?"s":""}</span>
-        <Btn v="success" sm onClick={()=>confirmarBulk([...pendSel])} disabled={saving}>✓ Confirmar ({pendSel.size})</Btn>
-        <Btn v="danger" sm onClick={()=>cancelarBulk([...pendSel])} disabled={saving}>✗ Cancelar ({pendSel.size})</Btn>
-        <button onClick={()=>setPendSel(new Set())} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>×</button>
+      {pendSel.size>0&&<div style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"stretch":"center",gap:isMobile?8:10,padding:"10px 14px",borderRadius:10,background:"rgba(224,91,40,0.08)",border:`1px solid ${C.coralD}`,marginBottom:12,position:"sticky",top:isMobile?60:0,zIndex:10,backdropFilter:"blur(8px)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flex:1}}>
+          <span style={{fontSize:13,color:C.coral,fontWeight:600}}>{pendSel.size} seleccionado{pendSel.size!==1?"s":""}</span>
+          {isMobile&&<button onClick={()=>setPendSel(new Set())} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>×</button>}
+        </div>
+        <div style={{display:"flex",gap:6,...(isMobile?{flex:1}:{})}}>
+          <Btn v="success" sm onClick={()=>confirmarBulk([...pendSel])} disabled={saving} style={isMobile?{flex:1}:{}}>✓ Confirmar ({pendSel.size})</Btn>
+          <Btn v="danger" sm onClick={()=>cancelarBulk([...pendSel])} disabled={saving} style={isMobile?{flex:1}:{}}>✗ Cancelar</Btn>
+          {!isMobile&&<button onClick={()=>setPendSel(new Set())} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>×</button>}
+        </div>
       </div>}
       {filtered.length===0?<Empty t="Sin resultados"/>:<div style={{display:"grid",gap:8}}>
         {/* Select-all row */}
@@ -1882,31 +1888,30 @@ export default function App() {
       return <>{text.slice(0,idx)}<mark style={{background:"rgba(224,91,40,0.25)",color:C.coral,padding:"0 2px",borderRadius:3}}>{text.slice(idx,idx+query.length)}</mark>{text.slice(idx+query.length)}</>;
     };
     return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:8,flexWrap:"wrap"}}>
-        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Clientes <span style={{fontSize:13,color:C.t2,fontWeight:400}}>({lista.length}{q?` de ${clientes.length}`:""})</span></span>
-        <div style={{display:"flex",gap:8}}>
-          <input style={{...inp,width:200}} placeholder="Buscar nombre o teléfono..." value={q} onChange={e=>setQ(e.target.value)}/>
-          <Btn v="primary" onClick={()=>openM("cliente",{nivel:"intermedio"})}>+ Agregar</Btn>
-        </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?10:16,gap:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:isMobile?14:16,fontWeight:600,color:C.t1}}>Clientes <span style={{fontSize:13,color:C.t2,fontWeight:400}}>({lista.length}{q?` de ${clientes.length}`:""})</span></span>
+        {!isMobile&&<Btn v="primary" onClick={()=>openM("cliente",{nivel:"intermedio"})}>+ Agregar</Btn>}
+      </div>
+      <div style={{marginBottom:12}}>
+        <input style={{...inp,fontSize:14,padding:"10px 14px",...(isMobile?{}:{maxWidth:320})}} placeholder="Buscar nombre o teléfono..." value={q} onChange={e=>setQ(e.target.value)}/>
       </div>
       <div style={{display:"grid",gap:8}}>
         {lista.length===0&&q&&<Empty t={`Sin resultados para "${q}"`}/>}
-        {lista.map(c=>{const ab=abonos.find(a=>a.cliente_id===c.id&&a.estado==="activo");const resC=turnos.filter(t=>t.cliente_id===c.id).length;return<div key={c.id} style={{...card,display:"flex",alignItems:"center",gap:14,padding:"12px 16px",cursor:"pointer"}} onClick={()=>openM("cliente",{...c})}>
-          <Avatar nombre={c.nombre} size={40}/>
+        {lista.map(c=>{const ab=abonos.find(a=>a.cliente_id===c.id&&a.estado==="activo");const resC=turnos.filter(t=>t.cliente_id===c.id).length;return<div key={c.id} style={{...card,display:"flex",alignItems:"center",gap:isMobile?10:14,padding:isMobile?"10px 12px":"12px 16px",cursor:"pointer"}} onClick={()=>openM("cliente",{...c})}>
+          <Avatar nombre={c.nombre} size={isMobile?36:40}/>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:600,fontSize:14,color:C.t1}}>{qLow?highlight(c.nombre,q.trim()):c.nombre}</div>
-            <div style={{fontSize:12,color:C.t2,marginTop:2}}>{qTel&&c.telefono?highlight(c.telefono,qTel):(c.telefono||"Sin teléfono")} · {resC} turnos · {c.nivel}</div>
-            <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
-              {c.referrer_code&&<span style={{fontSize:11,color:C.yellow,background:C.yellowBg,padding:"2px 7px",borderRadius:5,letterSpacing:.5,border:`1px solid ${C.yellowBd}`}}>{c.referrer_code}</span>}
-              {c.saldo_favor>0&&<span style={{fontSize:11,color:C.green,background:C.greenBg,padding:"2px 7px",borderRadius:5,border:`1px solid ${C.greenBd}`}}>Saldo: {gs(c.saldo_favor)}</span>}
+            <div style={{fontWeight:600,fontSize:isMobile?13:14,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{qLow?highlight(c.nombre,q.trim()):c.nombre}</div>
+            <div style={{fontSize:isMobile?11:12,color:C.t2,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{qTel&&c.telefono?highlight(c.telefono,qTel):(c.telefono||"Sin teléfono")} · {resC} turnos</div>
+            <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
+              {ab?<Badge type="purple">{pById(ab.plan_id)?.nombre||"Abonado"}</Badge>:<Badge type="gray">Ocasional</Badge>}
+              {c.saldo_favor>0&&<span style={{fontSize:10,color:C.green,background:C.greenBg,padding:"1px 6px",borderRadius:5,border:`1px solid ${C.greenBd}`}}>+{gs(c.saldo_favor)}</span>}
+              {c.deuda>0&&<Badge type="danger">Debe {gs(c.deuda)}</Badge>}
+              {c.referrer_code&&!isMobile&&<span style={{fontSize:11,color:C.yellow,background:C.yellowBg,padding:"2px 7px",borderRadius:5,letterSpacing:.5,border:`1px solid ${C.yellowBd}`}}>{c.referrer_code}</span>}
             </div>
-            {c.notas&&<div style={{fontSize:11,color:C.t3,marginTop:2}}>{c.notas}</div>}
           </div>
-          <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}} onClick={e=>e.stopPropagation()}>
-            {ab?<Badge type="purple">{pById(ab.plan_id)?.nombre||"Abonado"}</Badge>:<Badge type="gray">Ocasional</Badge>}
-            {c.deuda>0&&<Badge type="danger">Debe {gs(c.deuda)}</Badge>}
-            <Btn sm v="ghost" onClick={()=>openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional",cliente_id:c.id})}>Reservar</Btn>
-            {!ab&&<Btn sm v="ghost" onClick={()=>openM("abono",{cliente_id:c.id,fecha_inicio:hoy(),slots:[]})}>Abonar</Btn>}
+          <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}} onClick={e=>e.stopPropagation()}>
+            <Btn sm v="ghost" onClick={()=>openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional",cliente_id:c.id})}>{isMobile?"📅":"Reservar"}</Btn>
+            {!ab&&!isMobile&&<Btn sm v="ghost" onClick={()=>openM("abono",{cliente_id:c.id,fecha_inicio:hoy(),slots:[]})}>Abonar</Btn>}
           </div>
         </div>;})}
       </div>
@@ -1919,17 +1924,26 @@ export default function App() {
     const venc=abonos.filter(a=>a.fecha_vencimiento<h&&a.estado==="activo");
     const vig=abonos.filter(a=>a.fecha_vencimiento>=h&&a.estado==="activo");
     return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Abonados</span>
-        <div style={{display:"flex",gap:8}}><Btn v="ghost" onClick={()=>openM("plan",{})}>Gestionar planes</Btn><Btn v="primary" onClick={()=>openM("abono",{fecha_inicio:hoy(),slots:[]})}>+ Nuevo abono</Btn></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?12:16,gap:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:isMobile?14:16,fontWeight:600,color:C.t1}}>Abonados</span>
+        <div style={{display:"flex",gap:6}}>
+          <Btn v="ghost" sm={isMobile} onClick={()=>openM("plan",{})}>{isMobile?"Planes":"Gestionar planes"}</Btn>
+          {!isMobile&&<Btn v="primary" onClick={()=>openM("abono",{fecha_inicio:hoy(),slots:[]})}>+ Nuevo abono</Btn>}
+        </div>
       </div>
       {venc.length>0&&<div style={{background:C.yellowBg,borderRadius:10,padding:"10px 14px",fontSize:13,color:C.yellow,border:`1px solid ${C.yellowBd}`,marginBottom:14}}>{venc.length} abono{venc.length>1?"s":""} vencido{venc.length>1?"s":""}</div>}
       <div style={{display:"grid",gap:8}}>
-        {[...venc,...vig].map(ab=>{const c=cById(ab.cliente_id);const pl=pById(ab.plan_id);const v=ab.fecha_vencimiento<h;return<div key={ab.id} style={{...card,padding:"14px 16px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <Avatar nombre={c?.nombre} size={40}/>
-            <div style={{flex:1}}><div style={{fontWeight:600,fontSize:14,color:C.t1}}>{c?.nombre||"?"}</div><div style={{fontSize:12,color:C.t2,marginTop:2}}>{pl?.nombre||"Plan"} · {gs(ab.precio_acordado)}/mes</div><div style={{fontSize:12,color:C.t3,marginTop:2}}>{diasAbono(ab)}</div></div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
+        {[...venc,...vig].map(ab=>{const c=cById(ab.cliente_id);const pl=pById(ab.plan_id);const v=ab.fecha_vencimiento<h;return<div key={ab.id} style={{...card,padding:isMobile?"12px 14px":"14px 16px"}}>
+          <div style={{display:"flex",alignItems:isMobile?"flex-start":"center",gap:isMobile?10:14,flexDirection:isMobile?"column":"row"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,...(isMobile?{width:"100%"}:{flex:1})}}>
+              <Avatar nombre={c?.nombre} size={isMobile?36:40}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:600,fontSize:isMobile?13:14,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c?.nombre||"?"}</div>
+                <div style={{fontSize:12,color:C.t2,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pl?.nombre||"Plan"} · {gs(ab.precio_acordado)}/mes</div>
+                {!isMobile&&<div style={{fontSize:12,color:C.t3,marginTop:2}}>{diasAbono(ab)}</div>}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:isMobile?"row":"column",alignItems:isMobile?"center":"flex-end",gap:isMobile?8:8,...(isMobile?{width:"100%",justifyContent:"space-between"}:{})}}>
               {v?<Badge type="danger">Vencido {ab.fecha_vencimiento?.slice(5)}</Badge>:<Badge type="ok">Hasta {ab.fecha_vencimiento?.slice(5)}</Badge>}
               <div style={{display:"flex",gap:6}}>
                 {v&&<Btn v="primary" sm onClick={()=>openM("abono",{cliente_id:ab.cliente_id,plan_id:ab.plan_id,precio_acordado:ab.precio_acordado,fecha_inicio:hoy(),slots:abono_turnos.filter(at=>at.abono_id===ab.id).map(at=>({dia:at.dia,hora:at.hora}))})}>Renovar</Btn>}
@@ -1953,14 +1967,14 @@ export default function App() {
     if(cajaFechaFin)cajaFiltrada=cajaFiltrada.filter(m=>m.fecha<=cajaFechaFin);
     if(cajaTipo)cajaFiltrada=cajaFiltrada.filter(m=>m.tipo===cajaTipo);
     return<div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
-        <div style={metric}><div style={{fontSize:12,color:C.t2,marginBottom:6}}>Ingresos hoy</div><div style={{fontSize:21,fontWeight:600,color:C.t1}}>{gs(ingH)}</div></div>
-        <div style={metric}><div style={{fontSize:12,color:C.t2,marginBottom:6}}>Ingresos mes</div><div style={{fontSize:21,fontWeight:600,color:C.t1}}>{gs(ingM)}</div></div>
-        <div style={metric}><div style={{fontSize:12,color:C.t2,marginBottom:6}}>Balance mes</div><div style={{fontSize:21,fontWeight:600,color:ingM-egrM>=0?C.green:C.red}}>{gs(ingM-egrM)}</div></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:isMobile?6:10,marginBottom:16}}>
+        <div style={{...metric,padding:isMobile?"10px 10px":metric.padding,minWidth:0}}><div style={{fontSize:isMobile?10:12,color:C.t2,marginBottom:4}}>Hoy</div><div style={{fontSize:isMobile?14:21,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gs(ingH)}</div></div>
+        <div style={{...metric,padding:isMobile?"10px 10px":metric.padding,minWidth:0}}><div style={{fontSize:isMobile?10:12,color:C.t2,marginBottom:4}}>Mes</div><div style={{fontSize:isMobile?14:21,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gs(ingM)}</div></div>
+        <div style={{...metric,padding:isMobile?"10px 10px":metric.padding,minWidth:0}}><div style={{fontSize:isMobile?10:12,color:C.t2,marginBottom:4}}>Balance</div><div style={{fontSize:isMobile?14:21,fontWeight:600,color:ingM-egrM>=0?C.green:C.red,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gs(ingM-egrM)}</div></div>
       </div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Movimientos</span>
-        <Btn v="primary" onClick={()=>openM("movCaja",{tipo:"egreso",categoria:"gasto",fecha:hoy()})}>+ Registrar gasto</Btn>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:8}}>
+        <span style={{fontSize:isMobile?14:16,fontWeight:600,color:C.t1}}>Movimientos</span>
+        <Btn v="primary" sm={isMobile} onClick={()=>openM("movCaja",{tipo:"egreso",categoria:"gasto",fecha:hoy()})}>{isMobile?"+ Gasto":"+ Registrar gasto"}</Btn>
       </div>
       <div style={{...card,marginBottom:14}}>
         {(()=>{
@@ -1979,34 +1993,54 @@ export default function App() {
             {chips.map(c=><button key={c.l} onClick={c.a} style={{padding:"5px 11px",borderRadius:20,fontSize:12,fontWeight:c.act?700:500,border:`1px solid ${c.act?C.coral:C.border}`,background:c.act?"rgba(224,91,40,0.12)":"transparent",color:c.act?C.coral:C.t2,cursor:"pointer",fontFamily:"var(--font-sans)",transition:"all 0.15s"}}>{c.l}</button>)}
           </div>;
         })()}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"flex-end"}}>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr auto",gap:isMobile?8:10,alignItems:"flex-end"}}>
           <div><label style={lbl}>Desde</label><input type="date" value={cajaFechaIni} onChange={e=>setCajaFechaIni(e.target.value)} style={{...inp,fontSize:13}}/></div>
           <div><label style={lbl}>Hasta</label><input type="date" value={cajaFechaFin} onChange={e=>setCajaFechaFin(e.target.value)} style={{...inp,fontSize:13}}/></div>
-          <div><label style={lbl}>Tipo</label><select value={cajaTipo} onChange={e=>setCajaTipo(e.target.value)} style={{...inp,fontSize:13}}><option value="">Todos</option><option value="ingreso">Ingresos</option><option value="egreso">Egresos</option></select></div>
-          <Btn sm v="ghost" onClick={()=>{setCajaFechaIni("");setCajaFechaFin("");setCajaTipo("");}}>Limpiar</Btn>
+          <div style={isMobile?{gridColumn:"1 / -1"}:{}}><label style={lbl}>Tipo</label><select value={cajaTipo} onChange={e=>setCajaTipo(e.target.value)} style={{...inp,fontSize:13}}><option value="">Todos</option><option value="ingreso">Ingresos</option><option value="egreso">Egresos</option></select></div>
+          <Btn sm v="ghost" onClick={()=>{setCajaFechaIni("");setCajaFechaFin("");setCajaTipo("");}} style={isMobile?{gridColumn:"1 / -1"}:{}}>Limpiar filtros</Btn>
         </div>
       </div>
-      <div style={{overflowX:"auto"}}>
-        <table style={{width:"100%",borderCollapse:"collapse",borderRadius:10,overflow:"hidden"}}>
-          <thead><tr>{["Fecha","Descripción","Categoría","Monto",""].map((h,i)=><th key={i} style={{textAlign:i>=3?"right":"left",padding:"10px 14px",fontSize:12,fontWeight:600,color:C.t2,borderBottom:`1px solid ${C.border}`,background:C.bg}}>{h}</th>)}</tr></thead>
-          <tbody>{cajaFiltrada.map(m=><tr key={m.id} style={{background:C.bgCard}}>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,color:C.t2}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,color:C.t1}}>{m.descripcion}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`}}><Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge></td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,textAlign:"right",fontWeight:600,color:m.tipo==="ingreso"?C.green:C.red}}>{m.tipo==="egreso"?"- ":""}{gs(m.monto)}</td>
-            <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,textAlign:"right"}}><Btn sm v="danger" onClick={()=>setDlg({type:"eliminarMov",id:m.id,desc:m.descripcion})}>×</Btn></td>
-          </tr>)}</tbody>
-        </table>
-      </div>
+      {isMobile
+        ?<div style={{display:"grid",gap:8}}>
+          {cajaFiltrada.length===0&&<Empty t="Sin movimientos"/>}
+          {cajaFiltrada.map(m=><div key={m.id} style={{...card,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
+            <div style={{minWidth:0,flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                <Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge>
+                <span style={{fontSize:11,color:C.t3}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</span>
+              </div>
+              <div style={{fontSize:13,fontWeight:500,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.descripcion}</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+              <div style={{fontSize:14,fontWeight:700,color:m.tipo==="ingreso"?C.green:C.red,whiteSpace:"nowrap"}}>{m.tipo==="egreso"?"- ":""}{gs(m.monto)}</div>
+              <button onClick={()=>setDlg({type:"eliminarMov",id:m.id,desc:m.descripcion})} style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:6,padding:"3px 9px",fontSize:11,cursor:"pointer",fontFamily:"var(--font-sans)"}}>Eliminar</button>
+            </div>
+          </div>)}
+        </div>
+        :<div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",borderRadius:10,overflow:"hidden"}}>
+            <thead><tr>{["Fecha","Descripción","Categoría","Monto",""].map((h,i)=><th key={i} style={{textAlign:i>=3?"right":"left",padding:"10px 14px",fontSize:12,fontWeight:600,color:C.t2,borderBottom:`1px solid ${C.border}`,background:C.bg}}>{h}</th>)}</tr></thead>
+            <tbody>{cajaFiltrada.map(m=><tr key={m.id} style={{background:C.bgCard}}>
+              <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,color:C.t2}}>{m.fecha.slice(8)}/{m.fecha.slice(5,7)}</td>
+              <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,color:C.t1}}>{m.descripcion}</td>
+              <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`}}><Badge type={m.tipo==="ingreso"?"ok":"danger"}>{m.categoria||m.tipo}</Badge></td>
+              <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,textAlign:"right",fontWeight:600,color:m.tipo==="ingreso"?C.green:C.red}}>{m.tipo==="egreso"?"- ":""}{gs(m.monto)}</td>
+              <td style={{padding:"10px 14px",fontSize:13,borderBottom:`1px solid ${C.border}`,textAlign:"right"}}><Btn sm v="danger" onClick={()=>setDlg({type:"eliminarMov",id:m.id,desc:m.descripcion})}>×</Btn></td>
+            </tr>)}</tbody>
+          </table>
+        </div>}
     </div>;
   };
 
   const Stock=()=>{
     const cats=[...new Set(stock.map(s=>s.categoria))];const bajo=stock.filter(s=>s.minimo>0&&s.cantidad<=s.minimo);
     return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <span style={{fontSize:16,fontWeight:600,color:C.t1}}>Stock</span>
-        <div style={{display:"flex",gap:8}}><Btn v="ghost" onClick={()=>openM("moverStock",{tipo_mov:"salida"})}>Registrar movimiento</Btn><Btn v="primary" onClick={()=>openM("stockItem",{categoria:"pelotas",cantidad:"0",minimo:"0"})}>+ Producto</Btn></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?12:16,gap:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:isMobile?14:16,fontWeight:600,color:C.t1}}>Stock</span>
+        <div style={{display:"flex",gap:6}}>
+          <Btn v="ghost" sm={isMobile} onClick={()=>openM("moverStock",{tipo_mov:"salida"})}>{isMobile?"Movim.":"Registrar movimiento"}</Btn>
+          {!isMobile&&<Btn v="primary" onClick={()=>openM("stockItem",{categoria:"pelotas",cantidad:"0",minimo:"0"})}>+ Producto</Btn>}
+        </div>
       </div>
       {bajo.length>0&&<div style={{background:C.redBg,borderRadius:10,padding:"10px 14px",fontSize:13,color:C.red,border:`1px solid ${C.redBd}`,marginBottom:14}}>Stock bajo: {bajo.map(s=>s.nombre).join(", ")}</div>}
       {cats.map(cat=><div key={cat} style={{marginBottom:16}}>
@@ -2035,9 +2069,9 @@ export default function App() {
     const maxDow=Math.max(...porDow.map(x=>x.n),1);
     const ordenDow=[1,2,3,4,5,6,0]; // Lun→Dom
     return<div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:isMobile?8:10,marginBottom:16}}>
         {[{l:"Ingresos mes",v:gs(ingM)},{l:"Proyección",v:gs(proy),c:C.info},{l:"Total reservas",v:turnos.length},{l:"Abonados activos",v:abonos.filter(a=>a.estado==="activo"&&a.fecha_vencimiento>=h).length}].map((m,i)=>
-          <div key={i} style={metric}><div style={{fontSize:12,color:C.t2,marginBottom:6}}>{m.l}</div><div style={{fontSize:21,fontWeight:600,color:m.c||C.t1}}>{m.v}</div></div>
+          <div key={i} style={{...metric,padding:isMobile?"12px 14px":metric.padding,minWidth:0}}><div style={{fontSize:isMobile?11:12,color:C.t2,marginBottom:isMobile?3:6}}>{m.l}</div><div style={{fontSize:isMobile?17:21,fontWeight:600,color:m.c||C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.v}</div></div>
         )}
       </div>
       <div style={{...card,marginBottom:12}}>
@@ -2528,6 +2562,9 @@ export default function App() {
           {tabActual?.ic==="wa"?<WhatsAppIcon size={15}/>:<span style={{fontSize:15,lineHeight:1,flexShrink:0}}>{tabActual?.ic}</span>}
           <span style={{fontSize:15,fontWeight:700,color:C.t1,letterSpacing:-0.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tabActual?.l}</span>
         </div>
+        <button onClick={()=>{setCmdOpen(true);setCmdQ("");}} aria-label="Búsqueda rápida" style={{width:36,height:36,borderRadius:9,background:"transparent",border:`1px solid ${C.border}`,color:C.t2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"var(--font-sans)"}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+        </button>
         <div style={{display:"flex",alignItems:"center",gap:5,opacity:isRefreshing?1:0.5,transition:"opacity 0.3s",flexShrink:0}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:isRefreshing?C.coral:C.t3,animation:isRefreshing?"pulse 1s infinite":"none"}}/>
         </div>
