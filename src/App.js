@@ -292,6 +292,48 @@ const SelectorFecha = ({value, onChange, min}) => {
   );
 };
 
+// ── CALENDARIO MINI ──
+const CalendarioMini = ({value, onChange, min}) => {
+  const minStr = min || new Date().toISOString().slice(0,10);
+  const initDate = value ? new Date(value+"T00:00:00") : new Date();
+  const [mes, setMes] = useState(()=>new Date(initDate.getFullYear(), initDate.getMonth(), 1));
+  const y=mes.getFullYear(), m=mes.getMonth();
+  const firstWd=new Date(y,m,1).getDay(); // 0=Sun
+  const offset=(firstWd===0?6:firstWd-1); // Monday-first offset
+  const dim=new Date(y,m+1,0).getDate();
+  const cells=[...Array(offset).fill(null),...Array.from({length:dim},(_,i)=>i+1)];
+  while(cells.length%7!==0) cells.push(null);
+  const todayStr=new Date().toISOString().slice(0,10);
+  const fmtCell=(d)=>`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const MESES_FULL=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const DIA_NAMES=["Lu","Ma","Mi","Ju","Vi","Sá","Do"];
+  return (
+    <div style={{background:C.bgElev,borderRadius:14,border:`1px solid ${C.border}`,padding:"14px 16px",userSelect:"none"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <button onClick={()=>setMes(new Date(y,m-1,1))} style={{background:"none",border:"none",color:C.t2,cursor:"pointer",fontSize:20,padding:"0 6px",lineHeight:1,fontFamily:"var(--font-sans)"}}>‹</button>
+        <span style={{fontSize:14,fontWeight:700,color:C.t1}}>{MESES_FULL[m]} {y}</span>
+        <button onClick={()=>setMes(new Date(y,m+1,1))} style={{background:"none",border:"none",color:C.t2,cursor:"pointer",fontSize:20,padding:"0 6px",lineHeight:1,fontFamily:"var(--font-sans)"}}>›</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+        {DIA_NAMES.map(d=><div key={d} style={{textAlign:"center",fontSize:10,color:C.t3,fontWeight:600,paddingBottom:4}}>{d}</div>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+        {cells.map((day,i)=>{
+          if(!day) return <div key={i}/>;
+          const ds=fmtCell(day);
+          const disabled=ds<minStr;
+          const selected=ds===value;
+          const isToday=ds===todayStr;
+          return <button key={i} disabled={disabled} onClick={()=>!disabled&&onChange(ds)}
+            style={{padding:"7px 2px",borderRadius:8,border:`1px solid ${selected?C.coral:isToday?C.coralD:"transparent"}`,background:selected?C.coral:isToday?"rgba(224,91,40,0.1)":"transparent",color:disabled?C.t3:selected?"#fff":C.t1,fontSize:13,fontWeight:selected?700:isToday?600:400,cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.25:1,fontFamily:"var(--font-sans)",textAlign:"center",transition:"all 0.1s"}}>
+            {day}
+          </button>;
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ── PORTAL CLIENTE ──
 const PortalCliente = () => {
   const isMobile = useIsMobile();
@@ -470,9 +512,9 @@ const PortalCliente = () => {
         {/* PASO LISTA */}
         {paso==="lista"&&<>
           {/* Selector fecha */}
-          <div style={{...card,marginBottom:12}}>
-            <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:0.6}}>Dia de juego</div>
-            <SelectorFecha value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.6}}>Día de juego</div>
+            <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
           </div>
 
           {/* Clima */}
@@ -494,6 +536,26 @@ const PortalCliente = () => {
               <div style={{fontSize:12,color:"#E8C898",marginTop:2,lineHeight:1.4}}>Descuento aplicado automaticamente en todos los precios.</div>
             </div>
           </div>}
+
+          {/* Disponibilidad visual */}
+          <div style={{marginBottom:10}}>
+            {libres.length>0&&libres.length<=3&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,background:"rgba(240,96,96,0.08)",border:"1px solid rgba(240,96,96,0.25)",marginBottom:8}}>
+              <span style={{fontSize:16}}>⚡</span>
+              <span style={{fontSize:13,fontWeight:600,color:C.red}}>¡Solo {libres.length} horario{libres.length!==1?"s":""} disponible{libres.length!==1?"s":""}!</span>
+            </div>}
+            <div style={{display:"flex",gap:2,height:7,borderRadius:6,overflow:"hidden"}}>
+              {horasArr.map(h=>{const occ=!!(ocupado(h)||pasado(h));const pico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;return<div key={h} style={{flex:1,background:occ?C.redBg:pico?"rgba(224,91,40,0.5)":C.green,opacity:occ?0.7:1}}/>;  })}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:10,color:C.t3}}>
+              <span>{cfg.hora_inicio}:00</span>
+              <span style={{display:"flex",gap:10,alignItems:"center"}}>
+                <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:7,height:7,borderRadius:1,background:C.green,display:"inline-block"}}/>Libre</span>
+                <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:7,height:7,borderRadius:1,background:"rgba(224,91,40,0.5)",display:"inline-block"}}/>Pico</span>
+                <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:7,height:7,borderRadius:1,background:C.redBg,display:"inline-block"}}/>Ocupado</span>
+              </span>
+              <span>{cfg.hora_fin}:00</span>
+            </div>
+          </div>
 
           {/* Horarios disponibles */}
           <div style={{...card,overflow:"hidden",marginBottom:12,padding:0}}>
@@ -728,35 +790,47 @@ const PortalCliente = () => {
 
         {/* PASO CONFIRMADO */}
         {paso==="confirmado"&&<>
-          <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{width:80,height:80,borderRadius:"50%",background:C.greenBg,border:`2px solid ${C.greenBd}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 16px",boxShadow:`0 0 30px rgba(52,212,144,0.2)`}}>
-              {metodoPago==="transferencia"?"⏳":"✓"}
+          {/* Ticket */}
+          <div style={{borderRadius:20,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)",marginBottom:16}}>
+            {/* Header */}
+            <div style={{background:metodoPago==="transferencia"?`linear-gradient(135deg,#071E12,#0A2A18)`:`linear-gradient(135deg,#071E12,#092A18)`,padding:"28px 24px 24px",textAlign:"center",position:"relative"}}>
+              <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(52,212,144,0.15)",border:`2px solid ${C.greenBd}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 14px",boxShadow:"0 0 40px rgba(52,212,144,0.2)"}}>
+                {metodoPago==="transferencia"?"⏳":"✓"}
+              </div>
+              <div style={{fontSize:22,fontWeight:800,color:C.green,marginBottom:6,letterSpacing:-0.3}}>
+                {metodoPago==="transferencia"?"¡Reserva recibida!":"¡Reserva confirmada!"}
+              </div>
+              <div style={{fontSize:13,color:"rgba(52,212,144,0.65)",lineHeight:1.5}}>
+                {metodoPago==="transferencia"?"Te avisamos al confirmar tu transferencia":"Tu turno está reservado, ¡nos vemos!"}
+              </div>
             </div>
-            <div style={{fontSize:22,fontWeight:800,color:C.t1,marginBottom:8}}>
-              {metodoPago==="transferencia"?"¡Reserva recibida!":"¡Pago confirmado!"}
+            {/* Torn edge */}
+            <div style={{display:"flex",alignItems:"center",background:C.bgCard,height:22,position:"relative"}}>
+              <div style={{position:"absolute",left:-11,width:22,height:22,borderRadius:"50%",background:C.bg,zIndex:1}}/>
+              <div style={{flex:1,borderTop:`2px dashed ${C.border}`,margin:"0 16px"}}/>
+              <div style={{position:"absolute",right:-11,width:22,height:22,borderRadius:"50%",background:C.bg,zIndex:1}}/>
             </div>
-            <div style={{fontSize:14,color:C.t2,lineHeight:1.7,maxWidth:320,margin:"0 auto"}}>
-              {metodoPago==="transferencia"
-                ? `Te enviamos un WhatsApp con los datos de tu reserva. Una vez que verifiquemos tu transferencia, te confirmamos.`
-                : `Tu reserva esta confirmada. Te esperamos en DEXON Padel.`}
+            {/* Body */}
+            <div style={{background:C.bgCard,padding:"18px 22px 22px"}}>
+              <div style={{textAlign:"center",marginBottom:16}}>
+                <div style={{fontSize:11,color:C.t3,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{cfg.nombre_club} · Tavapy</div>
+                <div style={{fontSize:26,fontWeight:800,color:C.t1,letterSpacing:-0.5}}>{fmtFechaLegible(fecha)}</div>
+                <div style={{fontSize:18,fontWeight:700,color:C.coral,marginTop:4}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+                {[{l:"Duración",v:`${slotsSel.length}h`},{l:"Total",v:gs(totalSel)},{l:"A nombre de",v:form.nombre.split(" ")[0]},{l:"Método",v:metodoPago==="transferencia"?"Transferencia":"Pago online"}].map(({l,v})=>(
+                  <div key={l} style={{background:C.bgElev,borderRadius:10,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+                    <div style={{fontSize:10,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>{l}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              {metodoPago==="transferencia"&&<div style={{background:"rgba(52,212,144,0.06)",border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"12px 16px"}}>
+                <div style={{fontSize:12,fontWeight:700,color:C.green,marginBottom:4}}>Próximo paso</div>
+                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.6}}>Transferí al alias <strong>80168039-5</strong> (UENO) y enviá el comprobante respondiendo el WhatsApp que te mandamos.</div>
+              </div>}
             </div>
           </div>
-
-          <div style={{...card,marginBottom:12}}>
-            <div style={{fontSize:13,color:C.t2,lineHeight:2.2}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.t3}}>Fecha</span><span style={{color:C.t1,fontWeight:600}}>{fmtFechaLegible(fecha)}</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.t3}}>Horarios</span><span style={{color:C.t1,fontWeight:600}}>{slotsSel.map(h=>`${h}:00`).join(" — ")}hs</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.t3}}>Total</span><span style={{color:C.coral,fontWeight:700}}>{gs(totalSel)}</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.t3}}>Lugar</span><span style={{color:C.t1,fontWeight:600}}>{cfg.nombre_club} — Tavapy</span></div>
-            </div>
-          </div>
-
-          {metodoPago==="transferencia"&&(
-            <div style={{...card,marginBottom:12,background:C.greenBg,border:`1px solid ${C.greenBd}`}}>
-              <div style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:6}}>Proximo paso</div>
-              <div style={{fontSize:13,color:"#5ABDA8",lineHeight:1.6}}>Realizá la transferencia al alias <strong>80168039-5</strong> (UENO) y enviá el comprobante respondiendo el WhatsApp que te acabamos de mandar.</div>
-            </div>
-          )}
 
           {miCodigo&&(
             <div style={{background:"linear-gradient(135deg,#1A0A30,#0A1820)",borderRadius:14,padding:"18px",marginBottom:12,border:`1px solid ${C.purpleBd}`}}>
@@ -1514,6 +1588,41 @@ export default function App() {
           <div key={i} style={{...metric,padding:isMobile?"12px 14px":metric.padding,minWidth:0}}><div style={{fontSize:isMobile?11:12,color:C.t2,marginBottom:4}}>{m.l}</div><div style={{fontSize:isMobile?17:21,fontWeight:700,color:m.c||C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.v}</div>{m.sub&&<div style={{fontSize:11,color:C.yellow,marginTop:3}}>{m.sub}</div>}</div>
         )}
       </div>
+      {(()=>{
+        const horasHoy=Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
+        const ahoraHr=new Date().getHours();
+        return<div style={{...card,marginBottom:16,padding:0,overflow:"hidden"}}>
+          <div style={{padding:"12px 16px 10px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:13,fontWeight:600,color:C.t1}}>Cronograma de hoy</span>
+            <span style={{fontSize:11,color:C.t3}}>{tHoy.length} turno{tHoy.length!==1?"s":""} · {horasHoy.length-(tHoy.length)} libres</span>
+          </div>
+          <div style={{padding:"12px 14px 6px"}}>
+            <div style={{display:"flex",gap:2,height:46}}>
+              {horasHoy.map(hr=>{
+                const t=tHoy.find(x=>x.hora===hr);
+                const c2=t?cById(t.cliente_id):null;
+                const isPast=hr<ahoraHr;const isCurr=hr===ahoraHr;
+                const isPico=hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin;
+                const bgCell=t?(t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:"#3A1A0A"):isPast?C.bg:isPico?"rgba(224,91,40,0.06)":C.bgElev;
+                const bdCell=isCurr?C.coral:t?(t.tipo==="abono"?C.purpleBd:t.tipo==="clase"?"rgba(90,160,240,0.4)":C.coralD):C.border;
+                const fgCell=t?(t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral):isCurr?C.coral:C.t3;
+                return<div key={hr} title={t?`${hr}:00 — ${c2?.nombre||"?"}`:`${hr}:00 — libre`}
+                  onClick={()=>t&&openM("verTurno",{...t,cliente:c2,instructor:iById(t.instructor_id)})}
+                  style={{flex:1,borderRadius:5,background:bgCell,border:`1.5px solid ${bdCell}`,opacity:isPast&&!t?0.3:1,cursor:t?"pointer":"default",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,overflow:"hidden",position:"relative",transition:"transform 0.1s"}}
+                  onMouseEnter={e=>{if(t)e.currentTarget.style.transform="scaleY(1.06)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform="scaleY(1)";}}>
+                  <div style={{fontSize:8.5,fontWeight:700,color:fgCell,lineHeight:1}}>{hr}</div>
+                  {t&&<div style={{fontSize:7.5,color:fgCell,lineHeight:1,maxWidth:"94%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c2?.nombre?.split(" ")[0]?.[0]||"?"}</div>}
+                  {isCurr&&!t&&<div style={{width:4,height:4,borderRadius:"50%",background:C.coral,marginTop:1}}/>}
+                </div>;
+              })}
+            </div>
+            <div style={{display:"flex",gap:2,marginTop:3}}>
+              {horasHoy.map(hr=><div key={hr} style={{flex:1,textAlign:"center",fontSize:7,color:C.t3,lineHeight:1}}>{hr%2===0?hr:""}</div>)}
+            </div>
+          </div>
+        </div>;
+      })()}
       {clima&&<div style={{...card,marginBottom:16}}>
         <div style={{fontWeight:600,fontSize:13,marginBottom:12,color:C.t2}}>Pronóstico — Alto Paraná</div>
         <div style={{display:"flex",gap:8,overflowX:"auto"}}>
@@ -1654,7 +1763,12 @@ export default function App() {
           {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?C.bgElev:C.bg,padding:isMobile?"6px 2px":"10px 4px",textAlign:"center"}}>
             <div style={{fontSize:isMobile?9.5:11,fontWeight:500,color:isH?C.coral:C.t2,letterSpacing:isMobile?-0.2:0}}>{isMobile?DIAS[d.getDay()].slice(0,1):DIAS[d.getDay()]}</div>
             <div style={{fontSize:isMobile?13:16,fontWeight:700,color:isH?C.coral:C.t1,margin:isMobile?"1px 0":"2px 0"}}>{d.getDate()}</div>
-            {cnt>0?<div style={{fontSize:isMobile?9:10,color:C.coral,fontWeight:600}}>{cnt}t</div>:<div style={{height:isMobile?10:14}}/>}
+            {cnt>0?<div>
+              <div style={{fontSize:isMobile?9:10,color:C.coral,fontWeight:600}}>{cnt}t</div>
+              <div style={{width:"70%",margin:"2px auto 0",height:3,borderRadius:2,background:C.border,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${Math.min(100,Math.round(cnt/horas.length*100))}%`,background:cnt/horas.length>0.7?C.red:cnt/horas.length>0.4?C.yellow:C.green,borderRadius:2}}/>
+              </div>
+            </div>:<div style={{height:isMobile?10:14}}/>}
           </div>;})}
           {horas.map(hr=><React.Fragment key={hr}>
             <div style={{background:C.bg,padding:isMobile?"0 3px":"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:isMobile?9.5:11,color:C.t3,minHeight:cellMinH}}>{isMobile?hr:`${hr}:00`}</div>
@@ -1665,6 +1779,7 @@ export default function App() {
               const isPico=hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin;
               const isToday=fs===h;
               const isNowHr=isToday&&hr===nowHr;
+              const isPast=isToday&&hr<nowHr;
               const isDragTarget=!t&&dragOver?.fecha===fs&&dragOver?.hora===hr&&draggingId;
               return<div key={`${hr}-${di}`}
                 onClick={()=>!draggingId&&(t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"}))}
@@ -1680,7 +1795,8 @@ export default function App() {
                   setDraggingId(null);setDragOver(null);
                 }}
                 style={{
-                  background:isDragTarget?"rgba(224,91,40,0.15)":t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPico?"rgba(224,91,40,0.06)":C.bg),
+                  opacity:isPast&&!t?0.35:1,
+                  background:isDragTarget?"rgba(224,91,40,0.15)":t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPast?C.bg:isPico?"rgba(224,91,40,0.06)":C.bg),
                   display:"flex",alignItems:"center",justifyContent:"center",
                   cursor:draggingId?(t?"not-allowed":"copy"):"pointer",
                   minHeight:cellMinH,transition:"background 0.1s",padding:isMobile?"0 1px":"0 2px",
@@ -2266,13 +2382,17 @@ export default function App() {
 
   const tabActual=TABS.find(t=>t.id===tab);
 
+  const skeletonBg=`linear-gradient(90deg,${C.bgElev} 25%,${C.bgCard} 50%,${C.bgElev} 75%)`;
+  const SK=({h=60,r=10,mb=8})=><div style={{height:h,borderRadius:r,marginBottom:mb,background:skeletonBg,backgroundSize:"400% 100%",animation:"shimmer 1.5s ease infinite"}}/>;
   const contenidoTab=loading
-    ?<div style={{textAlign:"center",padding:80,color:C.t2,fontSize:13}}>Cargando...</div>
+    ?<div style={{display:"grid",gap:0}}>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:12}}>{[0,1,2,3].map(i=><SK key={i} h={76} r={12} mb={0}/>)}</div>
+      <SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/>
+    </div>
     :<>{tab==="hoy"&&<Hoy/>}{tab==="pendientes"&&<Pendientes/>}{tab==="agenda"&&<Agenda/>}{tab==="clientes"&&<Clientes/>}{tab==="abonados"&&<Abonados/>}{tab==="caja"&&<Caja/>}{tab==="stock"&&<Stock/>}{tab==="stats"&&<Stats/>}{tab==="whatsapp"&&<WhatsApp/>}{tab==="config"&&<Config/>}</>;
 
   return <div style={{fontFamily:"var(--font-sans)",background:C.bg,minHeight:"100vh",...(isMobile?{paddingTop:"calc(56px + env(safe-area-inset-top))"}:{display:"flex",alignItems:"stretch"})}}>
-
-    {/* SIDEBAR (desktop: sticky · mobile: drawer) */}
+    <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
     {isMobile&&navOpen&&<div onClick={()=>setNavOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:1500,backdropFilter:"blur(2px)",animation:"fadeIn 0.18s ease-out"}}/>}
     <aside style={{
       width:isMobile?276:224,
