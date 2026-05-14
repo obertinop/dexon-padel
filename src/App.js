@@ -2427,15 +2427,17 @@ export default function App() {
               const label=t?(inicial+". "+apellido):"";
               return <div key={di}
                 onClick={()=>!draggingId&&(t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"}))}
-                onDragOver={e=>{if(!t){e.preventDefault();e.dataTransfer.dropEffect="move";setDragOver({fecha:fs,hora:hr});}}}
-                onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDragOver(null);}}
+                onDragEnter={e=>{if(!t){e.preventDefault();setDragOver({fecha:fs,hora:hr});}}}
+                onDragOver={e=>{if(!t){e.preventDefault();e.dataTransfer.dropEffect="move";}}}
+                onDragLeave={()=>setDragOver(null)}
                 onDrop={e=>{
                   e.preventDefault();
-                  const id=Number(e.dataTransfer.getData("text/plain"));
-                  if(!id||t)return;
+                  const raw=e.dataTransfer.getData("text/plain");
+                  const id=Number(raw);
+                  if(!id||t){setDraggingId(null);setDragOver(null);return;}
                   const orig=turnos.find(x=>x.id===id);
                   if(orig&&(orig.fecha!==fs||orig.hora!==hr)){
-                    setDlg({type:"dragReprogram",turnoId:id,newFecha:fs,newHora:hr,nombre:cById(orig.cliente_id)?.nombre||"?"});
+                    setDlg({type:"dragReprogram",turnoId:id,newFecha:fs,newHora:hr,nombre:cById(orig.cliente_id)?.nombre||"?",fechaLabel:fmtFechaLegible(fs)});
                   }
                   setDraggingId(null);setDragOver(null);
                 }}
@@ -3242,7 +3244,7 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
     <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
-    <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
+    <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.fechaLabel||dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
 
     {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
       <div style={{backgroundColor:C.bgCard,borderRadius:16,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:`1px solid ${C.border}`}}>
