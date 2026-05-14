@@ -2384,7 +2384,7 @@ export default function App() {
           <Btn sm v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>+ Nueva</Btn>
         </div>
       </div>}
-      <div style={isMobile?{}:{overflowX:"auto"}}>
+      <div style={isMobile?{}:{overflowX:"auto",borderRadius:16}}>
         <div style={{display:"grid",gridTemplateColumns:`${timeCol}px repeat(7,1fr)`,gap:1,background:C.border,borderRadius:isMobile?10:16,overflow:"hidden",...(isMobile?{}:{minWidth:600})}}>
           <div style={{background:C.bg}}/>
           {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?"rgba(224,91,40,0.08)":C.bg,padding:isMobile?"6px 2px":"14px 6px",textAlign:"center",position:"relative"}}>
