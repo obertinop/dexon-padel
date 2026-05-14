@@ -2428,8 +2428,7 @@ export default function App() {
               return <div key={di}
                 onClick={()=>!draggingId&&(t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"}))}
                 onDragEnter={e=>{if(!t){e.preventDefault();setDragOver({fecha:fs,hora:hr});}}}
-                onDragOver={e=>{if(!t){e.preventDefault();e.dataTransfer.dropEffect="move";}}}
-                onDragLeave={()=>setDragOver(null)}
+                onDragOver={e=>{if(!t){e.preventDefault();e.dataTransfer.dropEffect="move";}else{e.dataTransfer.dropEffect="none";}}}
                 onDrop={e=>{
                   e.preventDefault();
                   const raw=e.dataTransfer.getData("text/plain");
@@ -2455,7 +2454,7 @@ export default function App() {
                 {t&&<span
                   draggable={!t._gen}
                   onDragStart={t._gen?undefined:e=>{setDraggingId(t.id);e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(t.id));}}
-                  onDragEnd={t._gen?undefined:()=>{setDraggingId(null);setDragOver(null);}}
+                  onDragEnd={t._gen?undefined:e=>{setDraggingId(null);setDragOver(null);}}
                   style={{
                     fontSize:11,fontWeight:600,
                     color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,
