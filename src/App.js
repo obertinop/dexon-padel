@@ -497,11 +497,7 @@ const PortalCliente = () => {
         <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"14px 16px":"18px 20px",position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?56:72,...LOGO_STYLE_DARK}}/>
-              <div>
-                <div style={{fontSize:isMobile?16:18,fontWeight:800,color:C.t1,letterSpacing:-0.3}}>{cfg.nombre_club}</div>
-                <div style={{fontSize:11,color:C.t3,marginTop:1}}>Tavapy · Alto Paraná</div>
-              </div>
+              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?72:92,...LOGO_STYLE_DARK}}/>
             </div>
             <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer"
                style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.25)",borderRadius:10,textDecoration:"none",minHeight:40}}>
@@ -958,8 +954,7 @@ function LandingPage({ onAdmin }) {
     <div style={st.page}>
       <nav style={st.nav}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <img src={LOGO} alt="DEXON" style={{height:52,...LOGO_STYLE_DARK}} onError={e=>{e.target.style.display="none";}}/>
-          <span style={{fontSize:18,fontWeight:800,color:C.t1,letterSpacing:1}}>DEXON PADEL</span>
+          <img src={LOGO} alt="DEXON" style={{height:68,...LOGO_STYLE_DARK}} onError={e=>{e.target.style.display="none";}}/>
         </div>
         {!isMobile&&(
           <div style={{display:"flex",gap:28,alignItems:"center"}}>
