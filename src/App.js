@@ -494,7 +494,7 @@ const PortalCliente = () => {
       <div style={{background:`linear-gradient(180deg, #0A1830 0%, ${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:-60,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle, rgba(224,91,40,0.18) 0%, transparent 60%)",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"absolute",top:10,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle, rgba(52,212,144,0.10) 0%, transparent 70%)",pointerEvents:"none",zIndex:0}}/>
-        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"14px 16px":"18px 20px",position:"relative",zIndex:1}}>
+        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"6px 16px":"8px 20px",position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?72:92,...LOGO_STYLE_DARK}}/>
@@ -910,7 +910,7 @@ function LandingPage({ onAdmin }) {
 
   const st = {
     page: { fontFamily:"var(--font-sans)", background:C.bg, color:C.t1, minHeight:"100vh", overflowX:"hidden" },
-    nav: { position:"fixed", top:0, left:0, right:0, zIndex:100, background:"rgba(6,13,26,0.92)", backdropFilter:"blur(14px)", borderBottom:`1px solid ${C.border}`, padding:isMobile?"12px 20px":"14px 40px", display:"flex", alignItems:"center", justifyContent:"space-between" },
+    nav: { position:"fixed", top:0, left:0, right:0, zIndex:100, background:"rgba(6,13,26,0.92)", backdropFilter:"blur(14px)", borderBottom:`1px solid ${C.border}`, padding:isMobile?"0 20px":"0 40px", height:64, display:"flex", alignItems:"center", justifyContent:"space-between" },
     navLink: { color:C.t2, fontSize:14, fontWeight:500, cursor:"pointer", transition:"color 0.2s", textDecoration:"none" },
     btnOutline: { padding:"8px 18px", border:`1px solid ${coral}`, borderRadius:8, background:"transparent", color:coral, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"var(--font-sans)" },
     btnSolid: { padding:"8px 18px", border:"none", borderRadius:8, background:coral, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--font-sans)" },
