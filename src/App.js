@@ -2427,13 +2427,15 @@ export default function App() {
               const label=t?(inicial+". "+apellido):"";
               return <div key={di}
                 onClick={()=>!draggingId&&(t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"}))}
-                onDragOver={e=>{if(draggingId&&!t){e.preventDefault();setDragOver({fecha:fs,hora:hr});}}}
-                onDragLeave={()=>setDragOver(null)}
+                onDragOver={e=>{if(!t){e.preventDefault();e.dataTransfer.dropEffect="move";setDragOver({fecha:fs,hora:hr});}}}
+                onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDragOver(null);}}
                 onDrop={e=>{
-                  e.preventDefault();if(!draggingId)return;
-                  const orig=turnos.find(x=>x.id===draggingId);
-                  if(orig&&(orig.fecha!==fs||orig.hora!==hr)&&!t){
-                    setDlg({type:"dragReprogram",turnoId:draggingId,newFecha:fs,newHora:hr,nombre:cById(orig.cliente_id)?.nombre||"?"});
+                  e.preventDefault();
+                  const id=Number(e.dataTransfer.getData("text/plain"));
+                  if(!id||t)return;
+                  const orig=turnos.find(x=>x.id===id);
+                  if(orig&&(orig.fecha!==fs||orig.hora!==hr)){
+                    setDlg({type:"dragReprogram",turnoId:id,newFecha:fs,newHora:hr,nombre:cById(orig.cliente_id)?.nombre||"?"});
                   }
                   setDraggingId(null);setDragOver(null);
                 }}
@@ -2450,7 +2452,7 @@ export default function App() {
                 }}>
                 {t&&<span
                   draggable={!t._gen}
-                  onDragStart={t._gen?undefined:e=>{e.stopPropagation();setDraggingId(t.id);e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(t.id));}}
+                  onDragStart={t._gen?undefined:e=>{setDraggingId(t.id);e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(t.id));}}
                   onDragEnd={t._gen?undefined:()=>{setDraggingId(null);setDragOver(null);}}
                   style={{
                     fontSize:11,fontWeight:600,
