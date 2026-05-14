@@ -509,18 +509,17 @@ const PortalCliente = () => {
       </div>
 
       {/* CONTENIDO */}
-      <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"20px 14px 40px":"24px 16px 48px"}}>
+      <div style={{maxWidth:isMobile?500:1140,margin:"0 auto",padding:isMobile?"20px 14px 40px":"32px 32px 48px"}}>
        <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
 
         {/* PASO LISTA */}
-        {paso==="lista"&&<>
-          {/* Selector fecha */}
+        {paso==="lista"&&(isMobile?(
+          /* ── MOBILE: layout original ── */
+          <>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.6}}>Día de juego</div>
             <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
           </div>
-
-          {/* Clima */}
           {climaFecha&&<div style={{...card,marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
             <div style={{fontSize:36,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
             <div style={{flex:1}}>
@@ -530,8 +529,6 @@ const PortalCliente = () => {
             {climaFecha.lluvia>=60&&<Badge type="info">Lluvia probable</Badge>}
             {climaFecha.lluvia<20&&<Badge type="ok">Buen dia</Badge>}
           </div>}
-
-          {/* Banner descuento */}
           {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
             <div style={{fontSize:28,flexShrink:0}}>🎉</div>
             <div>
@@ -539,8 +536,6 @@ const PortalCliente = () => {
               <div style={{fontSize:12,color:"#E8C898",marginTop:2,lineHeight:1.4}}>Descuento aplicado automaticamente en todos los precios.</div>
             </div>
           </div>}
-
-          {/* Disponibilidad visual */}
           <div style={{marginBottom:10}}>
             {libres.length>0&&libres.length<=3&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,background:"rgba(240,96,96,0.08)",border:"1px solid rgba(240,96,96,0.25)",marginBottom:8}}>
               <span style={{fontSize:16}}>⚡</span>
@@ -559,8 +554,6 @@ const PortalCliente = () => {
               <span>{cfg.hora_fin}:00</span>
             </div>
           </div>
-
-          {/* Horarios disponibles */}
           <div style={{...card,overflow:"hidden",marginBottom:12,padding:0}}>
             <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
               <div style={{minWidth:0,flex:1}}>
@@ -611,8 +604,6 @@ const PortalCliente = () => {
               );
             })}
           </div>
-
-          {/* Ocupados */}
           {ocupados.length>0&&<div style={{...card,padding:0,marginBottom:16,opacity:0.6}}>
             <div style={{padding:"10px 18px",borderBottom:`1px solid ${C.border}`}}>
               <div style={{fontSize:12,fontWeight:500,color:C.t3}}>No disponibles</div>
@@ -624,8 +615,6 @@ const PortalCliente = () => {
               </div>
             ))}
           </div>}
-
-          {/* Resumen seleccion */}
           {slotsSel.length>0&&<>
             <div style={{...card,marginBottom:12,background:C.bgElev}}>
               <div style={{fontSize:12,color:C.t3,marginBottom:8}}>Seleccionados · {slotsSel.length}h</div>
@@ -639,7 +628,141 @@ const PortalCliente = () => {
               Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
             </button>
           </>}
-        </>}
+          </>
+        ):(
+          /* ── DESKTOP: 2 columnas ── */
+          <>
+          <StepBar/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 360px",gap:36,alignItems:"start"}}>
+            {/* COLUMNA IZQUIERDA */}
+            <div>
+              <h1 style={{fontSize:38,fontWeight:900,color:C.t1,margin:"0 0 8px",letterSpacing:-1.2,lineHeight:1.1}}>¿Cuándo querés jugar?</h1>
+              <p style={{fontSize:15,color:C.t2,margin:"0 0 28px",lineHeight:1.5}}>Elegí día y horarios disponibles. Podés reservar hasta 4 horas seguidas.</p>
+              {/* Pills de fecha */}
+              <div style={{display:"flex",gap:10,marginBottom:28,overflowX:"auto",paddingBottom:4}}>
+                {Array.from({length:14},(_,i)=>{
+                  const d=new Date(); d.setDate(d.getDate()+i);
+                  const ds=d.toISOString().slice(0,10);
+                  const sel=ds===fecha;
+                  return(
+                    <button key={ds} onClick={()=>{setFecha(ds);setSlotsSel([]);}}
+                      style={{flexShrink:0,minWidth:72,padding:"14px 10px",borderRadius:16,
+                        border:`2px solid ${sel?C.coral:C.border}`,
+                        background:sel?C.coral:"transparent",
+                        cursor:"pointer",fontFamily:"var(--font-sans)",textAlign:"center",
+                        transition:"all 0.15s"}}>
+                      <div style={{fontSize:10,color:sel?"rgba(255,255,255,0.75)":C.t3,fontWeight:700,letterSpacing:1,marginBottom:6}}>{i===0?"HOY":DIAS[d.getDay()].toUpperCase()}</div>
+                      <div style={{fontSize:26,fontWeight:800,color:sel?"#fff":C.t1}}>{d.getDate()}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Banner descuento */}
+              {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:24}}>🎉</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Día de descuento — {descPct}% off</div>
+                  <div style={{fontSize:12,color:"#E8C898",marginTop:2}}>Descuento aplicado automáticamente en todos los precios.</div>
+                </div>
+              </div>}
+              {/* Header de slots */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:1.5}}>
+                  Horarios disponibles{fecha?` · ${DIAS[diaFecha]?.toUpperCase()} ${new Date(fecha+"T00:00:00").getDate()}`:""}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.t2}}>
+                  <span style={{width:7,height:7,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>
+                  Hora pico
+                </div>
+              </div>
+              {/* Grid 4 columnas */}
+              {libres.length===0&&<div style={{padding:"48px 0",textAlign:"center",color:C.t3,fontSize:14}}>Sin horarios disponibles para este día.</div>}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+                {horasArr.map(h=>{
+                  const occ=!!(ocupado(h)||pasado(h));
+                  const sel=slotsSel.includes(h);
+                  const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
+                  const tieneDesc=diaTieneDesc();
+                  const precioFinal=precioConDesc(h);
+                  const precioOriginal=precioH(h);
+                  return(
+                    <div key={h} onClick={()=>!occ&&toggleSlot(h)}
+                      style={{padding:"18px 14px",borderRadius:16,
+                        border:`2px solid ${sel?C.coral:occ?"rgba(255,255,255,0.06)":isPico?C.coralAlpha:C.border}`,
+                        background:sel?`linear-gradient(135deg,${C.coral},${C.coralD})`:occ?C.bgElev:isPico?"rgba(224,91,40,0.04)":"rgba(255,255,255,0.02)",
+                        cursor:occ?"default":"pointer",
+                        opacity:occ?0.45:1,
+                        position:"relative",
+                        transition:"all 0.15s",
+                        userSelect:"none"}}>
+                      {isPico&&!occ&&!sel&&<span style={{position:"absolute",top:10,right:12,width:7,height:7,borderRadius:"50%",background:C.coral}}/>}
+                      {sel&&<span style={{position:"absolute",top:10,right:12,display:"flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",background:"rgba(255,255,255,0.25)"}}>
+                        <svg width="10" height="8" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>}
+                      <div style={{fontSize:20,fontWeight:800,color:sel?"#fff":occ?C.t3:C.t1,marginBottom:6,lineHeight:1}}>{h}:00</div>
+                      {occ
+                        ?<div style={{fontSize:12,color:C.t3}}>Reservado</div>
+                        :<>
+                          {tieneDesc&&<div style={{fontSize:11,color:sel?"rgba(255,255,255,0.55)":"rgba(255,255,255,0.3)",textDecoration:"line-through",lineHeight:1,marginBottom:2}}>{gs(precioOriginal)}</div>}
+                          <div style={{fontSize:13,fontWeight:600,color:sel?"rgba(255,255,255,0.85)":tieneDesc?C.yellow:C.t2}}>{gs(precioFinal)}</div>
+                        </>
+                      }
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Leyenda */}
+              <div style={{display:"flex",gap:16,fontSize:11,color:C.t3}}>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.coral,display:"inline-block"}}/>Seleccionado</span>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>Hora pico</span>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.bgElev,border:`1px solid ${C.border}`,display:"inline-block"}}/>Reservado</span>
+              </div>
+            </div>
+            {/* COLUMNA DERECHA — Sticky */}
+            <div style={{position:"sticky",top:28}}>
+              <div style={{background:C.bgCard,borderRadius:22,border:`1px solid ${C.border}`,padding:"28px 24px",boxShadow:"0 12px 48px rgba(0,0,0,0.35)"}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:2,marginBottom:22}}>Tu reserva</div>
+                {slotsSel.length>0?(
+                  <>
+                    <div style={{fontSize:24,fontWeight:800,color:C.t1,marginBottom:6}}>{fmtFechaLegible(fecha)}</div>
+                    <div style={{fontSize:17,fontWeight:700,color:C.coral,marginBottom:24}}>
+                      {Math.min(...slotsSel)}:00 — {Math.max(...slotsSel)+1}:00
+                    </div>
+                    <div style={{borderTop:`1px solid ${C.border}`,paddingTop:18,marginBottom:18,display:"flex",flexDirection:"column",gap:10}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.t2}}>
+                        <span>{slotsSel.length} horario{slotsSel.length>1?"s":""}</span>
+                        <span>{gs(subtotalSinDesc)}</span>
+                      </div>
+                      {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.yellow}}>
+                        <span>Descuento {DIAS[diaFecha]?.toLowerCase()}</span>
+                        <span>— {gs(ahorroDia)}</span>
+                      </div>}
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,paddingTop:4,borderTop:`1px solid ${C.border}`}}>
+                      <span style={{fontSize:15,fontWeight:700,color:C.t1}}>Total</span>
+                      <span style={{fontSize:26,fontWeight:900,color:C.coral}}>{gs(totalSel)}</span>
+                    </div>
+                    <button onClick={()=>setPaso("datos")}
+                      style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)",marginBottom:14,transition:"opacity 0.15s"}}>
+                      Continuar →
+                    </button>
+                    <div style={{textAlign:"center",fontSize:11,color:C.t3,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                      <svg width="11" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      Pago seguro · Pagopar / Transferencia
+                    </div>
+                  </>
+                ):(
+                  <div style={{textAlign:"center",padding:"36px 0",color:C.t3}}>
+                    <div style={{fontSize:40,marginBottom:14}}>📅</div>
+                    <div style={{fontSize:15,fontWeight:600,color:C.t2,marginBottom:6}}>Seleccioná un horario</div>
+                    <div style={{fontSize:12,lineHeight:1.5}}>Podés elegir hasta<br/>4 horas seguidas</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          </>
+        ))}
 
         {/* PASO DATOS */}
         {paso==="datos"&&<>
@@ -2236,31 +2359,47 @@ export default function App() {
       </div>;
     }
     return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?10:16,gap:6,flexWrap:isMobile?"wrap":"nowrap"}}>
-        <div style={{fontSize:isMobile?13:16,fontWeight:600,color:C.t1,whiteSpace:"nowrap"}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
-        <div style={{display:"flex",gap:isMobile?4:8,alignItems:"center",flexWrap:"nowrap"}}>
-          <Btn sm={isMobile} onClick={()=>setSemOff(o=>o-1)} style={isMobile?{padding:"6px 9px",minWidth:32}:{}}>←</Btn>
-          <Btn sm={isMobile} onClick={()=>setSemOff(0)}>Hoy</Btn>
-          <Btn sm={isMobile} onClick={()=>setSemOff(o=>o+1)} style={isMobile?{padding:"6px 9px",minWidth:32}:{}}>→</Btn>
-          <Btn sm={isMobile} v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>{isMobile?"+ Nueva":"+ Reservar"}</Btn>
+      {/* Header agenda desktop */}
+      {!isMobile&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:20}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.coral,textTransform:"uppercase",letterSpacing:2,marginBottom:6}}>Agenda</div>
+          <div style={{fontSize:28,fontWeight:900,color:C.t1,letterSpacing:-0.5,lineHeight:1}}>Agenda</div>
+          <div style={{fontSize:13,color:C.t3,marginTop:4}}>Vista semanal de turnos</div>
         </div>
-      </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={()=>setSemOff(o=>o-1)} style={{width:36,height:36,borderRadius:10,background:C.bgElev,border:`1px solid ${C.border}`,color:C.t1,cursor:"pointer",fontSize:16,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+          <button onClick={()=>setSemOff(0)} style={{height:36,padding:"0 16px",borderRadius:10,background:C.bgElev,border:`1px solid ${C.border}`,color:C.t1,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"var(--font-sans)"}}>Hoy</button>
+          <button onClick={()=>setSemOff(o=>o+1)} style={{width:36,height:36,borderRadius:10,background:C.bgElev,border:`1px solid ${C.border}`,color:C.t1,cursor:"pointer",fontSize:16,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+          <button onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})} style={{height:36,padding:"0 18px",borderRadius:10,background:C.coral,border:"none",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",gap:6,boxShadow:"0 4px 14px rgba(224,91,40,0.35)"}}>
+            <span style={{fontSize:16,lineHeight:1}}>+</span> Reservar
+          </button>
+        </div>
+      </div>}
+      {isMobile&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:6}}>
+        <div style={{fontSize:13,fontWeight:600,color:C.t1,whiteSpace:"nowrap"}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+          <Btn sm onClick={()=>setSemOff(o=>o-1)} style={{padding:"6px 9px",minWidth:32}}>←</Btn>
+          <Btn sm onClick={()=>setSemOff(0)}>Hoy</Btn>
+          <Btn sm onClick={()=>setSemOff(o=>o+1)} style={{padding:"6px 9px",minWidth:32}}>→</Btn>
+          <Btn sm v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>+ Nueva</Btn>
+        </div>
+      </div>}
       <div style={isMobile?{}:{overflowX:"auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:`${timeCol}px repeat(7,1fr)`,gap:1,background:C.border,borderRadius:10,overflow:"hidden",...(isMobile?{}:{minWidth:600})}}>
+        <div style={{display:"grid",gridTemplateColumns:`${timeCol}px repeat(7,1fr)`,gap:1,background:C.border,borderRadius:isMobile?10:16,overflow:"hidden",...(isMobile?{}:{minWidth:600})}}>
           <div style={{background:C.bg}}/>
-          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?C.bgElev:C.bg,padding:isMobile?"6px 2px":"10px 4px",textAlign:"center",position:"relative"}}>
-            {isH&&<div style={{position:"absolute",top:isMobile?2:4,right:isMobile?2:4,fontSize:isMobile?7.5:9,fontWeight:700,color:"#fff",background:C.coral,padding:isMobile?"1px 4px":"2px 6px",borderRadius:10,letterSpacing:0.2,boxShadow:"0 1px 3px rgba(224,91,40,0.4)"}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
-            <div style={{fontSize:isMobile?9.5:11,fontWeight:500,color:isH?C.coral:C.t2,letterSpacing:isMobile?-0.2:0}}>{isMobile?DIAS[d.getDay()].slice(0,1):DIAS[d.getDay()]}</div>
-            <div style={{fontSize:isMobile?13:16,fontWeight:700,color:isH?C.coral:C.t1,margin:isMobile?"1px 0":"2px 0"}}>{d.getDate()}</div>
+          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?"rgba(224,91,40,0.08)":C.bg,padding:isMobile?"6px 2px":"14px 6px",textAlign:"center",position:"relative"}}>
+            {isH&&!isMobile&&<div style={{position:"absolute",top:6,right:6,fontSize:9,fontWeight:700,color:"#fff",background:C.coral,padding:"2px 6px",borderRadius:8,letterSpacing:0.2}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
+            <div style={{fontSize:isMobile?9.5:11,fontWeight:600,color:isH?C.coral:C.t3,letterSpacing:1,textTransform:"uppercase"}}>{isMobile?DIAS[d.getDay()].slice(0,1):DIAS[d.getDay()]}</div>
+            <div style={{fontSize:isMobile?13:20,fontWeight:700,color:isH?C.coral:C.t1,margin:isMobile?"1px 0":"4px 0"}}>{d.getDate()}</div>
             {cnt>0?<div>
               <div style={{fontSize:isMobile?9:10,color:C.coral,fontWeight:600}}>{cnt}t</div>
-              <div style={{width:"70%",margin:"2px auto 0",height:3,borderRadius:2,background:C.border,overflow:"hidden"}}>
+              {!isMobile&&<div style={{width:"60%",margin:"4px auto 0",height:3,borderRadius:2,background:C.border,overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${Math.min(100,Math.round(cnt/horas.length*100))}%`,background:cnt/horas.length>0.7?C.red:cnt/horas.length>0.4?C.yellow:C.green,borderRadius:2}}/>
-              </div>
+              </div>}
             </div>:<div style={{height:isMobile?10:14}}/>}
           </div>;})}
           {horas.map(hr=><React.Fragment key={hr}>
-            <div style={{background:C.bg,padding:isMobile?"0 3px":"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:isMobile?9.5:11,color:C.t3,minHeight:cellMinH}}>{isMobile?hr:`${hr}:00`}</div>
+            <div style={{background:C.bg,padding:isMobile?"0 3px":"0 12px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:isMobile?9.5:11,color:C.t3,minHeight:cellMinH,fontWeight:500}}>{isMobile?hr:`${hr}:00`}</div>
             {dias.map((d,di)=>{
               const fs=fmtD(d);
               const t=all.find(t=>t.fecha===fs&&t.hora===hr&&t.estado!=="cancelado");
@@ -2270,6 +2409,9 @@ export default function App() {
               const isNowHr=isToday&&hr===nowHr;
               const isPast=isToday&&hr<nowHr;
               const isDragTarget=!t&&dragOver?.fecha===fs&&dragOver?.hora===hr&&draggingId;
+              const apellido=c?.nombre?.split(" ").slice(-1)[0]||"";
+              const inicial=c?.nombre?.[0]?.toUpperCase()||"";
+              const labelDesktop=t?(inicial+". "+apellido):"";
               return<div key={`${hr}-${di}`}
                 onClick={()=>!draggingId&&(t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"}))}
                 onDragOver={e=>{if(draggingId&&!t){e.preventDefault();setDragOver({fecha:fs,hora:hr});}}}
@@ -2284,11 +2426,11 @@ export default function App() {
                   setDraggingId(null);setDragOver(null);
                 }}
                 style={{
-                  opacity:isPast&&!t?0.35:1,
-                  background:isDragTarget?"rgba(224,91,40,0.15)":t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPast?C.bg:isPico?"rgba(224,91,40,0.06)":C.bg),
+                  opacity:isPast&&!t?0.3:1,
+                  background:isDragTarget?"rgba(224,91,40,0.15)":t?(t.tipo==="abono"?"rgba(140,100,255,0.12)":t.tipo==="clase"?"rgba(90,160,240,0.12)":"rgba(224,91,40,0.12)"):(isPast?C.bg:isPico?"rgba(224,91,40,0.03)":C.bg),
                   display:"flex",alignItems:"center",justifyContent:"center",
                   cursor:draggingId?(t?"not-allowed":"copy"):"pointer",
-                  minHeight:cellMinH,transition:"background 0.1s",padding:isMobile?"0 1px":"0 2px",
+                  minHeight:cellMinH,transition:"background 0.1s",padding:isMobile?"0 1px":"0 4px",
                   position:"relative",
                   outline:isDragTarget?`2px dashed ${C.coral}`:"none",outlineOffset:-2,
                 }}>
@@ -2296,11 +2438,24 @@ export default function App() {
                   draggable
                   onDragStart={e=>{e.stopPropagation();setDraggingId(t.id);e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(t.id));}}
                   onDragEnd={()=>{setDraggingId(null);setDragOver(null);}}
-                  style={{fontSize:isMobile?9:11,fontWeight:600,color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2,cursor:"grab"}}>
-                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}
+                  style={{fontSize:isMobile?9:11,fontWeight:600,
+                    color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,
+                    background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,
+                    borderRadius:isMobile?4:8,
+                    padding:isMobile?"2px 4px":"4px 10px",
+                    maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                    lineHeight:1.3,cursor:"grab",
+                    border:`1px solid ${t.tipo==="abono"?C.purpleBd:t.tipo==="clase"?"rgba(90,160,240,0.3)":C.coralD}`}}>
+                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):labelDesktop}
                 </span>}
-                {t&&t._gen&&<span style={{fontSize:isMobile?9:11,fontWeight:600,color:C.purple,background:C.purpleBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>
-                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}
+                {t&&t._gen&&<span style={{fontSize:isMobile?9:11,fontWeight:600,
+                  color:C.purple,background:C.purpleBg,
+                  borderRadius:isMobile?4:8,
+                  padding:isMobile?"2px 4px":"4px 10px",
+                  maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                  lineHeight:1.3,
+                  border:`1px solid ${C.purpleBd}`}}>
+                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):labelDesktop}
                 </span>}
                 {isNowHr&&<div style={{position:"absolute",top:`${nowPct}%`,left:0,right:0,height:2,background:C.red,zIndex:3,pointerEvents:"none",borderRadius:1,boxShadow:"0 0 6px rgba(240,96,96,0.7)"}}/>}
               </div>;
@@ -2308,10 +2463,10 @@ export default function App() {
           </React.Fragment>)}
         </div>
       </div>
-      <div style={{display:"flex",gap:isMobile?10:12,marginTop:10,fontSize:isMobile?10.5:12,color:C.t3,flexWrap:"wrap"}}>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Ocasional</span>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Abonado</span>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Clase</span>
+      <div style={{display:"flex",gap:isMobile?10:14,marginTop:12,fontSize:isMobile?10.5:12,color:C.t3,flexWrap:"wrap"}}>
+        <span><span style={{width:10,height:10,borderRadius:3,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:5,verticalAlign:"middle"}}/>Ocasional</span>
+        <span><span style={{width:10,height:10,borderRadius:3,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:5,verticalAlign:"middle"}}/>Abonado</span>
+        <span><span style={{width:10,height:10,borderRadius:3,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:5,verticalAlign:"middle"}}/>Clase</span>
         {!isMobile&&<span>· Arrastrá un turno para reprogramarlo</span>}
       </div>
     </div>;
