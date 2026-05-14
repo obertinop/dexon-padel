@@ -416,6 +416,8 @@ const PortalCliente = () => {
   },[]);
 
   const horasArr = (() => {
+    const especial = diasBloqueados.find(d=>d.fecha===fecha&&d.tipo==='horario');
+    if(especial) return Array.from({length:especial.hora_fin-especial.hora_inicio},(_,i)=>especial.hora_inicio+i);
     try {
       if(cfg.horarios_por_dia) {
         const parsed = JSON.parse(cfg.horarios_por_dia);
@@ -1880,6 +1882,7 @@ export default function App() {
   const [cmdQ,setCmdQ] = useState("");
   const {getFeriado,feriados} = useFeriados();
   const [diasBloqueados,setDiasBloqueados] = useState([]);
+  const [dayConfigFecha,setDayConfigFecha] = useState(null);
   const [draggingId,setDraggingId] = useState(null);
   const [dragOver,setDragOver] = useState(null);
   useEffect(()=>{
@@ -2381,6 +2384,78 @@ export default function App() {
     </div>;
   };
 
+  const DiaConfigModal=()=>{
+    const diaActual = diasBloqueados.find(d=>d.fecha===dayConfigFecha);
+    const feriado = getFeriado(dayConfigFecha);
+    const [tipo,setTipo] = useState(diaActual?.tipo||"normal");
+    const [motivo,setMotivo] = useState(diaActual?.motivo||"");
+    const [hIni,setHIni] = useState(diaActual?.hora_inicio??cfg.hora_inicio);
+    const [hFin,setHFin] = useState(diaActual?.hora_fin??cfg.hora_fin);
+    const [saving,setSaving] = useState(false);
+    const hOptions = Array.from({length:24},(_,i)=>i);
+    const guardar = async()=>{
+      setSaving(true);
+      try{
+        if(tipo==="normal"){
+          if(diaActual) await api(`dias_bloqueados?id=eq.${diaActual.id}`,{method:"DELETE"},tk);
+        } else if(diaActual){
+          await api(`dias_bloqueados?id=eq.${diaActual.id}`,{method:"PATCH",body:JSON.stringify({tipo,motivo,hora_inicio:tipo==="horario"?Number(hIni):null,hora_fin:tipo==="horario"?Number(hFin):null}),prefer:"return=representation"},tk);
+        } else {
+          await api("dias_bloqueados",{method:"POST",body:JSON.stringify({fecha:dayConfigFecha,tipo,motivo,hora_inicio:tipo==="horario"?Number(hIni):null,hora_fin:tipo==="horario"?Number(hFin):null}),prefer:"return=representation"},tk);
+        }
+        await load(); setDayConfigFecha(null);
+      }catch(e){notify(e.message,"error");}
+      setSaving(false);
+    };
+    const label = dayConfigFecha ? fmtFechaLegible(dayConfigFecha) : "";
+    return <Modal show={!!dayConfigFecha} onClose={()=>setDayConfigFecha(null)} title={`Configurar — ${label}`} width={400}>
+      {feriado&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:20}}>🇵🇾</span>
+        <div>
+          <div style={{fontSize:13,fontWeight:600,color:C.yellow}}>{feriado.localName}</div>
+          <div style={{fontSize:11,color:C.t3,marginTop:2}}>Feriado nacional</div>
+        </div>
+      </div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        {[{v:"normal",label:"Normal",desc:"Horario habitual del día",icon:"✅"},
+          {v:"horario",label:"Horario especial",desc:"Definís apertura y cierre para este día",icon:"🕐"},
+          {v:"bloqueado",label:"Cancha cerrada",desc:"No se pueden hacer reservas",icon:"🔒"},
+        ].map(op=><button key={op.v} onClick={()=>setTipo(op.v)}
+          style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,
+            border:`2px solid ${tipo===op.v?C.coral:C.border}`,
+            background:tipo===op.v?"rgba(224,91,40,0.08)":"transparent",
+            cursor:"pointer",textAlign:"left",fontFamily:"var(--font-sans)"}}>
+          <span style={{fontSize:20,flexShrink:0}}>{op.icon}</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:tipo===op.v?C.coral:C.t1}}>{op.label}</div>
+            <div style={{fontSize:11,color:C.t3,marginTop:1}}>{op.desc}</div>
+          </div>
+        </button>)}
+      </div>
+      {tipo==="horario"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        <div>
+          <label style={lbl}>Apertura</label>
+          <select value={hIni} onChange={e=>setHIni(Number(e.target.value))} style={inp}>
+            {hOptions.map(h=><option key={h} value={h}>{h}:00</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={lbl}>Cierre</label>
+          <select value={hFin} onChange={e=>setHFin(Number(e.target.value))} style={inp}>
+            {hOptions.map(h=><option key={h} value={h}>{h}:00</option>)}
+          </select>
+        </div>
+      </div>}
+      {tipo==="bloqueado"&&<div style={{marginBottom:16}}>
+        <label style={lbl}>Motivo</label>
+        <input value={motivo} onChange={e=>setMotivo(e.target.value)} placeholder="Ej: Mantenimiento, lluvia..." style={inp}/>
+      </div>}
+      <button onClick={guardar} disabled={saving} style={{width:"100%",padding:"12px",background:C.coral,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:saving?"wait":"pointer",fontFamily:"var(--font-sans)"}}>
+        {saving?"Guardando...":"Guardar"}
+      </button>
+    </Modal>;
+  };
+
   const Agenda=()=>{
     const dias=getSemana();const h=hoy();const extra=turnosAbonados();const all=[...turnos,...extra];
     const timeCol=isMobile?30:52;
@@ -2423,12 +2498,16 @@ export default function App() {
           })}
         </div>
         {/* Título día seleccionado */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10,gap:8}}>
-          <div style={{fontSize:13,color:C.t2,fontWeight:600}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8}}>
+          <div style={{fontSize:13,color:C.t2,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
             {fsActual===h?"Hoy":`${DIAS_FULL[diaActual.getDay()]} ${diaActual.getDate()}`}
+            {getFeriado(fsActual)&&<span style={{fontSize:10,color:C.yellow}}>🇵🇾 Feriado</span>}
+            {diasBloqueados.find(b=>b.fecha===fsActual&&b.tipo==="bloqueado")&&<span style={{fontSize:10,color:C.red}}>🔒 Cerrado</span>}
+            {diasBloqueados.find(b=>b.fecha===fsActual&&b.tipo==="horario")&&<span style={{fontSize:10,color:C.green}}>🕐 Especial</span>}
           </div>
-          <div style={{fontSize:11,color:C.t3}}>
-            {all.filter(t=>t.fecha===fsActual&&t.estado!=="cancelado").length} de {horas.length}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:11,color:C.t3}}>{all.filter(t=>t.fecha===fsActual&&t.estado!=="cancelado").length} de {horas.length}</span>
+            <button onClick={()=>setDayConfigFecha(fsActual)} style={{background:C.bgElev,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 8px",cursor:"pointer",fontSize:12,color:C.t2,fontFamily:"var(--font-sans)"}}>⚙️</button>
           </div>
         </div>
         {/* Lista de horas vertical */}
@@ -2520,12 +2599,19 @@ export default function App() {
             const cnt=all.filter(t=>t.fecha===fs&&t.estado!=="cancelado").length;
             const feriado=getFeriado(fs);
             const bloqueado=diasBloqueados.find(b=>b.fecha===fs);
-            return <div key={i} style={{borderBottom:bCell,borderRight:i<6?bCell:"none",background:bloqueado?"rgba(240,96,96,0.04)":isH?"rgba(224,91,40,0.07)":feriado?"rgba(245,192,96,0.04)":C.bgCard,padding:"10px 6px",textAlign:"center",position:"relative"}}>
+            const especial=bloqueado?.tipo==="horario"?bloqueado:null;
+            return <div key={i} onClick={()=>setDayConfigFecha(fs)}
+              style={{borderBottom:bCell,borderRight:i<6?bCell:"none",
+                background:bloqueado?.tipo==="bloqueado"?"rgba(240,96,96,0.04)":especial?"rgba(52,212,144,0.04)":isH?"rgba(224,91,40,0.07)":feriado?"rgba(245,192,96,0.04)":C.bgCard,
+                padding:"10px 6px",textAlign:"center",position:"relative",cursor:"pointer",
+                transition:"background 0.15s"}}
+              title="Configurar este día">
               {isH&&<div style={{position:"absolute",top:5,right:5,fontSize:9,fontWeight:700,color:"#fff",background:C.coral,padding:"2px 5px",borderRadius:5}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
-              <div style={{fontSize:10,fontWeight:600,color:bloqueado?C.red:isH?C.coral:feriado?C.yellow:C.t3,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{DIAS[d.getDay()]}</div>
-              <div style={{fontSize:18,fontWeight:700,color:bloqueado?C.red:isH?C.coral:feriado?C.yellow:C.t1}}>{d.getDate()}</div>
-              {feriado&&!bloqueado&&<div style={{fontSize:8,color:C.yellow,fontWeight:600,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",padding:"0 4px"}}>🇵🇾 Feriado</div>}
-              {bloqueado&&<div style={{fontSize:8,color:C.red,fontWeight:600,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",padding:"0 4px"}}>🔒 Cerrado</div>}
+              <div style={{fontSize:10,fontWeight:600,color:bloqueado?.tipo==="bloqueado"?C.red:especial?C.green:isH?C.coral:feriado?C.yellow:C.t3,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{DIAS[d.getDay()]}</div>
+              <div style={{fontSize:18,fontWeight:700,color:bloqueado?.tipo==="bloqueado"?C.red:especial?C.green:isH?C.coral:feriado?C.yellow:C.t1}}>{d.getDate()}</div>
+              {feriado&&!bloqueado&&<div style={{fontSize:8,color:C.yellow,fontWeight:600,marginTop:2}}>🇵🇾 Feriado</div>}
+              {bloqueado?.tipo==="bloqueado"&&<div style={{fontSize:8,color:C.red,fontWeight:600,marginTop:2}}>🔒 Cerrado</div>}
+              {especial&&<div style={{fontSize:8,color:C.green,fontWeight:600,marginTop:2}}>🕐 {especial.hora_inicio}–{especial.hora_fin}h</div>}
               {!feriado&&!bloqueado&&(cnt>0
                 ?<div style={{marginTop:4}}>
                   <div style={{width:"50%",margin:"0 auto",height:3,borderRadius:2,background:C.bgElev,overflow:"hidden"}}>
@@ -2867,9 +2953,6 @@ export default function App() {
     </div>
     {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:600,marginBottom:12,fontSize:14,color:C.t1}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{fontWeight:600,color:C.t1}}>{i.nombre}</span><span style={{color:C.t2}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
     <div style={{...card,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:600,fontSize:14,color:C.t1}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div><span style={{fontWeight:600,color:C.t1}}>{p.nombre}</span><span style={{color:C.t2,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:600,color:C.t1}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
-
-    {/* ── DÍAS BLOQUEADOS ── */}
-    <DiasBloquedosPanel diasBloqueados={diasBloqueados} tk={tk} onReload={load}/>
 
     {/* ── CÓDIGOS DE REFERIDO ── */}
     <div style={card}>
@@ -3376,6 +3459,7 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
     <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
+    <DiaConfigModal/>
     <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.fechaLabel||dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
 
     {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
