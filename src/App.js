@@ -389,7 +389,7 @@ const PortalCliente = () => {
   const [abonoTurnos,setAbonoTurnos] = useState([]);
   const [diasBloqueados,setDiasBloqueados] = useState([]);
 
-  const isDiaBloqueado = f => diasBloqueados.find(d=>d.fecha===f)||null;
+  const isDiaBloqueado = f => diasBloqueados.find(d=>d.fecha===f&&d.tipo==='bloqueado')||null;
   const feriadoDates = feriados.map(f=>f.date);
   const blockedDates = diasBloqueados.map(d=>d.fecha);
 
