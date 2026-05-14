@@ -2482,17 +2482,18 @@ export default function App() {
             const fs=fmtD(d);const isSel=i===idxSafe;const isH=fs===h;
             const cnt=all.filter(t=>t.fecha===fs&&t.estado!=="cancelado").length;
             const feriado=getFeriado(fs);
-            const bloqueado=diasBloqueados.find(b=>b.fecha===fs);
+            const bloqueado=diasBloqueados.find(b=>b.fecha===fs&&b.tipo==='bloqueado');
+            const especial=diasBloqueados.find(b=>b.fecha===fs&&b.tipo==='horario');
             return<button key={i} onClick={()=>setAgendaDiaIdx(i)}
               style={{padding:"8px 2px",borderRadius:10,
-                background:isSel?C.coral:bloqueado?"rgba(240,96,96,0.12)":feriado?"rgba(245,192,96,0.08)":isH?"rgba(224,91,40,0.1)":C.bgElev,
-                border:`1px solid ${isSel?C.coral:bloqueado?C.redBd:feriado?C.yellowBd:isH?C.coralD:C.border}`,
-                color:isSel?"#fff":bloqueado?C.red:feriado?C.yellow:isH?C.coral:C.t1,
+                background:isSel?C.coral:bloqueado?"rgba(240,96,96,0.12)":especial?"rgba(52,212,144,0.08)":feriado?"rgba(245,192,96,0.08)":isH?"rgba(224,91,40,0.1)":C.bgElev,
+                border:`1px solid ${isSel?C.coral:bloqueado?C.redBd:especial?C.greenBd:feriado?C.yellowBd:isH?C.coralD:C.border}`,
+                color:isSel?"#fff":bloqueado?C.red:especial?C.green:feriado?C.yellow:isH?C.coral:C.t1,
                 cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",flexDirection:"column",alignItems:"center",gap:1,minWidth:0,transition:"all 0.15s"}}>
               <span style={{fontSize:9,fontWeight:500,opacity:0.85,letterSpacing:0.2}}>{DIAS[d.getDay()].slice(0,3).toUpperCase()}</span>
               <span style={{fontSize:15,fontWeight:700}}>{d.getDate()}</span>
-              <span style={{fontSize:8,fontWeight:600,marginTop:1,opacity:bloqueado||feriado||cnt>0?1:0}}>
-                {bloqueado?"🔒":feriado?"🇵🇾":cnt>0?`${cnt}t`:"·"}
+              <span style={{fontSize:8,fontWeight:600,marginTop:1,opacity:bloqueado||especial||feriado||cnt>0?1:0}}>
+                {bloqueado?"🔒":especial?"🕐":feriado?"🇵🇾":cnt>0?`${cnt}t`:"·"}
               </span>
             </button>;
           })}
