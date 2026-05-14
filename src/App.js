@@ -2580,6 +2580,7 @@ export default function App() {
           <div style={{fontSize:13,color:C.t3,marginTop:4}}>Vista semanal de turnos</div>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={()=>openM("horarios",{})} style={{height:38,padding:"0 14px",borderRadius:10,background:C.bgElev,border:bCell,color:C.t2,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"var(--font-sans)"}}>⏱ Horarios</button>
           <button onClick={()=>setSemOff(o=>o-1)} style={{width:38,height:38,borderRadius:10,background:C.bgElev,border:bCell,color:C.t1,cursor:"pointer",fontSize:18,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
           <button onClick={()=>setSemOff(0)} style={{height:38,padding:"0 18px",borderRadius:10,background:C.bgElev,border:bCell,color:C.t1,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"var(--font-sans)"}}>Hoy</button>
           <button onClick={()=>setSemOff(o=>o+1)} style={{width:38,height:38,borderRadius:10,background:C.bgElev,border:bCell,color:C.t1,cursor:"pointer",fontSize:18,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
@@ -2934,22 +2935,6 @@ export default function App() {
       {[{l:"Club",v:cfg.nombre_club},{l:"Tarifa base",v:gs(cfg.tarifa_base)},{l:"Tarifa pico",v:gs(cfg.tarifa_pico)},{l:"Horario pico",v:`${cfg.hora_pico_inicio}:00 - ${cfg.hora_pico_fin}:00`},{l:"Apertura",v:`${cfg.hora_inicio}:00`},{l:"Cierre",v:`${cfg.hora_fin}:00`}].map((r,i)=>
         <div key={i}><div style={{fontSize:12,color:C.t2,marginBottom:4}}>{r.l}</div><div style={{fontSize:15,fontWeight:600,color:C.t1}}>{r.v}</div></div>
       )}
-    </div>
-    <div style={{...card,marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontWeight:600,fontSize:14,color:C.t1}}>Horarios por día</div>
-        <Btn sm v="primary" onClick={()=>openM("horarios",{})}>Editar</Btn>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {DIAS_FULL.map((dia,i)=>{
-          const horarios=cfg.horarios_por_dia?(()=>{try{return JSON.parse(cfg.horarios_por_dia);}catch{return{};}})():{};
-          const h=horarios[i]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
-          return <div key={i} style={{padding:10,background:C.bg,borderRadius:8,borderLeft:`3px solid ${C.coral}`,fontSize:12}}>
-            <div style={{fontWeight:600,color:C.t1,marginBottom:4}}>{dia}</div>
-            <div style={{color:C.t2}}>{h.inicio}:00 - {h.fin}:00</div>
-          </div>;
-        })}
-      </div>
     </div>
     {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:600,marginBottom:12,fontSize:14,color:C.t1}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{fontWeight:600,color:C.t1}}>{i.nombre}</span><span style={{color:C.t2}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
     <div style={{...card,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:600,fontSize:14,color:C.t1}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div><span style={{fontWeight:600,color:C.t1}}>{p.nombre}</span><span style={{color:C.t2,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:600,color:C.t1}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
