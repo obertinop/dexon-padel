@@ -4,7 +4,9 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 const SUPA_URL = "https://wirsrkuxzltedqdkrdak.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpcnNya3V4emx0ZWRxZGtyZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjEzMjMsImV4cCI6MjA5MjYzNzMyM30.BjxD2R5bgBUHyalpwFhRzsGEzOnCx4PH9Sb65d609VI";
 const ADMIN_TEL = "595994952201";
-const LOGO = "/logo192.png";
+const LOGO = "/logo.svg";
+const LOGO_STYLE_DARK = { objectFit: "contain", filter: "brightness(0) invert(1)" };
+const LOGO_STYLE_LIGHT = { objectFit: "contain" };
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -232,7 +234,7 @@ const Login = ({onLogin}) => {
       <div style={{position:"fixed",inset:0,opacity:0.03,backgroundImage:"linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
       <div style={{width:400,padding:"44px 40px",background:"rgba(12,22,40,0.95)",backdropFilter:"blur(20px)",borderRadius:24,border:`1px solid ${C.borderL}`,boxShadow:"0 40px 100px rgba(0,0,0,0.6)",position:"relative",zIndex:1}}>
         <div style={{textAlign:"center",marginBottom:36}}>
-          <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:64,marginBottom:14,objectFit:"contain"}}/>
+          <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:80,marginBottom:14,...LOGO_STYLE_DARK}}/>
           <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",letterSpacing:3,textTransform:"uppercase",fontWeight:500}}>Panel de administracion</div>
         </div>
         {err&&<div style={{background:"rgba(224,91,40,0.12)",color:"#FF8060",border:"1px solid rgba(224,91,40,0.3)",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:18}}>{err}</div>}
@@ -495,7 +497,7 @@ const PortalCliente = () => {
         <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"14px 16px":"18px 20px",position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?36:44,objectFit:"contain"}}/>
+              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?40:52,...LOGO_STYLE_DARK}}/>
               <div>
                 <div style={{fontSize:isMobile?16:18,fontWeight:800,color:C.t1,letterSpacing:-0.3}}>{cfg.nombre_club}</div>
                 <div style={{fontSize:11,color:C.t3,marginTop:1}}>Tavapy · Alto Paraná</div>
@@ -956,7 +958,7 @@ function LandingPage({ onAdmin }) {
     <div style={st.page}>
       <nav style={st.nav}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <img src={LOGO} alt="DEXON" style={{height:36,objectFit:"contain"}} onError={e=>{e.target.style.display="none";}}/>
+          <img src={LOGO} alt="DEXON" style={{height:40,...LOGO_STYLE_DARK}} onError={e=>{e.target.style.display="none";}}/>
           <span style={{fontSize:18,fontWeight:800,color:C.t1,letterSpacing:1}}>DEXON PADEL</span>
         </div>
         {!isMobile&&(
@@ -2705,7 +2707,7 @@ export default function App() {
       paddingTop:isMobile?"env(safe-area-inset-top)":0
     }}>
       <div style={{padding:sidebarCol&&!isMobile?"18px 12px 14px":"18px 18px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,justifyContent:sidebarCol&&!isMobile?"center":"flex-start"}}>
-        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:36,objectFit:"contain"}}/>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:40,...LOGO_STYLE_DARK}}/>
         {!(sidebarCol&&!isMobile)&&<>
           <span style={{flex:1,fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
           {!isMobile&&<button onClick={()=>{setCmdOpen(true);setCmdQ("");}} title="Búsqueda rápida (⌘K)" style={{fontSize:10,color:C.t3,background:C.bgElev,border:`1px solid ${C.border}`,borderRadius:5,padding:"3px 7px",cursor:"pointer",fontFamily:"var(--font-sans)",flexShrink:0,transition:"color 0.15s"}}>⌘K</button>}
@@ -2736,7 +2738,7 @@ export default function App() {
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
           {(turnos.filter(x=>x.estado==="pendiente_pago").length+waNoLeidos)>0&&<span style={{position:"absolute",top:-3,right:-3,width:9,height:9,borderRadius:"50%",background:C.coral,border:`2px solid ${C.bgCard}`}}/>}
         </button>
-        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:28,objectFit:"contain",flexShrink:0}}/>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:32,flexShrink:0,...LOGO_STYLE_DARK}}/>
         <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:7,overflow:"hidden"}}>
           {tabActual?.ic==="wa"?<WhatsAppIcon size={15}/>:<span style={{fontSize:15,lineHeight:1,flexShrink:0}}>{tabActual?.ic}</span>}
           <span style={{fontSize:15,fontWeight:700,color:C.t1,letterSpacing:-0.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tabActual?.l}</span>
