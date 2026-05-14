@@ -494,10 +494,10 @@ const PortalCliente = () => {
       <div style={{background:`linear-gradient(180deg, #0A1830 0%, ${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:-60,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle, rgba(224,91,40,0.18) 0%, transparent 60%)",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"absolute",top:10,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle, rgba(52,212,144,0.10) 0%, transparent 70%)",pointerEvents:"none",zIndex:0}}/>
-        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"6px 16px":"8px 20px",position:"relative",zIndex:1}}>
+        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"6px 16px":"4px 20px",position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?72:92,...LOGO_STYLE_DARK}}/>
+              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?72:76,...LOGO_STYLE_DARK}}/>
             </div>
             <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer"
                style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.25)",borderRadius:10,textDecoration:"none",minHeight:40}}>
@@ -509,7 +509,7 @@ const PortalCliente = () => {
       </div>
 
       {/* CONTENIDO */}
-      <div style={{maxWidth:isMobile?500:1140,margin:"0 auto",padding:isMobile?"20px 14px 40px":"32px 32px 48px"}}>
+      <div style={{maxWidth:isMobile?500:1140,margin:"0 auto",padding:isMobile?"20px 14px 40px":"20px 32px 36px"}}>
        <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
 
         {/* PASO LISTA */}
@@ -636,23 +636,23 @@ const PortalCliente = () => {
           <div style={{display:"grid",gridTemplateColumns:"1fr 360px",gap:36,alignItems:"start"}}>
             {/* COLUMNA IZQUIERDA */}
             <div>
-              <h1 style={{fontSize:38,fontWeight:900,color:C.t1,margin:"0 0 8px",letterSpacing:-1.2,lineHeight:1.1}}>¿Cuándo querés jugar?</h1>
-              <p style={{fontSize:15,color:C.t2,margin:"0 0 28px",lineHeight:1.5}}>Elegí día y horarios disponibles. Podés reservar hasta 4 horas seguidas.</p>
+              <h1 style={{fontSize:28,fontWeight:900,color:C.t1,margin:"0 0 6px",letterSpacing:-0.8,lineHeight:1.1}}>¿Cuándo querés jugar?</h1>
+              <p style={{fontSize:13,color:C.t2,margin:"0 0 16px",lineHeight:1.5}}>Elegí día y horarios disponibles. Podés reservar hasta 4 horas seguidas.</p>
               {/* Pills de fecha */}
-              <div style={{display:"flex",gap:10,marginBottom:28,overflowX:"auto",paddingBottom:4}}>
+              <div style={{display:"flex",gap:8,marginBottom:18,overflowX:"auto",paddingBottom:4}}>
                 {Array.from({length:14},(_,i)=>{
                   const d=new Date(); d.setDate(d.getDate()+i);
                   const ds=d.toISOString().slice(0,10);
                   const sel=ds===fecha;
                   return(
                     <button key={ds} onClick={()=>{setFecha(ds);setSlotsSel([]);}}
-                      style={{flexShrink:0,minWidth:72,padding:"14px 10px",borderRadius:16,
+                      style={{flexShrink:0,minWidth:60,padding:"10px 8px",borderRadius:12,
                         border:`2px solid ${sel?C.coral:C.border}`,
                         background:sel?C.coral:"transparent",
                         cursor:"pointer",fontFamily:"var(--font-sans)",textAlign:"center",
                         transition:"all 0.15s"}}>
-                      <div style={{fontSize:10,color:sel?"rgba(255,255,255,0.75)":C.t3,fontWeight:700,letterSpacing:1,marginBottom:6}}>{i===0?"HOY":DIAS[d.getDay()].toUpperCase()}</div>
-                      <div style={{fontSize:26,fontWeight:800,color:sel?"#fff":C.t1}}>{d.getDate()}</div>
+                      <div style={{fontSize:9,color:sel?"rgba(255,255,255,0.75)":C.t3,fontWeight:700,letterSpacing:1,marginBottom:4}}>{i===0?"HOY":DIAS[d.getDay()].toUpperCase()}</div>
+                      <div style={{fontSize:20,fontWeight:800,color:sel?"#fff":C.t1}}>{d.getDate()}</div>
                     </button>
                   );
                 })}
@@ -666,7 +666,7 @@ const PortalCliente = () => {
                 </div>
               </div>}
               {/* Header de slots */}
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                 <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:1.5}}>
                   Horarios disponibles{fecha?` · ${DIAS[diaFecha]?.toUpperCase()} ${new Date(fecha+"T00:00:00").getDate()}`:""}
                 </div>
@@ -677,7 +677,7 @@ const PortalCliente = () => {
               </div>
               {/* Grid 4 columnas */}
               {libres.length===0&&<div style={{padding:"48px 0",textAlign:"center",color:C.t3,fontSize:14}}>Sin horarios disponibles para este día.</div>}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
                 {horasArr.map(h=>{
                   const occ=!!(ocupado(h)||pasado(h));
                   const sel=slotsSel.includes(h);
@@ -687,7 +687,7 @@ const PortalCliente = () => {
                   const precioOriginal=precioH(h);
                   return(
                     <div key={h} onClick={()=>!occ&&toggleSlot(h)}
-                      style={{padding:"18px 14px",borderRadius:16,
+                      style={{padding:"12px 10px",borderRadius:12,
                         border:`2px solid ${sel?C.coral:occ?"rgba(255,255,255,0.06)":isPico?C.coralAlpha:C.border}`,
                         background:sel?`linear-gradient(135deg,${C.coral},${C.coralD})`:occ?C.bgElev:isPico?"rgba(224,91,40,0.04)":"rgba(255,255,255,0.02)",
                         cursor:occ?"default":"pointer",
@@ -699,7 +699,7 @@ const PortalCliente = () => {
                       {sel&&<span style={{position:"absolute",top:10,right:12,display:"flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",background:"rgba(255,255,255,0.25)"}}>
                         <svg width="10" height="8" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </span>}
-                      <div style={{fontSize:20,fontWeight:800,color:sel?"#fff":occ?C.t3:C.t1,marginBottom:6,lineHeight:1}}>{h}:00</div>
+                      <div style={{fontSize:16,fontWeight:800,color:sel?"#fff":occ?C.t3:C.t1,marginBottom:4,lineHeight:1}}>{h}:00</div>
                       {occ
                         ?<div style={{fontSize:12,color:C.t3}}>Reservado</div>
                         :<>
@@ -719,31 +719,31 @@ const PortalCliente = () => {
               </div>
             </div>
             {/* COLUMNA DERECHA — Sticky */}
-            <div style={{position:"sticky",top:28}}>
-              <div style={{background:C.bgCard,borderRadius:22,border:`1px solid ${C.border}`,padding:"28px 24px",boxShadow:"0 12px 48px rgba(0,0,0,0.35)"}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:2,marginBottom:22}}>Tu reserva</div>
+            <div style={{position:"sticky",top:20}}>
+              <div style={{background:C.bgCard,borderRadius:18,border:`1px solid ${C.border}`,padding:"20px 20px",boxShadow:"0 12px 48px rgba(0,0,0,0.35)"}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>Tu reserva</div>
                 {slotsSel.length>0?(
                   <>
-                    <div style={{fontSize:24,fontWeight:800,color:C.t1,marginBottom:6}}>{fmtFechaLegible(fecha)}</div>
-                    <div style={{fontSize:17,fontWeight:700,color:C.coral,marginBottom:24}}>
+                    <div style={{fontSize:20,fontWeight:800,color:C.t1,marginBottom:4}}>{fmtFechaLegible(fecha)}</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.coral,marginBottom:16}}>
                       {Math.min(...slotsSel)}:00 — {Math.max(...slotsSel)+1}:00
                     </div>
-                    <div style={{borderTop:`1px solid ${C.border}`,paddingTop:18,marginBottom:18,display:"flex",flexDirection:"column",gap:10}}>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.t2}}>
+                    <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12,marginBottom:12,display:"flex",flexDirection:"column",gap:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.t2}}>
                         <span>{slotsSel.length} horario{slotsSel.length>1?"s":""}</span>
                         <span>{gs(subtotalSinDesc)}</span>
                       </div>
-                      {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.yellow}}>
+                      {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow}}>
                         <span>Descuento {DIAS[diaFecha]?.toLowerCase()}</span>
                         <span>— {gs(ahorroDia)}</span>
                       </div>}
                     </div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,paddingTop:4,borderTop:`1px solid ${C.border}`}}>
-                      <span style={{fontSize:15,fontWeight:700,color:C.t1}}>Total</span>
-                      <span style={{fontSize:26,fontWeight:900,color:C.coral}}>{gs(totalSel)}</span>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,paddingTop:4,borderTop:`1px solid ${C.border}`}}>
+                      <span style={{fontSize:14,fontWeight:700,color:C.t1}}>Total</span>
+                      <span style={{fontSize:22,fontWeight:900,color:C.coral}}>{gs(totalSel)}</span>
                     </div>
                     <button onClick={()=>setPaso("datos")}
-                      style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)",marginBottom:14,transition:"opacity 0.15s"}}>
+                      style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)",marginBottom:12,transition:"opacity 0.15s"}}>
                       Continuar →
                     </button>
                     <div style={{textAlign:"center",fontSize:11,color:C.t3,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
@@ -752,9 +752,9 @@ const PortalCliente = () => {
                     </div>
                   </>
                 ):(
-                  <div style={{textAlign:"center",padding:"36px 0",color:C.t3}}>
-                    <div style={{fontSize:40,marginBottom:14}}>📅</div>
-                    <div style={{fontSize:15,fontWeight:600,color:C.t2,marginBottom:6}}>Seleccioná un horario</div>
+                  <div style={{textAlign:"center",padding:"24px 0",color:C.t3}}>
+                    <div style={{fontSize:36,marginBottom:10}}>📅</div>
+                    <div style={{fontSize:14,fontWeight:600,color:C.t2,marginBottom:4}}>Seleccioná un horario</div>
                     <div style={{fontSize:12,lineHeight:1.5}}>Podés elegir hasta<br/>4 horas seguidas</div>
                   </div>
                 )}
