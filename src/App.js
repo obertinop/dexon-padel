@@ -1773,6 +1773,11 @@ export default function App() {
   const [cmdQ,setCmdQ] = useState("");
   const [draggingId,setDraggingId] = useState(null);
   const [dragOver,setDragOver] = useState(null);
+  useEffect(()=>{
+    const clear=()=>{setDraggingId(null);setDragOver(null);};
+    document.addEventListener("dragend",clear);
+    return()=>document.removeEventListener("dragend",clear);
+  },[]);
   const [nowTime,setNowTime] = useState(()=>new Date());
   const [agendaDiaIdx,setAgendaDiaIdx] = useState(()=>((new Date().getDay()+6)%7));
   const [sidebarCol,setSidebarCol] = useState(()=>localStorage.getItem("dx_sidebarCol")==="1");
