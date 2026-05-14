@@ -1790,6 +1790,39 @@ const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMo
   </>;
 };
 
+// ── REENVIAR CONFIRMACIÓN ──
+const ReenviarConfirmacionBtn = ({turno, cliente, notify}) => {
+  const [sent,setSent] = useState(false);
+  const [loading,setLoading] = useState(false);
+  const enviar = async () => {
+    setLoading(true);
+    try {
+      await fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({tipo:"confirmacion_manual",nombre:cliente.nombre,telefono:cliente.telefono,
+          fecha:fmtFechaLegible(turno.fecha),horarios:`${turno.hora}:00hs`,
+          monto:gs(turno.precio),forma_pago:turno.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})});
+      setSent(true);
+      if(notify) notify("Confirmación enviada por WhatsApp","ok");
+      setTimeout(()=>setSent(false),4000);
+    } catch(e) {
+      if(notify) notify("No se pudo enviar","error");
+    }
+    setLoading(false);
+  };
+  return (
+    <button onClick={enviar} disabled={loading||sent}
+      style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${sent?"rgba(52,212,144,0.4)":C.greenBd}`,
+        background:sent?"rgba(52,212,144,0.08)":"transparent",
+        color:sent?C.green:C.t2,fontSize:13,fontWeight:600,cursor:loading||sent?"default":"pointer",
+        fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+        transition:"all 0.2s"}}>
+      {loading?"Enviando..."
+        :sent?<>✓ Confirmación enviada</>
+        :<><WhatsAppIcon size={14} color={C.t2}/>Reenviar confirmación</>}
+    </button>
+  );
+};
+
 // ── DÍAS BLOQUEADOS PANEL ──
 const DiasBloquedosPanel = ({diasBloqueados, tk, onReload}) => {
   const [fecha,setFecha] = useState("");
@@ -3204,10 +3237,11 @@ export default function App() {
       </div>}
       {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
         <Btn v="success" onClick={()=>{closeM();setDlg({type:"confirmar",t:form});}}>✓ Cobrar y confirmar {gs(form.precio-(form.sena||0))}</Btn>
+        {form.cliente?.telefono&&<ReenviarConfirmacionBtn turno={form} cliente={form.cliente} notify={notify}/>}
         <Btn v="ghost" onClick={()=>{closeM();setDlg({type:"noshow",t:form});}}>Marcar como no show</Btn>
         <Btn v="danger" onClick={()=>{closeM();setDlg({type:"cancelar",t:form});}}>Cancelar turno</Btn>
       </div>}
-      {form.estado==="confirmado"&&form.cliente?.telefono&&<Btn v="success" onClick={()=>enviarWsp(form.cliente.telefono,`¡Hola ${form.cliente.nombre}! Tu turno en ${cfg.nombre_club} del ${form.fecha} a las ${form.hora}:00hs fue confirmado. ¡Gracias!`)}>Enviar WhatsApp</Btn>}
+      {form.estado==="confirmado"&&form.cliente?.telefono&&<ReenviarConfirmacionBtn turno={form} cliente={form.cliente} notify={notify}/>}
 
       {/* ── Productos vendidos en el turno ── */}
       {form.id&&(()=>{
