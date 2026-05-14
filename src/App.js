@@ -51,6 +51,19 @@ const useIsMobile = () => {
   return isMobile;
 };
 
+const useFeriados = () => {
+  const [feriados, setFeriados] = useState([]);
+  useEffect(() => {
+    const yr = new Date().getFullYear();
+    Promise.all([
+      fetch(`https://date.nager.at/api/v3/PublicHolidays/${yr}/PY`).then(r=>r.json()).catch(()=>[]),
+      fetch(`https://date.nager.at/api/v3/PublicHolidays/${yr+1}/PY`).then(r=>r.json()).catch(()=>[]),
+    ]).then(([a,b])=>setFeriados([...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])])).catch(()=>{});
+  },[]);
+  const getFeriado = fechaStr => feriados.find(f=>f.date===fechaStr)||null;
+  return {feriados, getFeriado};
+};
+
 // ── AUTH ──
 const auth = {
   login: async (email, pw) => {
@@ -296,13 +309,13 @@ const SelectorFecha = ({value, onChange, min}) => {
 };
 
 // ── CALENDARIO MINI ──
-const CalendarioMini = ({value, onChange, min}) => {
+const CalendarioMini = ({value, onChange, min, blockedDates=[], feriadoDates=[]}) => {
   const minStr = min || new Date().toISOString().slice(0,10);
   const initDate = value ? new Date(value+"T00:00:00") : new Date();
   const [mes, setMes] = useState(()=>new Date(initDate.getFullYear(), initDate.getMonth(), 1));
   const y=mes.getFullYear(), m=mes.getMonth();
-  const firstWd=new Date(y,m,1).getDay(); // 0=Sun
-  const offset=(firstWd===0?6:firstWd-1); // Monday-first offset
+  const firstWd=new Date(y,m,1).getDay();
+  const offset=(firstWd===0?6:firstWd-1);
   const dim=new Date(y,m+1,0).getDate();
   const cells=[...Array(offset).fill(null),...Array.from({length:dim},(_,i)=>i+1)];
   while(cells.length%7!==0) cells.push(null);
@@ -324,15 +337,30 @@ const CalendarioMini = ({value, onChange, min}) => {
         {cells.map((day,i)=>{
           if(!day) return <div key={i}/>;
           const ds=fmtCell(day);
-          const disabled=ds<minStr;
+          const isBlocked=blockedDates.includes(ds);
+          const isFeriado=feriadoDates.includes(ds);
+          const disabled=ds<minStr||isBlocked;
           const selected=ds===value;
           const isToday=ds===todayStr;
           return <button key={i} disabled={disabled} onClick={()=>!disabled&&onChange(ds)}
-            style={{padding:"7px 2px",borderRadius:8,border:`1px solid ${selected?C.coral:isToday?C.coralD:"transparent"}`,background:selected?C.coral:isToday?"rgba(224,91,40,0.1)":"transparent",color:disabled?C.t3:selected?"#fff":C.t1,fontSize:13,fontWeight:selected?700:isToday?600:400,cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.25:1,fontFamily:"var(--font-sans)",textAlign:"center",transition:"all 0.1s"}}>
+            title={isBlocked?"Cancha cerrada":isFeriado?"Feriado nacional":""}
+            style={{padding:"7px 2px",borderRadius:8,position:"relative",
+              border:`1px solid ${selected?C.coral:isToday?C.coralD:isFeriado?"rgba(245,192,96,0.4)":"transparent"}`,
+              background:selected?C.coral:isBlocked?C.redBg:isToday?"rgba(224,91,40,0.1)":"transparent",
+              color:disabled?C.t3:selected?"#fff":isFeriado?C.yellow:C.t1,
+              fontSize:13,fontWeight:selected?700:isToday?600:400,
+              cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.4:1,
+              fontFamily:"var(--font-sans)",textAlign:"center",transition:"all 0.1s"}}>
             {day}
+            {isFeriado&&!isBlocked&&<span style={{position:"absolute",bottom:1,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:C.yellow,display:"block"}}/>}
+            {isBlocked&&<span style={{position:"absolute",bottom:1,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:C.red,display:"block"}}/>}
           </button>;
         })}
       </div>
+      {(blockedDates.length>0||feriadoDates.length>0)&&<div style={{display:"flex",gap:12,marginTop:10,fontSize:10,color:C.t3}}>
+        {feriadoDates.length>0&&<span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.yellow,display:"inline-block"}}/>Feriado</span>}
+        {blockedDates.length>0&&<span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.red,display:"inline-block"}}/>Cerrado</span>}
+      </div>}
     </div>
   );
 };
@@ -340,6 +368,7 @@ const CalendarioMini = ({value, onChange, min}) => {
 // ── PORTAL CLIENTE ──
 const PortalCliente = () => {
   const isMobile = useIsMobile();
+  const {getFeriado, feriados} = useFeriados();
   const [cfg,setCfg] = useState({nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22});
   const [turnos,setTurnos] = useState([]);
   const [clientes,setClientes] = useState([]);
@@ -358,16 +387,22 @@ const PortalCliente = () => {
   const [clienteEncontrado,setClienteEncontrado] = useState(null);
   const [codigosRef,setCodigosRef] = useState([]);
   const [abonoTurnos,setAbonoTurnos] = useState([]);
+  const [diasBloqueados,setDiasBloqueados] = useState([]);
+
+  const isDiaBloqueado = f => diasBloqueados.find(d=>d.fecha===f)||null;
+  const feriadoDates = feriados.map(f=>f.date);
+  const blockedDates = diasBloqueados.map(d=>d.fecha);
 
   useEffect(()=>{
     const load = async () => {
       try {
-        const [cf,tu,cl,cr,at] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true"),db.get("abono_turnos","select=dia,hora")]);
+        const [cf,tu,cl,cr,at,db2] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true"),db.get("abono_turnos","select=dia,hora"),db.get("dias_bloqueados","order=fecha.asc")]);
         if(cf?.[0]) setCfg(cf[0]);
         setTurnos(tu||[]);
         setClientes(cl||[]);
         setCodigosRef(cr||[]);
         setAbonoTurnos(at||[]);
+        setDiasBloqueados(db2||[]);
       } catch(e){console.error(e);}
       setLoading(false);
     };
@@ -518,8 +553,22 @@ const PortalCliente = () => {
           <>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.6}}>Día de juego</div>
-            <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
+            <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()} blockedDates={blockedDates} feriadoDates={feriadoDates}/>
           </div>
+          {isDiaBloqueado(fecha)&&<div style={{background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28,flexShrink:0}}>🔒</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:C.red}}>Cancha cerrada</div>
+              <div style={{fontSize:12,color:"#E8A8A8",marginTop:2,lineHeight:1.4}}>{isDiaBloqueado(fecha).motivo||"No disponible este día."}</div>
+            </div>
+          </div>}
+          {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28,flexShrink:0}}>🇵🇾</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Feriado nacional — {getFeriado(fecha).localName}</div>
+              <div style={{fontSize:12,color:"#E8C898",marginTop:2,lineHeight:1.4}}>El horario puede estar extendido. Consultá disponibilidad.</div>
+            </div>
+          </div>}
           {climaFecha&&<div style={{...card,marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
             <div style={{fontSize:36,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
             <div style={{flex:1}}>
@@ -657,8 +706,22 @@ const PortalCliente = () => {
                   );
                 })}
               </div>
-              {/* Banner descuento */}
-              {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+              {/* Banners feriado / bloqueado / descuento */}
+              {isDiaBloqueado(fecha)&&<div style={{background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:22}}>🔒</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.red}}>Cancha cerrada</div>
+                  <div style={{fontSize:12,color:"#E8A8A8",marginTop:2}}>{isDiaBloqueado(fecha).motivo||"No disponible este día."}</div>
+                </div>
+              </div>}
+              {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:22}}>🇵🇾</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Feriado nacional — {getFeriado(fecha).localName}</div>
+                  <div style={{fontSize:12,color:"#E8C898",marginTop:2}}>El horario puede estar extendido. Consultá disponibilidad.</div>
+                </div>
+              </div>}
+              {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
                 <div style={{fontSize:24}}>🎉</div>
                 <div>
                   <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Día de descuento — {descPct}% off</div>
@@ -1725,6 +1788,50 @@ const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMo
   </>;
 };
 
+// ── DÍAS BLOQUEADOS PANEL ──
+const DiasBloquedosPanel = ({diasBloqueados, tk, onReload}) => {
+  const [fecha,setFecha] = useState("");
+  const [motivo,setMotivo] = useState("");
+  const [saving,setSaving] = useState(false);
+  const agregar = async () => {
+    if(!fecha) return;
+    setSaving(true);
+    try {
+      await api("dias_bloqueados",{method:"POST",body:JSON.stringify({fecha,motivo}),prefer:"return=representation"},tk);
+      setFecha(""); setMotivo(""); await onReload();
+    } catch(e){}
+    setSaving(false);
+  };
+  const eliminar = async (id) => {
+    try { await api(`dias_bloqueados?id=eq.${id}`,{method:"DELETE"},tk); await onReload(); } catch(e){}
+  };
+  return <div style={{...card,marginBottom:12}}>
+    <div style={{fontWeight:600,fontSize:14,color:C.t1,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+      🔒 Días bloqueados
+      <span style={{fontSize:11,color:C.t3,fontWeight:400}}>Mantenimiento, lluvia, feriado especial</span>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={{...inp,width:"auto",flex:"0 0 160px"}}/>
+      <input placeholder="Motivo (ej: Mantenimiento)" value={motivo} onChange={e=>setMotivo(e.target.value)} style={{...inp,flex:1,minWidth:160}} onKeyDown={e=>e.key==="Enter"&&agregar()}/>
+      <button onClick={agregar} disabled={saving||!fecha} style={{padding:"8px 16px",background:C.coral,color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:saving||!fecha?"not-allowed":"pointer",opacity:saving||!fecha?0.5:1,fontFamily:"var(--font-sans)"}}>
+        {saving?"...":"Bloquear"}
+      </button>
+    </div>
+    {diasBloqueados.length===0
+      ?<div style={{fontSize:12,color:C.t3,textAlign:"center",padding:"12px 0"}}>Sin días bloqueados</div>
+      :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {diasBloqueados.map(d=><div key={d.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:8}}>
+          <div>
+            <span style={{fontSize:13,fontWeight:600,color:C.red}}>{d.fecha}</span>
+            {d.motivo&&<span style={{fontSize:12,color:C.t2,marginLeft:8}}>{d.motivo}</span>}
+          </div>
+          <button onClick={()=>eliminar(d.id)} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:18,lineHeight:1,padding:"0 4px",fontFamily:"var(--font-sans)"}}>×</button>
+        </div>)}
+      </div>
+    }
+  </div>;
+};
+
 // ── APP PRINCIPAL ──
 export default function App() {
   const isMobile = useIsMobile();
@@ -1771,6 +1878,8 @@ export default function App() {
   const [pendFiltro,setPendFiltro] = useState("todos");
   const [cmdOpen,setCmdOpen] = useState(false);
   const [cmdQ,setCmdQ] = useState("");
+  const {getFeriado,feriados} = useFeriados();
+  const [diasBloqueados,setDiasBloqueados] = useState([]);
   const [draggingId,setDraggingId] = useState(null);
   const [dragOver,setDragOver] = useState(null);
   useEffect(()=>{
@@ -1792,7 +1901,7 @@ export default function App() {
     if(!tk) return;
     setIsRefreshing(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,es,cf,at,cr,ti] = await Promise.all([
+      const [tu,cl,ab,pl,ins,ca,st,es,cf,at,cr,ti,db2] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc",tk),
         db.get("clientes","order=nombre.asc",tk),
         db.get("abonos","order=fecha_vencimiento.asc",tk),
@@ -1805,8 +1914,10 @@ export default function App() {
         db.get("abono_turnos","order=abono_id.asc",tk),
         db.get("codigos_referido","order=created_at.desc",tk),
         db.get("turno_items","order=created_at.asc",tk),
+        db.get("dias_bloqueados","order=fecha.asc",tk),
       ]);
       setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],cfg:cf?.[0]||prev.cfg}));
+      setDiasBloqueados(db2||[]);
     } catch(e){console.error(e);}
     setIsRefreshing(false);
   },[tk]);
@@ -2295,11 +2406,19 @@ export default function App() {
           {dias.map((d,i)=>{
             const fs=fmtD(d);const isSel=i===idxSafe;const isH=fs===h;
             const cnt=all.filter(t=>t.fecha===fs&&t.estado!=="cancelado").length;
+            const feriado=getFeriado(fs);
+            const bloqueado=diasBloqueados.find(b=>b.fecha===fs);
             return<button key={i} onClick={()=>setAgendaDiaIdx(i)}
-              style={{padding:"8px 2px",borderRadius:10,background:isSel?C.coral:isH?"rgba(224,91,40,0.1)":C.bgElev,border:`1px solid ${isSel?C.coral:isH?C.coralD:C.border}`,color:isSel?"#fff":isH?C.coral:C.t1,cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",flexDirection:"column",alignItems:"center",gap:1,minWidth:0,transition:"all 0.15s"}}>
+              style={{padding:"8px 2px",borderRadius:10,
+                background:isSel?C.coral:bloqueado?"rgba(240,96,96,0.12)":feriado?"rgba(245,192,96,0.08)":isH?"rgba(224,91,40,0.1)":C.bgElev,
+                border:`1px solid ${isSel?C.coral:bloqueado?C.redBd:feriado?C.yellowBd:isH?C.coralD:C.border}`,
+                color:isSel?"#fff":bloqueado?C.red:feriado?C.yellow:isH?C.coral:C.t1,
+                cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",flexDirection:"column",alignItems:"center",gap:1,minWidth:0,transition:"all 0.15s"}}>
               <span style={{fontSize:9,fontWeight:500,opacity:0.85,letterSpacing:0.2}}>{DIAS[d.getDay()].slice(0,3).toUpperCase()}</span>
               <span style={{fontSize:15,fontWeight:700}}>{d.getDate()}</span>
-              <span style={{fontSize:8,fontWeight:600,opacity:cnt>0?0.9:0,marginTop:1}}>{cnt>0?`${cnt}t`:"·"}</span>
+              <span style={{fontSize:8,fontWeight:600,marginTop:1,opacity:bloqueado||feriado||cnt>0?1:0}}>
+                {bloqueado?"🔒":feriado?"🇵🇾":cnt>0?`${cnt}t`:"·"}
+              </span>
             </button>;
           })}
         </div>
@@ -2396,20 +2515,25 @@ export default function App() {
         <div style={{display:"grid",gridTemplateColumns:"52px repeat(7,1fr)"}}>
           <div style={{borderBottom:bCell,borderRight:bCell,background:C.bgCard}}/>
           {dias.map((d,i)=>{
-            const isH=fmtD(d)===h;
-            const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;
-            return <div key={i} style={{borderBottom:bCell,borderRight:i<6?bCell:"none",background:isH?"rgba(224,91,40,0.07)":C.bgCard,padding:"12px 6px",textAlign:"center",position:"relative"}}>
-              {isH&&<div style={{position:"absolute",top:6,right:6,fontSize:9,fontWeight:700,color:"#fff",background:C.coral,padding:"2px 6px",borderRadius:6}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
-              <div style={{fontSize:10,fontWeight:600,color:isH?C.coral:C.t3,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{DIAS[d.getDay()]}</div>
-              <div style={{fontSize:18,fontWeight:700,color:isH?C.coral:C.t1}}>{d.getDate()}</div>
-              {cnt>0
+            const fs=fmtD(d);
+            const isH=fs===h;
+            const cnt=all.filter(t=>t.fecha===fs&&t.estado!=="cancelado").length;
+            const feriado=getFeriado(fs);
+            const bloqueado=diasBloqueados.find(b=>b.fecha===fs);
+            return <div key={i} style={{borderBottom:bCell,borderRight:i<6?bCell:"none",background:bloqueado?"rgba(240,96,96,0.04)":isH?"rgba(224,91,40,0.07)":feriado?"rgba(245,192,96,0.04)":C.bgCard,padding:"10px 6px",textAlign:"center",position:"relative"}}>
+              {isH&&<div style={{position:"absolute",top:5,right:5,fontSize:9,fontWeight:700,color:"#fff",background:C.coral,padding:"2px 5px",borderRadius:5}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
+              <div style={{fontSize:10,fontWeight:600,color:bloqueado?C.red:isH?C.coral:feriado?C.yellow:C.t3,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{DIAS[d.getDay()]}</div>
+              <div style={{fontSize:18,fontWeight:700,color:bloqueado?C.red:isH?C.coral:feriado?C.yellow:C.t1}}>{d.getDate()}</div>
+              {feriado&&!bloqueado&&<div style={{fontSize:8,color:C.yellow,fontWeight:600,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",padding:"0 4px"}}>🇵🇾 Feriado</div>}
+              {bloqueado&&<div style={{fontSize:8,color:C.red,fontWeight:600,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",padding:"0 4px"}}>🔒 Cerrado</div>}
+              {!feriado&&!bloqueado&&(cnt>0
                 ?<div style={{marginTop:4}}>
                   <div style={{width:"50%",margin:"0 auto",height:3,borderRadius:2,background:C.bgElev,overflow:"hidden"}}>
                     <div style={{height:"100%",width:`${Math.min(100,Math.round(cnt/horas.length*100))}%`,background:cnt/horas.length>0.7?C.red:cnt/horas.length>0.4?C.yellow:C.green}}/>
                   </div>
                 </div>
                 :<div style={{marginTop:4,height:7}}/>
-              }
+              )}
             </div>;
           })}
         </div>
@@ -2743,6 +2867,9 @@ export default function App() {
     </div>
     {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:600,marginBottom:12,fontSize:14,color:C.t1}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{fontWeight:600,color:C.t1}}>{i.nombre}</span><span style={{color:C.t2}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
     <div style={{...card,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:600,fontSize:14,color:C.t1}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div><span style={{fontWeight:600,color:C.t1}}>{p.nombre}</span><span style={{color:C.t2,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:600,color:C.t1}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
+
+    {/* ── DÍAS BLOQUEADOS ── */}
+    <DiasBloquedosPanel diasBloqueados={diasBloqueados} tk={tk} onReload={load}/>
 
     {/* ── CÓDIGOS DE REFERIDO ── */}
     <div style={card}>
