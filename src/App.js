@@ -1657,6 +1657,10 @@ export default function App() {
   const [agendaDiaIdx,setAgendaDiaIdx] = useState(()=>((new Date().getDay()+6)%7));
   const [sidebarCol,setSidebarCol] = useState(()=>localStorage.getItem("dx_sidebarCol")==="1");
   useEffect(()=>{localStorage.setItem("dx_sidebarCol",sidebarCol?"1":"0");},[sidebarCol]);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+  const [iosBannerDismissed,setIosBannerDismissed] = useState(()=>!!localStorage.getItem("dx_ios_banner_dismissed"));
+  const showIosBanner = isIOS && !isStandalone && !iosBannerDismissed;
   const tk = session?.token;
 
   const load = useCallback(async()=>{
@@ -2681,6 +2685,14 @@ export default function App() {
 
   return <div style={{fontFamily:"var(--font-sans)",background:C.bg,minHeight:"100vh",...(isMobile?{paddingTop:"calc(56px + env(safe-area-inset-top))"}:{display:"flex",alignItems:"stretch"})}}>
     <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
+    {showIosBanner&&<div style={{position:"fixed",bottom:`calc(env(safe-area-inset-bottom) + 80px)`,left:12,right:12,zIndex:9999,background:"#1C2B4A",border:`1px solid ${C.borderL}`,borderRadius:16,padding:"14px 16px",boxShadow:"0 8px 32px rgba(0,0,0,0.5)",display:"flex",gap:12,alignItems:"flex-start"}}>
+      <div style={{fontSize:28,lineHeight:1}}>📲</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.t1,marginBottom:3}}>Instalá DEXON en tu iPhone</div>
+        <div style={{fontSize:12,color:C.t2,lineHeight:1.5}}>Tocá <strong style={{color:C.t1}}>Compartir</strong> <span style={{fontSize:14}}>⎙</span> y luego <strong style={{color:C.t1}}>Agregar a inicio</strong> para acceso rápido sin browser.</div>
+      </div>
+      <button onClick={()=>{localStorage.setItem("dx_ios_banner_dismissed","1");setIosBannerDismissed(true);}} style={{background:"none",border:"none",color:C.t3,fontSize:18,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>✕</button>
+    </div>}
     {isMobile&&navOpen&&<div onClick={()=>setNavOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:1500,backdropFilter:"blur(2px)",animation:"fadeIn 0.18s ease-out"}}/>}
     <aside style={{
       width:isMobile?276:(sidebarCol?68:224),
