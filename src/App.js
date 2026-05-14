@@ -391,7 +391,7 @@ const PortalCliente = () => {
 
   const isDiaBloqueado = f => diasBloqueados.find(d=>d.fecha===f&&d.tipo==='bloqueado')||null;
   const feriadoDates = feriados.map(f=>f.date);
-  const blockedDates = diasBloqueados.map(d=>d.fecha);
+  const blockedDates = diasBloqueados.filter(d=>d.tipo==='bloqueado').map(d=>d.fecha);
 
   useEffect(()=>{
     const load = async () => {
