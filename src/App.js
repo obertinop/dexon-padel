@@ -4,7 +4,9 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 const SUPA_URL = "https://wirsrkuxzltedqdkrdak.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpcnNya3V4emx0ZWRxZGtyZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjEzMjMsImV4cCI6MjA5MjYzNzMyM30.BjxD2R5bgBUHyalpwFhRzsGEzOnCx4PH9Sb65d609VI";
 const ADMIN_TEL = "595994952201";
-const LOGO = "/logo192.png";
+const LOGO = "/logo.svg";
+const LOGO_STYLE_DARK = { objectFit: "contain", filter: "brightness(0) invert(1)" };
+const LOGO_STYLE_LIGHT = { objectFit: "contain" };
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -47,6 +49,19 @@ const useIsMobile = () => {
     return () => window.removeEventListener("resize", h);
   }, []);
   return isMobile;
+};
+
+const useFeriados = () => {
+  const [feriados, setFeriados] = useState([]);
+  useEffect(() => {
+    const yr = new Date().getFullYear();
+    Promise.all([
+      fetch(`https://date.nager.at/api/v3/PublicHolidays/${yr}/PY`).then(r=>r.json()).catch(()=>[]),
+      fetch(`https://date.nager.at/api/v3/PublicHolidays/${yr+1}/PY`).then(r=>r.json()).catch(()=>[]),
+    ]).then(([a,b])=>setFeriados([...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])])).catch(()=>{});
+  },[]);
+  const getFeriado = fechaStr => feriados.find(f=>f.date===fechaStr)||null;
+  return {feriados, getFeriado};
 };
 
 // ── AUTH ──
@@ -232,7 +247,7 @@ const Login = ({onLogin}) => {
       <div style={{position:"fixed",inset:0,opacity:0.03,backgroundImage:"linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
       <div style={{width:400,padding:"44px 40px",background:"rgba(12,22,40,0.95)",backdropFilter:"blur(20px)",borderRadius:24,border:`1px solid ${C.borderL}`,boxShadow:"0 40px 100px rgba(0,0,0,0.6)",position:"relative",zIndex:1}}>
         <div style={{textAlign:"center",marginBottom:36}}>
-          <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:64,marginBottom:14,objectFit:"contain"}}/>
+          <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:120,marginBottom:14,...LOGO_STYLE_DARK}}/>
           <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",letterSpacing:3,textTransform:"uppercase",fontWeight:500}}>Panel de administracion</div>
         </div>
         {err&&<div style={{background:"rgba(224,91,40,0.12)",color:"#FF8060",border:"1px solid rgba(224,91,40,0.3)",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:18}}>{err}</div>}
@@ -294,13 +309,13 @@ const SelectorFecha = ({value, onChange, min}) => {
 };
 
 // ── CALENDARIO MINI ──
-const CalendarioMini = ({value, onChange, min}) => {
+const CalendarioMini = ({value, onChange, min, blockedDates=[], feriadoDates=[]}) => {
   const minStr = min || new Date().toISOString().slice(0,10);
   const initDate = value ? new Date(value+"T00:00:00") : new Date();
   const [mes, setMes] = useState(()=>new Date(initDate.getFullYear(), initDate.getMonth(), 1));
   const y=mes.getFullYear(), m=mes.getMonth();
-  const firstWd=new Date(y,m,1).getDay(); // 0=Sun
-  const offset=(firstWd===0?6:firstWd-1); // Monday-first offset
+  const firstWd=new Date(y,m,1).getDay();
+  const offset=(firstWd===0?6:firstWd-1);
   const dim=new Date(y,m+1,0).getDate();
   const cells=[...Array(offset).fill(null),...Array.from({length:dim},(_,i)=>i+1)];
   while(cells.length%7!==0) cells.push(null);
@@ -322,15 +337,30 @@ const CalendarioMini = ({value, onChange, min}) => {
         {cells.map((day,i)=>{
           if(!day) return <div key={i}/>;
           const ds=fmtCell(day);
-          const disabled=ds<minStr;
+          const isBlocked=blockedDates.includes(ds);
+          const isFeriado=feriadoDates.includes(ds);
+          const disabled=ds<minStr||isBlocked;
           const selected=ds===value;
           const isToday=ds===todayStr;
           return <button key={i} disabled={disabled} onClick={()=>!disabled&&onChange(ds)}
-            style={{padding:"7px 2px",borderRadius:8,border:`1px solid ${selected?C.coral:isToday?C.coralD:"transparent"}`,background:selected?C.coral:isToday?"rgba(224,91,40,0.1)":"transparent",color:disabled?C.t3:selected?"#fff":C.t1,fontSize:13,fontWeight:selected?700:isToday?600:400,cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.25:1,fontFamily:"var(--font-sans)",textAlign:"center",transition:"all 0.1s"}}>
+            title={isBlocked?"Cancha cerrada":isFeriado?"Feriado nacional":""}
+            style={{padding:"7px 2px",borderRadius:8,position:"relative",
+              border:`1px solid ${selected?C.coral:isToday?C.coralD:isFeriado?"rgba(245,192,96,0.4)":"transparent"}`,
+              background:selected?C.coral:isBlocked?C.redBg:isToday?"rgba(224,91,40,0.1)":"transparent",
+              color:disabled?C.t3:selected?"#fff":isFeriado?C.yellow:C.t1,
+              fontSize:13,fontWeight:selected?700:isToday?600:400,
+              cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.4:1,
+              fontFamily:"var(--font-sans)",textAlign:"center",transition:"all 0.1s"}}>
             {day}
+            {isFeriado&&!isBlocked&&<span style={{position:"absolute",bottom:1,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:C.yellow,display:"block"}}/>}
+            {isBlocked&&<span style={{position:"absolute",bottom:1,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:C.red,display:"block"}}/>}
           </button>;
         })}
       </div>
+      {(blockedDates.length>0||feriadoDates.length>0)&&<div style={{display:"flex",gap:12,marginTop:10,fontSize:10,color:C.t3}}>
+        {feriadoDates.length>0&&<span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.yellow,display:"inline-block"}}/>Feriado</span>}
+        {blockedDates.length>0&&<span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.red,display:"inline-block"}}/>Cerrado</span>}
+      </div>}
     </div>
   );
 };
@@ -338,6 +368,7 @@ const CalendarioMini = ({value, onChange, min}) => {
 // ── PORTAL CLIENTE ──
 const PortalCliente = () => {
   const isMobile = useIsMobile();
+  const {getFeriado, feriados} = useFeriados();
   const [cfg,setCfg] = useState({nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22});
   const [turnos,setTurnos] = useState([]);
   const [clientes,setClientes] = useState([]);
@@ -356,16 +387,22 @@ const PortalCliente = () => {
   const [clienteEncontrado,setClienteEncontrado] = useState(null);
   const [codigosRef,setCodigosRef] = useState([]);
   const [abonoTurnos,setAbonoTurnos] = useState([]);
+  const [diasBloqueados,setDiasBloqueados] = useState([]);
+
+  const isDiaBloqueado = f => diasBloqueados.find(d=>d.fecha===f&&d.tipo==='bloqueado')||null;
+  const feriadoDates = feriados.map(f=>f.date);
+  const blockedDates = diasBloqueados.filter(d=>d.tipo==='bloqueado').map(d=>d.fecha);
 
   useEffect(()=>{
     const load = async () => {
       try {
-        const [cf,tu,cl,cr,at] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true"),db.get("abono_turnos","select=dia,hora")]);
+        const [cf,tu,cl,cr,at,db2] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true"),db.get("abono_turnos","select=dia,hora"),db.get("dias_bloqueados","order=fecha.asc")]);
         if(cf?.[0]) setCfg(cf[0]);
         setTurnos(tu||[]);
         setClientes(cl||[]);
         setCodigosRef(cr||[]);
         setAbonoTurnos(at||[]);
+        setDiasBloqueados(db2||[]);
       } catch(e){console.error(e);}
       setLoading(false);
     };
@@ -379,6 +416,8 @@ const PortalCliente = () => {
   },[]);
 
   const horasArr = (() => {
+    const especial = diasBloqueados.find(d=>d.fecha===fecha&&d.tipo==='horario');
+    if(especial) return Array.from({length:especial.hora_fin-especial.hora_inicio},(_,i)=>especial.hora_inicio+i);
     try {
       if(cfg.horarios_por_dia) {
         const parsed = JSON.parse(cfg.horarios_por_dia);
@@ -492,14 +531,10 @@ const PortalCliente = () => {
       <div style={{background:`linear-gradient(180deg, #0A1830 0%, ${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:-60,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle, rgba(224,91,40,0.18) 0%, transparent 60%)",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"absolute",top:10,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle, rgba(52,212,144,0.10) 0%, transparent 70%)",pointerEvents:"none",zIndex:0}}/>
-        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"14px 16px":"18px 20px",position:"relative",zIndex:1}}>
+        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"6px 16px":"4px 20px",position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?36:44,objectFit:"contain"}}/>
-              <div>
-                <div style={{fontSize:isMobile?16:18,fontWeight:800,color:C.t1,letterSpacing:-0.3}}>{cfg.nombre_club}</div>
-                <div style={{fontSize:11,color:C.t3,marginTop:1}}>Tavapy · Alto Paraná</div>
-              </div>
+              <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?72:76,...LOGO_STYLE_DARK}}/>
             </div>
             <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer"
                style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.25)",borderRadius:10,textDecoration:"none",minHeight:40}}>
@@ -511,18 +546,31 @@ const PortalCliente = () => {
       </div>
 
       {/* CONTENIDO */}
-      <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"20px 14px 40px":"24px 16px 48px"}}>
+      <div style={{maxWidth:isMobile?500:1140,margin:"0 auto",padding:isMobile?"20px 14px 40px":"20px 32px 36px"}}>
        <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
 
         {/* PASO LISTA */}
-        {paso==="lista"&&<>
-          {/* Selector fecha */}
+        {paso==="lista"&&(isMobile?(
+          /* ── MOBILE: layout original ── */
+          <>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.6}}>Día de juego</div>
-            <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()}/>
+            <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()} blockedDates={blockedDates} feriadoDates={feriadoDates}/>
           </div>
-
-          {/* Clima */}
+          {isDiaBloqueado(fecha)&&<div style={{background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28,flexShrink:0}}>🔒</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:C.red}}>Cancha cerrada</div>
+              <div style={{fontSize:12,color:"#E8A8A8",marginTop:2,lineHeight:1.4}}>{isDiaBloqueado(fecha).motivo||"No disponible este día."}</div>
+            </div>
+          </div>}
+          {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28,flexShrink:0}}>🇵🇾</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Feriado nacional — {getFeriado(fecha).localName}</div>
+              <div style={{fontSize:12,color:"#E8C898",marginTop:2,lineHeight:1.4}}>El horario puede estar extendido. Consultá disponibilidad.</div>
+            </div>
+          </div>}
           {climaFecha&&<div style={{...card,marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
             <div style={{fontSize:36,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
             <div style={{flex:1}}>
@@ -532,8 +580,6 @@ const PortalCliente = () => {
             {climaFecha.lluvia>=60&&<Badge type="info">Lluvia probable</Badge>}
             {climaFecha.lluvia<20&&<Badge type="ok">Buen dia</Badge>}
           </div>}
-
-          {/* Banner descuento */}
           {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
             <div style={{fontSize:28,flexShrink:0}}>🎉</div>
             <div>
@@ -541,8 +587,6 @@ const PortalCliente = () => {
               <div style={{fontSize:12,color:"#E8C898",marginTop:2,lineHeight:1.4}}>Descuento aplicado automaticamente en todos los precios.</div>
             </div>
           </div>}
-
-          {/* Disponibilidad visual */}
           <div style={{marginBottom:10}}>
             {libres.length>0&&libres.length<=3&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,background:"rgba(240,96,96,0.08)",border:"1px solid rgba(240,96,96,0.25)",marginBottom:8}}>
               <span style={{fontSize:16}}>⚡</span>
@@ -561,8 +605,6 @@ const PortalCliente = () => {
               <span>{cfg.hora_fin}:00</span>
             </div>
           </div>
-
-          {/* Horarios disponibles */}
           <div style={{...card,overflow:"hidden",marginBottom:12,padding:0}}>
             <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
               <div style={{minWidth:0,flex:1}}>
@@ -613,8 +655,6 @@ const PortalCliente = () => {
               );
             })}
           </div>
-
-          {/* Ocupados */}
           {ocupados.length>0&&<div style={{...card,padding:0,marginBottom:16,opacity:0.6}}>
             <div style={{padding:"10px 18px",borderBottom:`1px solid ${C.border}`}}>
               <div style={{fontSize:12,fontWeight:500,color:C.t3}}>No disponibles</div>
@@ -626,8 +666,6 @@ const PortalCliente = () => {
               </div>
             ))}
           </div>}
-
-          {/* Resumen seleccion */}
           {slotsSel.length>0&&<>
             <div style={{...card,marginBottom:12,background:C.bgElev}}>
               <div style={{fontSize:12,color:C.t3,marginBottom:8}}>Seleccionados · {slotsSel.length}h</div>
@@ -641,7 +679,155 @@ const PortalCliente = () => {
               Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
             </button>
           </>}
-        </>}
+          </>
+        ):(
+          /* ── DESKTOP: 2 columnas ── */
+          <>
+          <StepBar/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 360px",gap:36,alignItems:"start"}}>
+            {/* COLUMNA IZQUIERDA */}
+            <div>
+              <h1 style={{fontSize:28,fontWeight:900,color:C.t1,margin:"0 0 6px",letterSpacing:-0.8,lineHeight:1.1}}>¿Cuándo querés jugar?</h1>
+              <p style={{fontSize:13,color:C.t2,margin:"0 0 16px",lineHeight:1.5}}>Elegí día y horarios disponibles. Podés reservar hasta 4 horas seguidas.</p>
+              {/* Pills de fecha */}
+              <div style={{display:"flex",gap:8,marginBottom:18,overflowX:"auto",paddingBottom:4}}>
+                {Array.from({length:14},(_,i)=>{
+                  const d=new Date(); d.setDate(d.getDate()+i);
+                  const ds=d.toISOString().slice(0,10);
+                  const sel=ds===fecha;
+                  return(
+                    <button key={ds} onClick={()=>{setFecha(ds);setSlotsSel([]);}}
+                      style={{flexShrink:0,minWidth:60,padding:"10px 8px",borderRadius:12,
+                        border:`2px solid ${sel?C.coral:C.border}`,
+                        background:sel?C.coral:"transparent",
+                        cursor:"pointer",fontFamily:"var(--font-sans)",textAlign:"center",
+                        transition:"all 0.15s"}}>
+                      <div style={{fontSize:9,color:sel?"rgba(255,255,255,0.75)":C.t3,fontWeight:700,letterSpacing:1,marginBottom:4}}>{i===0?"HOY":DIAS[d.getDay()].toUpperCase()}</div>
+                      <div style={{fontSize:20,fontWeight:800,color:sel?"#fff":C.t1}}>{d.getDate()}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Banners feriado / bloqueado / descuento */}
+              {isDiaBloqueado(fecha)&&<div style={{background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:22}}>🔒</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.red}}>Cancha cerrada</div>
+                  <div style={{fontSize:12,color:"#E8A8A8",marginTop:2}}>{isDiaBloqueado(fecha).motivo||"No disponible este día."}</div>
+                </div>
+              </div>}
+              {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:22}}>🇵🇾</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Feriado nacional — {getFeriado(fecha).localName}</div>
+                  <div style={{fontSize:12,color:"#E8C898",marginTop:2}}>El horario puede estar extendido. Consultá disponibilidad.</div>
+                </div>
+              </div>}
+              {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:24}}>🎉</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Día de descuento — {descPct}% off</div>
+                  <div style={{fontSize:12,color:"#E8C898",marginTop:2}}>Descuento aplicado automáticamente en todos los precios.</div>
+                </div>
+              </div>}
+              {/* Header de slots */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:1.5}}>
+                  Horarios disponibles{fecha?` · ${DIAS[diaFecha]?.toUpperCase()} ${new Date(fecha+"T00:00:00").getDate()}`:""}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.t2}}>
+                  <span style={{width:7,height:7,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>
+                  Hora pico
+                </div>
+              </div>
+              {/* Grid 4 columnas */}
+              {libres.length===0&&<div style={{padding:"48px 0",textAlign:"center",color:C.t3,fontSize:14}}>Sin horarios disponibles para este día.</div>}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
+                {horasArr.map(h=>{
+                  const occ=!!(ocupado(h)||pasado(h));
+                  const sel=slotsSel.includes(h);
+                  const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
+                  const tieneDesc=diaTieneDesc();
+                  const precioFinal=precioConDesc(h);
+                  const precioOriginal=precioH(h);
+                  return(
+                    <div key={h} onClick={()=>!occ&&toggleSlot(h)}
+                      style={{padding:"12px 10px",borderRadius:12,
+                        border:`2px solid ${sel?C.coral:occ?"rgba(255,255,255,0.06)":isPico?C.coralAlpha:C.border}`,
+                        background:sel?`linear-gradient(135deg,${C.coral},${C.coralD})`:occ?C.bgElev:isPico?"rgba(224,91,40,0.04)":"rgba(255,255,255,0.02)",
+                        cursor:occ?"default":"pointer",
+                        opacity:occ?0.45:1,
+                        position:"relative",
+                        transition:"all 0.15s",
+                        userSelect:"none"}}>
+                      {isPico&&!occ&&!sel&&<span style={{position:"absolute",top:10,right:12,width:7,height:7,borderRadius:"50%",background:C.coral}}/>}
+                      {sel&&<span style={{position:"absolute",top:10,right:12,display:"flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",background:"rgba(255,255,255,0.25)"}}>
+                        <svg width="10" height="8" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>}
+                      <div style={{fontSize:16,fontWeight:800,color:sel?"#fff":occ?C.t3:C.t1,marginBottom:4,lineHeight:1}}>{h}:00</div>
+                      {occ
+                        ?<div style={{fontSize:12,color:C.t3}}>Reservado</div>
+                        :<>
+                          {tieneDesc&&<div style={{fontSize:11,color:sel?"rgba(255,255,255,0.55)":"rgba(255,255,255,0.3)",textDecoration:"line-through",lineHeight:1,marginBottom:2}}>{gs(precioOriginal)}</div>}
+                          <div style={{fontSize:13,fontWeight:600,color:sel?"rgba(255,255,255,0.85)":tieneDesc?C.yellow:C.t2}}>{gs(precioFinal)}</div>
+                        </>
+                      }
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Leyenda */}
+              <div style={{display:"flex",gap:16,fontSize:11,color:C.t3}}>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.coral,display:"inline-block"}}/>Seleccionado</span>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>Hora pico</span>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.bgElev,border:`1px solid ${C.border}`,display:"inline-block"}}/>Reservado</span>
+              </div>
+            </div>
+            {/* COLUMNA DERECHA — Sticky */}
+            <div style={{position:"sticky",top:20}}>
+              <div style={{background:C.bgCard,borderRadius:18,border:`1px solid ${C.border}`,padding:"20px 20px",boxShadow:"0 12px 48px rgba(0,0,0,0.35)"}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>Tu reserva</div>
+                {slotsSel.length>0?(
+                  <>
+                    <div style={{fontSize:20,fontWeight:800,color:C.t1,marginBottom:4}}>{fmtFechaLegible(fecha)}</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.coral,marginBottom:16}}>
+                      {Math.min(...slotsSel)}:00 — {Math.max(...slotsSel)+1}:00
+                    </div>
+                    <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12,marginBottom:12,display:"flex",flexDirection:"column",gap:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.t2}}>
+                        <span>{slotsSel.length} horario{slotsSel.length>1?"s":""}</span>
+                        <span>{gs(subtotalSinDesc)}</span>
+                      </div>
+                      {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow}}>
+                        <span>Descuento {DIAS[diaFecha]?.toLowerCase()}</span>
+                        <span>— {gs(ahorroDia)}</span>
+                      </div>}
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,paddingTop:4,borderTop:`1px solid ${C.border}`}}>
+                      <span style={{fontSize:14,fontWeight:700,color:C.t1}}>Total</span>
+                      <span style={{fontSize:22,fontWeight:900,color:C.coral}}>{gs(totalSel)}</span>
+                    </div>
+                    <button onClick={()=>setPaso("datos")}
+                      style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)",marginBottom:12,transition:"opacity 0.15s"}}>
+                      Continuar →
+                    </button>
+                    <div style={{textAlign:"center",fontSize:11,color:C.t3,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                      <svg width="11" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      Pago seguro · Pagopar / Transferencia
+                    </div>
+                  </>
+                ):(
+                  <div style={{textAlign:"center",padding:"24px 0",color:C.t3}}>
+                    <div style={{fontSize:36,marginBottom:10}}>📅</div>
+                    <div style={{fontSize:14,fontWeight:600,color:C.t2,marginBottom:4}}>Seleccioná un horario</div>
+                    <div style={{fontSize:12,lineHeight:1.5}}>Podés elegir hasta<br/>4 horas seguidas</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          </>
+        ))}
 
         {/* PASO DATOS */}
         {paso==="datos"&&<>
@@ -912,7 +1098,7 @@ function LandingPage({ onAdmin }) {
 
   const st = {
     page: { fontFamily:"var(--font-sans)", background:C.bg, color:C.t1, minHeight:"100vh", overflowX:"hidden" },
-    nav: { position:"fixed", top:0, left:0, right:0, zIndex:100, background:"rgba(6,13,26,0.92)", backdropFilter:"blur(14px)", borderBottom:`1px solid ${C.border}`, padding:isMobile?"12px 20px":"14px 40px", display:"flex", alignItems:"center", justifyContent:"space-between" },
+    nav: { position:"fixed", top:0, left:0, right:0, zIndex:100, background:"rgba(6,13,26,0.92)", backdropFilter:"blur(14px)", borderBottom:`1px solid ${C.border}`, padding:isMobile?"0 20px":"0 40px", height:64, display:"flex", alignItems:"center", justifyContent:"space-between" },
     navLink: { color:C.t2, fontSize:14, fontWeight:500, cursor:"pointer", transition:"color 0.2s", textDecoration:"none" },
     btnOutline: { padding:"8px 18px", border:`1px solid ${coral}`, borderRadius:8, background:"transparent", color:coral, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"var(--font-sans)" },
     btnSolid: { padding:"8px 18px", border:"none", borderRadius:8, background:coral, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--font-sans)" },
@@ -956,8 +1142,7 @@ function LandingPage({ onAdmin }) {
     <div style={st.page}>
       <nav style={st.nav}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <img src={LOGO} alt="DEXON" style={{height:36,objectFit:"contain"}} onError={e=>{e.target.style.display="none";}}/>
-          <span style={{fontSize:18,fontWeight:800,color:C.t1,letterSpacing:1}}>DEXON PADEL</span>
+          <img src={LOGO} alt="DEXON" style={{height:68,...LOGO_STYLE_DARK}} onError={e=>{e.target.style.display="none";}}/>
         </div>
         {!isMobile&&(
           <div style={{display:"flex",gap:28,alignItems:"center"}}>
@@ -1605,6 +1790,83 @@ const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMo
   </>;
 };
 
+// ── REENVIAR CONFIRMACIÓN ──
+const ReenviarConfirmacionBtn = ({turno, cliente, notify}) => {
+  const [sent,setSent] = useState(false);
+  const [loading,setLoading] = useState(false);
+  const enviar = async () => {
+    setLoading(true);
+    try {
+      await fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({tipo:"confirmacion_manual",nombre:cliente.nombre,telefono:cliente.telefono,
+          fecha:fmtFechaLegible(turno.fecha),horarios:`${turno.hora}:00hs`,
+          monto:gs(turno.precio),forma_pago:turno.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})});
+      setSent(true);
+      if(notify) notify("Confirmación enviada por WhatsApp","ok");
+      setTimeout(()=>setSent(false),4000);
+    } catch(e) {
+      if(notify) notify("No se pudo enviar","error");
+    }
+    setLoading(false);
+  };
+  return (
+    <button onClick={enviar} disabled={loading||sent}
+      style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1px solid ${sent?"rgba(52,212,144,0.4)":C.greenBd}`,
+        background:sent?"rgba(52,212,144,0.08)":"transparent",
+        color:sent?C.green:C.t2,fontSize:13,fontWeight:600,cursor:loading||sent?"default":"pointer",
+        fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+        transition:"all 0.2s"}}>
+      {loading?"Enviando..."
+        :sent?<>✓ Confirmación enviada</>
+        :<><WhatsAppIcon size={14} color={C.t2}/>Reenviar confirmación</>}
+    </button>
+  );
+};
+
+// ── DÍAS BLOQUEADOS PANEL ──
+const DiasBloquedosPanel = ({diasBloqueados, tk, onReload}) => {
+  const [fecha,setFecha] = useState("");
+  const [motivo,setMotivo] = useState("");
+  const [saving,setSaving] = useState(false);
+  const agregar = async () => {
+    if(!fecha) return;
+    setSaving(true);
+    try {
+      await api("dias_bloqueados",{method:"POST",body:JSON.stringify({fecha,motivo}),prefer:"return=representation"},tk);
+      setFecha(""); setMotivo(""); await onReload();
+    } catch(e){}
+    setSaving(false);
+  };
+  const eliminar = async (id) => {
+    try { await api(`dias_bloqueados?id=eq.${id}`,{method:"DELETE"},tk); await onReload(); } catch(e){}
+  };
+  return <div style={{...card,marginBottom:12}}>
+    <div style={{fontWeight:600,fontSize:14,color:C.t1,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+      🔒 Días bloqueados
+      <span style={{fontSize:11,color:C.t3,fontWeight:400}}>Mantenimiento, lluvia, feriado especial</span>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={{...inp,width:"auto",flex:"0 0 160px"}}/>
+      <input placeholder="Motivo (ej: Mantenimiento)" value={motivo} onChange={e=>setMotivo(e.target.value)} style={{...inp,flex:1,minWidth:160}} onKeyDown={e=>e.key==="Enter"&&agregar()}/>
+      <button onClick={agregar} disabled={saving||!fecha} style={{padding:"8px 16px",background:C.coral,color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:saving||!fecha?"not-allowed":"pointer",opacity:saving||!fecha?0.5:1,fontFamily:"var(--font-sans)"}}>
+        {saving?"...":"Bloquear"}
+      </button>
+    </div>
+    {diasBloqueados.length===0
+      ?<div style={{fontSize:12,color:C.t3,textAlign:"center",padding:"12px 0"}}>Sin días bloqueados</div>
+      :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {diasBloqueados.map(d=><div key={d.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:8}}>
+          <div>
+            <span style={{fontSize:13,fontWeight:600,color:C.red}}>{d.fecha}</span>
+            {d.motivo&&<span style={{fontSize:12,color:C.t2,marginLeft:8}}>{d.motivo}</span>}
+          </div>
+          <button onClick={()=>eliminar(d.id)} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:18,lineHeight:1,padding:"0 4px",fontFamily:"var(--font-sans)"}}>×</button>
+        </div>)}
+      </div>
+    }
+  </div>;
+};
+
 // ── APP PRINCIPAL ──
 export default function App() {
   const isMobile = useIsMobile();
@@ -1651,8 +1913,16 @@ export default function App() {
   const [pendFiltro,setPendFiltro] = useState("todos");
   const [cmdOpen,setCmdOpen] = useState(false);
   const [cmdQ,setCmdQ] = useState("");
+  const {getFeriado,feriados} = useFeriados();
+  const [diasBloqueados,setDiasBloqueados] = useState([]);
+  const [dayConfigFecha,setDayConfigFecha] = useState(null);
   const [draggingId,setDraggingId] = useState(null);
   const [dragOver,setDragOver] = useState(null);
+  useEffect(()=>{
+    const clear=()=>{setDraggingId(null);setDragOver(null);};
+    document.addEventListener("dragend",clear);
+    return()=>document.removeEventListener("dragend",clear);
+  },[]);
   const [nowTime,setNowTime] = useState(()=>new Date());
   const [agendaDiaIdx,setAgendaDiaIdx] = useState(()=>((new Date().getDay()+6)%7));
   const [sidebarCol,setSidebarCol] = useState(()=>localStorage.getItem("dx_sidebarCol")==="1");
@@ -1667,7 +1937,7 @@ export default function App() {
     if(!tk) return;
     setIsRefreshing(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,es,cf,at,cr,ti] = await Promise.all([
+      const [tu,cl,ab,pl,ins,ca,st,es,cf,at,cr,ti,db2] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc",tk),
         db.get("clientes","order=nombre.asc",tk),
         db.get("abonos","order=fecha_vencimiento.asc",tk),
@@ -1680,8 +1950,10 @@ export default function App() {
         db.get("abono_turnos","order=abono_id.asc",tk),
         db.get("codigos_referido","order=created_at.desc",tk),
         db.get("turno_items","order=created_at.asc",tk),
+        db.get("dias_bloqueados","order=fecha.asc",tk),
       ]);
       setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],cfg:cf?.[0]||prev.cfg}));
+      setDiasBloqueados(db2||[]);
     } catch(e){console.error(e);}
     setIsRefreshing(false);
   },[tk]);
@@ -1818,6 +2090,8 @@ export default function App() {
         const saldo=t.precio-(t.sena||0);
         await db.patch("turnos",id,{estado:"confirmado",cobrado:true,saldo:0},tk);
         if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
+        const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);
+        if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
       }));
       await load();notify(`${ids.length} turno${ids.length!==1?"s":""} confirmado${ids.length!==1?"s":""}!`,"ok");
       setPendSel(new Set());
@@ -2145,6 +2419,78 @@ export default function App() {
     </div>;
   };
 
+  const DiaConfigModal=()=>{
+    const diaActual = diasBloqueados.find(d=>d.fecha===dayConfigFecha);
+    const feriado = getFeriado(dayConfigFecha);
+    const [tipo,setTipo] = useState(diaActual?.tipo||"normal");
+    const [motivo,setMotivo] = useState(diaActual?.motivo||"");
+    const [hIni,setHIni] = useState(diaActual?.hora_inicio??cfg.hora_inicio);
+    const [hFin,setHFin] = useState(diaActual?.hora_fin??cfg.hora_fin);
+    const [saving,setSaving] = useState(false);
+    const hOptions = Array.from({length:24},(_,i)=>i);
+    const guardar = async()=>{
+      setSaving(true);
+      try{
+        if(tipo==="normal"){
+          if(diaActual) await api(`dias_bloqueados?id=eq.${diaActual.id}`,{method:"DELETE"},tk);
+        } else if(diaActual){
+          await api(`dias_bloqueados?id=eq.${diaActual.id}`,{method:"PATCH",body:JSON.stringify({tipo,motivo,hora_inicio:tipo==="horario"?Number(hIni):null,hora_fin:tipo==="horario"?Number(hFin):null}),prefer:"return=representation"},tk);
+        } else {
+          await api("dias_bloqueados",{method:"POST",body:JSON.stringify({fecha:dayConfigFecha,tipo,motivo,hora_inicio:tipo==="horario"?Number(hIni):null,hora_fin:tipo==="horario"?Number(hFin):null}),prefer:"return=representation"},tk);
+        }
+        await load(); setDayConfigFecha(null);
+      }catch(e){notify(e.message,"error");}
+      setSaving(false);
+    };
+    const label = dayConfigFecha ? fmtFechaLegible(dayConfigFecha) : "";
+    return <Modal show={!!dayConfigFecha} onClose={()=>setDayConfigFecha(null)} title={`Configurar — ${label}`} width={400}>
+      {feriado&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:20}}>🇵🇾</span>
+        <div>
+          <div style={{fontSize:13,fontWeight:600,color:C.yellow}}>{feriado.localName}</div>
+          <div style={{fontSize:11,color:C.t3,marginTop:2}}>Feriado nacional</div>
+        </div>
+      </div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        {[{v:"normal",label:"Normal",desc:"Horario habitual del día",icon:"✅"},
+          {v:"horario",label:"Horario especial",desc:"Definís apertura y cierre para este día",icon:"🕐"},
+          {v:"bloqueado",label:"Cancha cerrada",desc:"No se pueden hacer reservas",icon:"🔒"},
+        ].map(op=><button key={op.v} onClick={()=>setTipo(op.v)}
+          style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,
+            border:`2px solid ${tipo===op.v?C.coral:C.border}`,
+            background:tipo===op.v?"rgba(224,91,40,0.08)":"transparent",
+            cursor:"pointer",textAlign:"left",fontFamily:"var(--font-sans)"}}>
+          <span style={{fontSize:20,flexShrink:0}}>{op.icon}</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:tipo===op.v?C.coral:C.t1}}>{op.label}</div>
+            <div style={{fontSize:11,color:C.t3,marginTop:1}}>{op.desc}</div>
+          </div>
+        </button>)}
+      </div>
+      {tipo==="horario"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        <div>
+          <label style={lbl}>Apertura</label>
+          <select value={hIni} onChange={e=>setHIni(Number(e.target.value))} style={inp}>
+            {hOptions.map(h=><option key={h} value={h}>{h}:00</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={lbl}>Cierre</label>
+          <select value={hFin} onChange={e=>setHFin(Number(e.target.value))} style={inp}>
+            {hOptions.map(h=><option key={h} value={h}>{h}:00</option>)}
+          </select>
+        </div>
+      </div>}
+      {tipo==="bloqueado"&&<div style={{marginBottom:16}}>
+        <label style={lbl}>Motivo</label>
+        <input value={motivo} onChange={e=>setMotivo(e.target.value)} placeholder="Ej: Mantenimiento, lluvia..." style={inp}/>
+      </div>}
+      <button onClick={guardar} disabled={saving} style={{width:"100%",padding:"12px",background:C.coral,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:saving?"wait":"pointer",fontFamily:"var(--font-sans)"}}>
+        {saving?"Guardando...":"Guardar"}
+      </button>
+    </Modal>;
+  };
+
   const Agenda=()=>{
     const dias=getSemana();const h=hoy();const extra=turnosAbonados();const all=[...turnos,...extra];
     const timeCol=isMobile?30:52;
@@ -2170,21 +2516,34 @@ export default function App() {
           {dias.map((d,i)=>{
             const fs=fmtD(d);const isSel=i===idxSafe;const isH=fs===h;
             const cnt=all.filter(t=>t.fecha===fs&&t.estado!=="cancelado").length;
+            const feriado=getFeriado(fs);
+            const bloqueado=diasBloqueados.find(b=>b.fecha===fs&&b.tipo==='bloqueado');
+            const especial=diasBloqueados.find(b=>b.fecha===fs&&b.tipo==='horario');
             return<button key={i} onClick={()=>setAgendaDiaIdx(i)}
-              style={{padding:"8px 2px",borderRadius:10,background:isSel?C.coral:isH?"rgba(224,91,40,0.1)":C.bgElev,border:`1px solid ${isSel?C.coral:isH?C.coralD:C.border}`,color:isSel?"#fff":isH?C.coral:C.t1,cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",flexDirection:"column",alignItems:"center",gap:1,minWidth:0,transition:"all 0.15s"}}>
+              style={{padding:"8px 2px",borderRadius:10,
+                background:isSel?C.coral:bloqueado?"rgba(240,96,96,0.12)":especial?"rgba(52,212,144,0.08)":feriado?"rgba(245,192,96,0.08)":isH?"rgba(224,91,40,0.1)":C.bgElev,
+                border:`1px solid ${isSel?C.coral:bloqueado?C.redBd:especial?C.greenBd:feriado?C.yellowBd:isH?C.coralD:C.border}`,
+                color:isSel?"#fff":bloqueado?C.red:especial?C.green:feriado?C.yellow:isH?C.coral:C.t1,
+                cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",flexDirection:"column",alignItems:"center",gap:1,minWidth:0,transition:"all 0.15s"}}>
               <span style={{fontSize:9,fontWeight:500,opacity:0.85,letterSpacing:0.2}}>{DIAS[d.getDay()].slice(0,3).toUpperCase()}</span>
               <span style={{fontSize:15,fontWeight:700}}>{d.getDate()}</span>
-              <span style={{fontSize:8,fontWeight:600,opacity:cnt>0?0.9:0,marginTop:1}}>{cnt>0?`${cnt}t`:"·"}</span>
+              <span style={{fontSize:8,fontWeight:600,marginTop:1,opacity:bloqueado||especial||feriado||cnt>0?1:0}}>
+                {bloqueado?"🔒":especial?"🕐":feriado?"🇵🇾":cnt>0?`${cnt}t`:"·"}
+              </span>
             </button>;
           })}
         </div>
         {/* Título día seleccionado */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10,gap:8}}>
-          <div style={{fontSize:13,color:C.t2,fontWeight:600}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8}}>
+          <div style={{fontSize:13,color:C.t2,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
             {fsActual===h?"Hoy":`${DIAS_FULL[diaActual.getDay()]} ${diaActual.getDate()}`}
+            {getFeriado(fsActual)&&<span style={{fontSize:10,color:C.yellow}}>🇵🇾 Feriado</span>}
+            {diasBloqueados.find(b=>b.fecha===fsActual&&b.tipo==="bloqueado")&&<span style={{fontSize:10,color:C.red}}>🔒 Cerrado</span>}
+            {diasBloqueados.find(b=>b.fecha===fsActual&&b.tipo==="horario")&&<span style={{fontSize:10,color:C.green}}>🕐 Especial</span>}
           </div>
-          <div style={{fontSize:11,color:C.t3}}>
-            {all.filter(t=>t.fecha===fsActual&&t.estado!=="cancelado").length} de {horas.length}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:11,color:C.t3}}>{all.filter(t=>t.fecha===fsActual&&t.estado!=="cancelado").length} de {horas.length}</span>
+            <button onClick={()=>setDayConfigFecha(fsActual)} style={{background:C.bgElev,border:`1px solid ${C.border}`,borderRadius:7,padding:"4px 8px",cursor:"pointer",fontSize:12,color:C.t2,fontFamily:"var(--font-sans)"}}>⚙️</button>
           </div>
         </div>
         {/* Lista de horas vertical */}
@@ -2238,84 +2597,140 @@ export default function App() {
         </div>
       </div>;
     }
-    return<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?10:16,gap:6,flexWrap:isMobile?"wrap":"nowrap"}}>
-        <div style={{fontSize:isMobile?13:16,fontWeight:600,color:C.t1,whiteSpace:"nowrap"}}>{dias[0].getDate()} {MESES[dias[0].getMonth()]} — {dias[6].getDate()} {MESES[dias[6].getMonth()]}</div>
-        <div style={{display:"flex",gap:isMobile?4:8,alignItems:"center",flexWrap:"nowrap"}}>
-          <Btn sm={isMobile} onClick={()=>setSemOff(o=>o-1)} style={isMobile?{padding:"6px 9px",minWidth:32}:{}}>←</Btn>
-          <Btn sm={isMobile} onClick={()=>setSemOff(0)}>Hoy</Btn>
-          <Btn sm={isMobile} onClick={()=>setSemOff(o=>o+1)} style={isMobile?{padding:"6px 9px",minWidth:32}:{}}>→</Btn>
-          <Btn sm={isMobile} v="primary" onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})}>{isMobile?"+ Nueva":"+ Reservar"}</Btn>
+    /* ── DESKTOP ── */
+    const bCell=`1px solid ${C.border}`;
+    const cellBg=(fs,hr,t,isDragTarget)=>{
+      if(isDragTarget) return "rgba(224,91,40,0.15)";
+      if(t) return t.tipo==="abono"?"rgba(140,100,255,0.10)":t.tipo==="clase"?"rgba(90,160,240,0.10)":"rgba(224,91,40,0.10)";
+      const isToday=fs===h; const isPast=isToday&&hr<nowHr;
+      if(isPast) return C.bgCard;
+      if(hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin) return "rgba(224,91,40,0.03)";
+      return C.bgCard;
+    };
+    return <div>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:20}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.coral,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>AGENDA</div>
+          <div style={{fontSize:26,fontWeight:900,color:C.t1,letterSpacing:-0.5,lineHeight:1.1}}>Agenda</div>
+          <div style={{fontSize:13,color:C.t3,marginTop:4}}>Vista semanal de turnos</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={()=>openM("horarios",{})} style={{height:38,padding:"0 14px",borderRadius:10,background:C.bgElev,border:bCell,color:C.t2,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"var(--font-sans)"}}>⏱ Horarios</button>
+          <button onClick={()=>setSemOff(o=>o-1)} style={{width:38,height:38,borderRadius:10,background:C.bgElev,border:bCell,color:C.t1,cursor:"pointer",fontSize:18,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+          <button onClick={()=>setSemOff(0)} style={{height:38,padding:"0 18px",borderRadius:10,background:C.bgElev,border:bCell,color:C.t1,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"var(--font-sans)"}}>Hoy</button>
+          <button onClick={()=>setSemOff(o=>o+1)} style={{width:38,height:38,borderRadius:10,background:C.bgElev,border:bCell,color:C.t1,cursor:"pointer",fontSize:18,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+          <button onClick={()=>openM("turno",{fecha:h,hora:cfg.hora_inicio,tipo:"ocasional"})} style={{height:38,padding:"0 20px",borderRadius:10,background:C.coral,border:"none",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",gap:7,boxShadow:"0 4px 16px rgba(224,91,40,0.4)"}}>
+            <span style={{fontSize:18,lineHeight:1,marginTop:-1}}>+</span>Reservar
+          </button>
         </div>
       </div>
-      <div style={isMobile?{}:{overflowX:"auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:`${timeCol}px repeat(7,1fr)`,gap:1,background:C.border,borderRadius:10,overflow:"hidden",...(isMobile?{}:{minWidth:600})}}>
-          <div style={{background:C.bg}}/>
-          {dias.map((d,i)=>{const isH=fmtD(d)===h;const cnt=all.filter(t=>t.fecha===fmtD(d)&&t.estado!=="cancelado").length;return<div key={i} style={{background:isH?C.bgElev:C.bg,padding:isMobile?"6px 2px":"10px 4px",textAlign:"center",position:"relative"}}>
-            {isH&&<div style={{position:"absolute",top:isMobile?2:4,right:isMobile?2:4,fontSize:isMobile?7.5:9,fontWeight:700,color:"#fff",background:C.coral,padding:isMobile?"1px 4px":"2px 6px",borderRadius:10,letterSpacing:0.2,boxShadow:"0 1px 3px rgba(224,91,40,0.4)"}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
-            <div style={{fontSize:isMobile?9.5:11,fontWeight:500,color:isH?C.coral:C.t2,letterSpacing:isMobile?-0.2:0}}>{isMobile?DIAS[d.getDay()].slice(0,1):DIAS[d.getDay()]}</div>
-            <div style={{fontSize:isMobile?13:16,fontWeight:700,color:isH?C.coral:C.t1,margin:isMobile?"1px 0":"2px 0"}}>{d.getDate()}</div>
-            {cnt>0?<div>
-              <div style={{fontSize:isMobile?9:10,color:C.coral,fontWeight:600}}>{cnt}t</div>
-              <div style={{width:"70%",margin:"2px auto 0",height:3,borderRadius:2,background:C.border,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${Math.min(100,Math.round(cnt/horas.length*100))}%`,background:cnt/horas.length>0.7?C.red:cnt/horas.length>0.4?C.yellow:C.green,borderRadius:2}}/>
-              </div>
-            </div>:<div style={{height:isMobile?10:14}}/>}
-          </div>;})}
-          {horas.map(hr=><React.Fragment key={hr}>
-            <div style={{background:C.bg,padding:isMobile?"0 3px":"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:isMobile?9.5:11,color:C.t3,minHeight:cellMinH}}>{isMobile?hr:`${hr}:00`}</div>
+      {/* Grilla */}
+      <div style={{borderRadius:14,overflow:"hidden",border:bCell,background:C.bgCard}}>
+        {/* Fila header: esquina + 7 días */}
+        <div style={{display:"grid",gridTemplateColumns:"52px repeat(7,1fr)"}}>
+          <div style={{borderBottom:bCell,borderRight:bCell,background:C.bgCard}}/>
+          {dias.map((d,i)=>{
+            const fs=fmtD(d);
+            const isH=fs===h;
+            const cnt=all.filter(t=>t.fecha===fs&&t.estado!=="cancelado").length;
+            const feriado=getFeriado(fs);
+            const bloqueado=diasBloqueados.find(b=>b.fecha===fs);
+            const especial=bloqueado?.tipo==="horario"?bloqueado:null;
+            return <div key={i} onClick={()=>setDayConfigFecha(fs)}
+              style={{borderBottom:bCell,borderRight:i<6?bCell:"none",
+                background:bloqueado?.tipo==="bloqueado"?"rgba(240,96,96,0.04)":especial?"rgba(52,212,144,0.04)":isH?"rgba(224,91,40,0.07)":feriado?"rgba(245,192,96,0.04)":C.bgCard,
+                padding:"10px 6px",textAlign:"center",position:"relative",cursor:"pointer",
+                transition:"background 0.15s"}}
+              title="Configurar este día">
+              {isH&&<div style={{position:"absolute",top:5,right:5,fontSize:9,fontWeight:700,color:"#fff",background:C.coral,padding:"2px 5px",borderRadius:5}}>{String(nowTime.getHours()).padStart(2,"0")}:{String(nowTime.getMinutes()).padStart(2,"0")}</div>}
+              <div style={{fontSize:10,fontWeight:600,color:bloqueado?.tipo==="bloqueado"?C.red:especial?C.green:isH?C.coral:feriado?C.yellow:C.t3,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{DIAS[d.getDay()]}</div>
+              <div style={{fontSize:18,fontWeight:700,color:bloqueado?.tipo==="bloqueado"?C.red:especial?C.green:isH?C.coral:feriado?C.yellow:C.t1}}>{d.getDate()}</div>
+              {feriado&&!bloqueado&&<div style={{fontSize:8,color:C.yellow,fontWeight:600,marginTop:2}}>🇵🇾 Feriado</div>}
+              {bloqueado?.tipo==="bloqueado"&&<div style={{fontSize:8,color:C.red,fontWeight:600,marginTop:2}}>🔒 Cerrado</div>}
+              {especial&&<div style={{fontSize:8,color:C.green,fontWeight:600,marginTop:2}}>🕐 {especial.hora_inicio}–{especial.hora_fin}h</div>}
+              {!feriado&&!bloqueado&&(cnt>0
+                ?<div style={{marginTop:4}}>
+                  <div style={{width:"50%",margin:"0 auto",height:3,borderRadius:2,background:C.bgElev,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${Math.min(100,Math.round(cnt/horas.length*100))}%`,background:cnt/horas.length>0.7?C.red:cnt/horas.length>0.4?C.yellow:C.green}}/>
+                  </div>
+                </div>
+                :<div style={{marginTop:4,height:7}}/>
+              )}
+            </div>;
+          })}
+        </div>
+        {/* Filas de horas */}
+        {horas.map((hr,hrIdx)=>(
+          <div key={hr} style={{display:"grid",gridTemplateColumns:"52px repeat(7,1fr)"}}>
+            <div style={{borderBottom:hrIdx<horas.length-1?bCell:"none",borderRight:bCell,padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end",fontSize:11,color:C.t3,minHeight:40,fontWeight:500,background:C.bgCard}}>
+              {hr}:00
+            </div>
             {dias.map((d,di)=>{
               const fs=fmtD(d);
               const t=all.find(t=>t.fecha===fs&&t.hora===hr&&t.estado!=="cancelado");
               const c=t?cById(t.cliente_id):null;
-              const isPico=hr>=cfg.hora_pico_inicio&&hr<cfg.hora_pico_fin;
               const isToday=fs===h;
               const isNowHr=isToday&&hr===nowHr;
               const isPast=isToday&&hr<nowHr;
               const isDragTarget=!t&&dragOver?.fecha===fs&&dragOver?.hora===hr&&draggingId;
-              return<div key={`${hr}-${di}`}
+              const apellido=c?.nombre?.split(" ").slice(-1)[0]||"";
+              const inicial=c?.nombre?.[0]?.toUpperCase()||"";
+              const label=t?(inicial+". "+apellido):"";
+              return <div key={di}
                 onClick={()=>!draggingId&&(t?openM("verTurno",{...t,cliente:c,instructor:iById(t.instructor_id)}):openM("turno",{fecha:fs,hora:hr,tipo:"ocasional"}))}
-                onDragOver={e=>{if(draggingId&&!t){e.preventDefault();setDragOver({fecha:fs,hora:hr});}}}
+                onDragEnter={e=>{if(!t){e.preventDefault();setDragOver({fecha:fs,hora:hr});}}}
+                onDragOver={e=>{if(!t){e.preventDefault();e.dataTransfer.dropEffect="move";}}}
                 onDragLeave={()=>setDragOver(null)}
                 onDrop={e=>{
                   e.preventDefault();
-                  if(!draggingId)return;
-                  const orig=turnos.find(x=>x.id===draggingId);
-                  if(orig&&(orig.fecha!==fs||orig.hora!==hr)&&!t){
-                    setDlg({type:"dragReprogram",turnoId:draggingId,newFecha:fs,newHora:hr,nombre:cById(orig.cliente_id)?.nombre||"?"});
+                  const raw=e.dataTransfer.getData("text/plain");
+                  const id=Number(raw);
+                  if(!id||t){setDraggingId(null);setDragOver(null);return;}
+                  const orig=turnos.find(x=>x.id===id);
+                  if(orig&&(orig.fecha!==fs||orig.hora!==hr)){
+                    setDlg({type:"dragReprogram",turnoId:id,newFecha:fs,newHora:hr,nombre:cById(orig.cliente_id)?.nombre||"?",fechaLabel:fmtFechaLegible(fs)});
                   }
                   setDraggingId(null);setDragOver(null);
                 }}
                 style={{
-                  opacity:isPast&&!t?0.35:1,
-                  background:isDragTarget?"rgba(224,91,40,0.15)":t?(t.tipo==="abono"?"#1A0A38":t.tipo==="clase"?"#0A1A38":"#3A1A0A"):(isPast?C.bg:isPico?"rgba(224,91,40,0.06)":C.bg),
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  cursor:draggingId?(t?"not-allowed":"copy"):"pointer",
-                  minHeight:cellMinH,transition:"background 0.1s",padding:isMobile?"0 1px":"0 2px",
-                  position:"relative",
+                  borderBottom:hrIdx<horas.length-1?bCell:"none",
+                  borderRight:di<6?bCell:"none",
+                  background:cellBg(fs,hr,t,isDragTarget),
                   outline:isDragTarget?`2px dashed ${C.coral}`:"none",outlineOffset:-2,
+                  opacity:isPast&&!t?0.35:1,
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  minHeight:40,padding:"0 4px",position:"relative",
+                  cursor:draggingId?(t?"not-allowed":"copy"):"pointer",
+                  transition:"background 0.1s",
                 }}>
-                {t&&!t._gen&&<span
-                  draggable
-                  onDragStart={e=>{e.stopPropagation();setDraggingId(t.id);e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(t.id));}}
-                  onDragEnd={()=>{setDraggingId(null);setDragOver(null);}}
-                  style={{fontSize:isMobile?9:11,fontWeight:600,color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2,cursor:"grab"}}>
-                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}
+                {t&&<span
+                  draggable={!t._gen}
+                  onDragStart={t._gen?undefined:e=>{setDraggingId(t.id);e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(t.id));}}
+                  onDragEnd={t._gen?undefined:()=>{setDraggingId(null);setDragOver(null);}}
+                  style={{
+                    fontSize:11,fontWeight:600,
+                    color:t.tipo==="abono"?C.purple:t.tipo==="clase"?C.info:C.coral,
+                    background:t.tipo==="abono"?C.purpleBg:t.tipo==="clase"?C.infoBg:C.redBg,
+                    border:`1px solid ${t.tipo==="abono"?C.purpleBd:t.tipo==="clase"?"rgba(90,160,240,0.3)":C.coralD}`,
+                    borderRadius:8,padding:"4px 10px",
+                    maxWidth:"95%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                    lineHeight:1.3,cursor:t._gen?"default":"grab",
+                  }}>
+                  {label}
                 </span>}
-                {t&&t._gen&&<span style={{fontSize:isMobile?9:11,fontWeight:600,color:C.purple,background:C.purpleBg,borderRadius:isMobile?3:5,padding:isMobile?"1px 3px":"2px 7px",maxWidth:"96%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>
-                  {isMobile?(c?.nombre?.[0]?.toUpperCase()||"?"):(c?.nombre?.split(" ")[0]||"?")}
-                </span>}
-                {isNowHr&&<div style={{position:"absolute",top:`${nowPct}%`,left:0,right:0,height:2,background:C.red,zIndex:3,pointerEvents:"none",borderRadius:1,boxShadow:"0 0 6px rgba(240,96,96,0.7)"}}/>}
+                {isNowHr&&<div style={{position:"absolute",top:`${nowPct}%`,left:0,right:0,height:2,background:C.red,zIndex:3,pointerEvents:"none",boxShadow:"0 0 6px rgba(240,96,96,0.7)"}}/>}
               </div>;
             })}
-          </React.Fragment>)}
-        </div>
+          </div>
+        ))}
       </div>
-      <div style={{display:"flex",gap:isMobile?10:12,marginTop:10,fontSize:isMobile?10.5:12,color:C.t3,flexWrap:"wrap"}}>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Ocasional</span>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Abonado</span>
-        <span><span style={{width:10,height:10,borderRadius:2,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:4,verticalAlign:"middle"}}/>Clase</span>
-        {!isMobile&&<span>· Arrastrá un turno para reprogramarlo</span>}
+      {/* Leyenda */}
+      <div style={{display:"flex",gap:14,marginTop:12,fontSize:12,color:C.t3,flexWrap:"wrap"}}>
+        <span><span style={{width:10,height:10,borderRadius:3,background:C.redBg,border:`1px solid ${C.coral}`,display:"inline-block",marginRight:5,verticalAlign:"middle"}}/>Ocasional</span>
+        <span><span style={{width:10,height:10,borderRadius:3,background:C.purpleBg,border:`1px solid ${C.purple}`,display:"inline-block",marginRight:5,verticalAlign:"middle"}}/>Abonado</span>
+        <span><span style={{width:10,height:10,borderRadius:3,background:C.infoBg,border:`1px solid ${C.info}`,display:"inline-block",marginRight:5,verticalAlign:"middle"}}/>Clase</span>
+        <span>· Arrastrá un turno para reprogramarlo</span>
       </div>
     </div>;
   };
@@ -2557,22 +2972,6 @@ export default function App() {
         <div key={i}><div style={{fontSize:12,color:C.t2,marginBottom:4}}>{r.l}</div><div style={{fontSize:15,fontWeight:600,color:C.t1}}>{r.v}</div></div>
       )}
     </div>
-    <div style={{...card,marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontWeight:600,fontSize:14,color:C.t1}}>Horarios por día</div>
-        <Btn sm v="primary" onClick={()=>openM("horarios",{})}>Editar</Btn>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {DIAS_FULL.map((dia,i)=>{
-          const horarios=cfg.horarios_por_dia?(()=>{try{return JSON.parse(cfg.horarios_por_dia);}catch{return{};}})():{};
-          const h=horarios[i]||{inicio:cfg.hora_inicio,fin:cfg.hora_fin};
-          return <div key={i} style={{padding:10,background:C.bg,borderRadius:8,borderLeft:`3px solid ${C.coral}`,fontSize:12}}>
-            <div style={{fontWeight:600,color:C.t1,marginBottom:4}}>{dia}</div>
-            <div style={{color:C.t2}}>{h.inicio}:00 - {h.fin}:00</div>
-          </div>;
-        })}
-      </div>
-    </div>
     {instructores.length>0&&<div style={{...card,marginBottom:12}}><div style={{fontWeight:600,marginBottom:12,fontSize:14,color:C.t1}}>Instructores</div>{instructores.map(i=><div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{fontWeight:600,color:C.t1}}>{i.nombre}</span><span style={{color:C.t2}}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
     <div style={{...card,marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontWeight:600,fontSize:14,color:C.t1}}>Planes de abono</div><Btn sm v="ghost" onClick={()=>openM("plan",{})}>+ Plan</Btn></div>{planes.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}><div><span style={{fontWeight:600,color:C.t1}}>{p.nombre}</span><span style={{color:C.t2,marginLeft:8}}>{p.horas_semana}hs/sem</span></div><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontWeight:600,color:C.t1}}>{gs(p.precio)}/mes</span><Btn sm v="ghost" onClick={()=>openM("plan",{...p})}>Editar</Btn></div></div>)}</div>
 
@@ -2705,7 +3104,7 @@ export default function App() {
       paddingTop:isMobile?"env(safe-area-inset-top)":0
     }}>
       <div style={{padding:sidebarCol&&!isMobile?"18px 12px 14px":"18px 18px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,justifyContent:sidebarCol&&!isMobile?"center":"flex-start"}}>
-        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:36,objectFit:"contain"}}/>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:52,...LOGO_STYLE_DARK}}/>
         {!(sidebarCol&&!isMobile)&&<>
           <span style={{flex:1,fontSize:11,color:C.t3,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase"}}>Admin</span>
           {!isMobile&&<button onClick={()=>{setCmdOpen(true);setCmdQ("");}} title="Búsqueda rápida (⌘K)" style={{fontSize:10,color:C.t3,background:C.bgElev,border:`1px solid ${C.border}`,borderRadius:5,padding:"3px 7px",cursor:"pointer",fontFamily:"var(--font-sans)",flexShrink:0,transition:"color 0.15s"}}>⌘K</button>}
@@ -2736,7 +3135,7 @@ export default function App() {
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
           {(turnos.filter(x=>x.estado==="pendiente_pago").length+waNoLeidos)>0&&<span style={{position:"absolute",top:-3,right:-3,width:9,height:9,borderRadius:"50%",background:C.coral,border:`2px solid ${C.bgCard}`}}/>}
         </button>
-        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:28,objectFit:"contain",flexShrink:0}}/>
+        <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:40,flexShrink:0,...LOGO_STYLE_DARK}}/>
         <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:7,overflow:"hidden"}}>
           {tabActual?.ic==="wa"?<WhatsAppIcon size={15}/>:<span style={{fontSize:15,lineHeight:1,flexShrink:0}}>{tabActual?.ic}</span>}
           <span style={{fontSize:15,fontWeight:700,color:C.t1,letterSpacing:-0.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tabActual?.l}</span>
@@ -2838,10 +3237,11 @@ export default function App() {
       </div>}
       {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
         <Btn v="success" onClick={()=>{closeM();setDlg({type:"confirmar",t:form});}}>✓ Cobrar y confirmar {gs(form.precio-(form.sena||0))}</Btn>
+        {form.cliente?.telefono&&<ReenviarConfirmacionBtn turno={form} cliente={form.cliente} notify={notify}/>}
         <Btn v="ghost" onClick={()=>{closeM();setDlg({type:"noshow",t:form});}}>Marcar como no show</Btn>
         <Btn v="danger" onClick={()=>{closeM();setDlg({type:"cancelar",t:form});}}>Cancelar turno</Btn>
       </div>}
-      {form.estado==="confirmado"&&form.cliente?.telefono&&<Btn v="success" onClick={()=>enviarWsp(form.cliente.telefono,`¡Hola ${form.cliente.nombre}! Tu turno en ${cfg.nombre_club} del ${form.fecha} a las ${form.hora}:00hs fue confirmado. ¡Gracias!`)}>Enviar WhatsApp</Btn>}
+      {form.estado==="confirmado"&&form.cliente?.telefono&&<ReenviarConfirmacionBtn turno={form} cliente={form.cliente} notify={notify}/>}
 
       {/* ── Productos vendidos en el turno ── */}
       {form.id&&(()=>{
@@ -3081,7 +3481,8 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
     <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
-    <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
+    <DiaConfigModal/>
+    <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.fechaLabel||dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
 
     {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
       <div style={{backgroundColor:C.bgCard,borderRadius:16,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:`1px solid ${C.border}`}}>
