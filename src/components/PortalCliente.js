@@ -89,6 +89,8 @@ const PortalCliente = () => {
   const refValido = !!codigoInstit || (!!refMatch && (!miTelNorm || refMatch.telefono?.replace(/\D/g,"") !== miTelNorm));
   const refDescPct = codigoInstit ? Number(codigoInstit.descuento_pct)||10 : Number(cfg.referral_discount_percent)||10;
   const saldoDisponible = clienteEncontrado?.saldo_favor || 0;
+  const reservasConfirmadas = clienteEncontrado ? turnos.filter(t=>t.cliente_id===clienteEncontrado.id&&(t.estado==="confirmado"||t.estado==="completado")).length : 0;
+  const puedeEfectivo = reservasConfirmadas >= 2;
   const diaFecha = fecha ? new Date(fecha+"T00:00:00").getDay() : -1;
   const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado") || abonoTurnos.find(at=>at.dia===diaFecha&&at.hora===h);
   const pasado = h => fecha===hoy()&&h<=new Date().getHours();
@@ -186,7 +188,7 @@ const PortalCliente = () => {
       </div>
 
       {/* CONTENIDO */}
-      <div style={{maxWidth:600,margin:"0 auto",padding:isMobile?"20px 14px 40px":"20px 32px 36px"}}>
+      <div style={{maxWidth:paso==="lista"&&!isMobile?960:600,margin:"0 auto",padding:isMobile?"20px 14px 40px":"20px 32px 36px"}}>
        <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
 
         {/* PASO LISTA */}
@@ -527,6 +529,7 @@ const PortalCliente = () => {
               {[
                 {id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WA",icon:"🏦"},
                 {id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},
+                ...(puedeEfectivo?[{id:"efectivo",title:"Pagar en el lugar",sub:"Efectivo al llegar",icon:"💵"}]:[]),
               ].map(({id,title,sub,icon})=>(
                 <div key={id} onClick={()=>setMetodoPago(id)}
                      style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:8}}>
@@ -601,6 +604,22 @@ const PortalCliente = () => {
                 style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)",opacity:saving?0.7:1}}>
                 {saving?"Guardando...":"Confirmar reserva →"}
               </button>
+            ):metodoPago==="efectivo"?(
+              <button onClick={async()=>{
+                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
+                setSaving(true);setMsg("");
+                try {
+                  const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:false,metodoPago:"efectivo"})});
+                  const d = await r.json();
+                  if(!r.ok){setMsg(d.error||"Error al guardar. Intentalo de nuevo.");setSaving(false);return;}
+                  setMiCodigo(d.referrer_code||"");
+                  setPaso("confirmado");
+                } catch(e){console.error(e);setMsg("Error de conexión. Intentá de nuevo.");}
+                setSaving(false);
+              }} disabled={saving}
+                style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)",opacity:saving?0.7:1}}>
+                {saving?"Guardando...":"Confirmar reserva →"}
+              </button>
             ):(
               <button onClick={async()=>{
                 if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tus datos.");return;}
@@ -626,15 +645,15 @@ const PortalCliente = () => {
           {/* Ticket */}
           <div style={{borderRadius:20,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)",marginBottom:16}}>
             {/* Header */}
-            <div style={{background:metodoPago==="transferencia"?`linear-gradient(135deg,#071E12,#0A2A18)`:`linear-gradient(135deg,#071E12,#092A18)`,padding:"20px 20px 16px",textAlign:"center",position:"relative"}}>
+            <div style={{background:`linear-gradient(135deg,#071E12,#0A2A18)`,padding:"20px 20px 16px",textAlign:"center",position:"relative"}}>
               <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(52,212,144,0.15)",border:`2px solid ${C.greenBd}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,margin:"0 auto 10px",boxShadow:"0 0 24px rgba(52,212,144,0.2)"}}>
                 {metodoPago==="transferencia"?"⏳":"✓"}
               </div>
               <div style={{fontSize:18,fontWeight:800,color:C.green,marginBottom:4,letterSpacing:-0.3}}>
-                {metodoPago==="transferencia"?"¡Reserva recibida!":"¡Reserva confirmada!"}
+                {metodoPago==="transferencia"?"¡Reserva recibida!":"¡Turno reservado!"}
               </div>
               <div style={{fontSize:13,color:"rgba(52,212,144,0.65)",lineHeight:1.5}}>
-                {metodoPago==="transferencia"?"Te avisamos al confirmar tu transferencia":"Tu turno está reservado, ¡nos vemos!"}
+                {metodoPago==="transferencia"?"Te avisamos al confirmar tu transferencia":metodoPago==="efectivo"?"Pagás cuando llegues. ¡Te esperamos!":"Tu turno está reservado, ¡nos vemos!"}
               </div>
             </div>
             {/* Torn edge */}
@@ -651,7 +670,7 @@ const PortalCliente = () => {
                 <div style={{fontSize:18,fontWeight:700,color:C.coral,marginTop:4}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-                {[{l:"Duración",v:`${slotsSel.length}h`},{l:"Total",v:gs(totalSel)},{l:"A nombre de",v:form.nombre.split(" ")[0]},{l:"Método",v:metodoPago==="transferencia"?"Transferencia":"Pago online"}].map(({l,v})=>(
+                {[{l:"Duración",v:`${slotsSel.length}h`},{l:"Total",v:gs(totalSel)},{l:"A nombre de",v:form.nombre.split(" ")[0]},{l:"Método",v:metodoPago==="transferencia"?"Transferencia":metodoPago==="efectivo"?"Efectivo":"Pago online"}].map(({l,v})=>(
                   <div key={l} style={{background:C.bgElev,borderRadius:10,padding:"10px 12px",border:`1px solid ${C.border}`}}>
                     <div style={{fontSize:10,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>{l}</div>
                     <div style={{fontSize:13,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
