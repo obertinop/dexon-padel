@@ -149,7 +149,7 @@ const PortalCliente = () => {
   const StepBar = () => (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:0,marginBottom:24,padding:"0 8px"}}>
       {[{i:0,l:"Horario"},{i:1,l:"Datos"},{i:2,l:"Pago"}].map(({i,l})=>(
-        <div key={i} style={{display:"flex",alignItems:"center",flex:i<3?"1":"0"}}>
+        <div key={i} style={{display:"flex",alignItems:"center",flex:i<2?"1":"0"}}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
             <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,
               background:pasoIdx>i?C.green:pasoIdx===i?C.coral:C.bgElev,
@@ -161,7 +161,7 @@ const PortalCliente = () => {
             </div>
             <div style={{fontSize:10,color:pasoIdx>=i?C.t2:C.t3,fontWeight:pasoIdx===i?600:400}}>{l}</div>
           </div>
-          {i<3&&<div style={{flex:1,height:2,background:pasoIdx>i?C.green:C.border,marginBottom:18,marginLeft:4,marginRight:4,transition:"background 0.3s"}}/>}
+          {i<2&&<div style={{flex:1,height:2,background:pasoIdx>i?C.green:C.border,marginBottom:18,marginLeft:4,marginRight:4,transition:"background 0.3s"}}/>}
         </div>
       ))}
     </div>
