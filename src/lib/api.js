@@ -1,5 +1,10 @@
 import { SUPA_URL, SUPA_KEY } from "./constants.js";
 
+export const apiHeaders = () => ({
+  "Content-Type": "application/json",
+  "x-api-secret": import.meta.env.VITE_API_SECRET || "",
+});
+
 // ── AUTH ──
 export const auth = {
   login: async (email, pw) => {

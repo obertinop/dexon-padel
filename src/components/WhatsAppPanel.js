@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { C } from "../lib/constants.js";
 import { gs, fmtFechaLegible } from "../lib/utils.js";
 import { Avatar, WhatsAppIcon, Dialog } from "./UI.js";
+import { apiHeaders } from "../lib/api.js";
 
 const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMobile}) => {
   const WA_GREEN = "#25D366";
@@ -361,7 +362,7 @@ const ReenviarConfirmacionBtn = ({turno, cliente, notify}) => {
   const enviar = async () => {
     setLoading(true);
     try {
-      await fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},
+      await fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),
         body:JSON.stringify({tipo:"confirmacion_manual",nombre:cliente.nombre,telefono:cliente.telefono,
           fecha:fmtFechaLegible(turno.fecha),horarios:`${turno.hora}:00hs`,
           monto:gs(turno.precio),forma_pago:turno.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})});

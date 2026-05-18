@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { C, DIAS, ADMIN_TEL, LOGO, LOGO_STYLE_DARK, card } from "../lib/constants.js";
 import { useIsMobile, useFeriados } from "../lib/hooks.js";
-import { db } from "../lib/api.js";
+import { db, apiHeaders } from "../lib/api.js";
 import { hoy, fmtFechaLegible, gs, avatarBg, avatarFg, initials } from "../lib/utils.js";
 import { Badge } from "./UI.js";
 import CalendarioMini from "./CalendarioMini.js";
@@ -603,12 +603,12 @@ const PortalCliente = () => {
                 if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completa tu nombre y telefono.");return;}
                 setSaving(true);setMsg("");
                 try {
-                  const r = await fetch("/api/reservar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
+                  const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
                   const d = await r.json();
                   if(!r.ok){setMsg(d.error||"Error al guardar. Intentalo de nuevo.");setSaving(false);return;}
                   setMiCodigo(d.referrer_code||"");
                   const horasStr=slotsSel.map(h=>`${h}:00`).join(", ");
-                  fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
+                  fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
                   setPaso("confirmado");
                 } catch(e){console.error(e);setMsg("Error de conexion. Intenta de nuevo.");}
                 setSaving(false);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 
 // ── lib ──
 import { C, DIAS, DIAS_FULL, MESES, card, metric, inp, lbl, LOGO, LOGO_STYLE_DARK } from "./lib/constants.js";
-import { auth, api, db } from "./lib/api.js";
+import { auth, api, db, apiHeaders } from "./lib/api.js";
 import { useIsMobile, useFeriados } from "./lib/hooks.js";
 import { gs, hoy, fmtFechaLegible, fmtD, initials, avatarBg, avatarFg, genRefCode } from "./lib/utils.js";
 
@@ -229,7 +229,7 @@ export default function App() {
   const confirmarTurno = async t=>{
     setSaving(true);
     try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
-    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
+    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
     setDlg(null);await load();}
     catch(e){notify(e.message,"error");}
     setSaving(false);
@@ -250,7 +250,7 @@ export default function App() {
         await db.patch("turnos",id,{estado:"confirmado",cobrado:true,saldo:0},tk);
         if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
         const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);
-        if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
+        if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
       }));
       await load();notify(`${ids.length} turno${ids.length!==1?"s":""} confirmado${ids.length!==1?"s":""}!`,"ok");
       setPendSel(new Set());
