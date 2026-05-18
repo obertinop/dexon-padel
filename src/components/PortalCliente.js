@@ -574,6 +574,7 @@ const PortalCliente = () => {
               {[
                 {id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WA",icon:"🏦"},
                 {id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},
+                ...(puedeEfectivo?[{id:"efectivo",title:"Pagar en el lugar",sub:"Efectivo al llegar",icon:"💵"}]:[]),
               ].map(({id,title,sub,icon})=>(
                 <div key={id} onClick={()=>setMetodoPago(id)}
                      style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:8}}>
@@ -608,36 +609,6 @@ const PortalCliente = () => {
                 <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad <span style={{color:C.coral}}>*</span></label>
                 <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpP} placeholder="Número de CI (sin puntos)"/>
                 <div style={{fontSize:11,color:C.t3,marginTop:4}}>Requerido por la pasarela de pago.</div>
-              </div>
-            )}
-
-            {/* Efectivo cliente habitual (oculto por defecto) */}
-            {puedeEfectivo&&metodoPago!=="efectivo"&&(
-              <button onClick={()=>{setMostrarEfectivo(s=>!s);}} style={{width:"100%",marginBottom:12,padding:"9px 14px",background:"transparent",border:`1px dashed ${C.border}`,borderRadius:10,fontSize:12,color:C.t3,cursor:"pointer",fontFamily:"var(--font-sans)",textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
-                <span>¿Sos cliente habitual?</span>
-                <span style={{color:C.t2,fontWeight:600}}>{mostrarEfectivo?"Ocultar opciones ↑":"Ver más opciones →"}</span>
-              </button>
-            )}
-            {puedeEfectivo&&mostrarEfectivo&&metodoPago!=="efectivo"&&(
-              <div onClick={()=>{setMetodoPago("efectivo");setMostrarEfectivo(false);}}
-                style={{border:`2px solid ${C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:C.bgElev,marginBottom:12,display:"flex",alignItems:"center",gap:8,transition:"all 0.15s"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor=C.coral}
-                onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-                <div style={{fontSize:16}}>💵</div>
-                <div>
-                  <div style={{fontSize:12,fontWeight:700,color:C.t1}}>Pagar en el lugar</div>
-                  <div style={{fontSize:10,color:C.t3}}>Efectivo al llegar · Solo clientes habituales</div>
-                </div>
-              </div>
-            )}
-            {metodoPago==="efectivo"&&(
-              <div style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
-                <div style={{fontSize:20}}>💵</div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:C.t1,marginBottom:2}}>Pagar en el lugar</div>
-                  <div style={{fontSize:12,color:C.t3}}>Abonás en efectivo al llegar.</div>
-                </div>
-                <button onClick={()=>{setMetodoPago("transferencia");setMostrarEfectivo(false);}} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:11,fontFamily:"var(--font-sans)"}}>Cambiar</button>
               </div>
             )}
 
