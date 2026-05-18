@@ -141,11 +141,11 @@ const PortalCliente = () => {
   const inpP = {width:"100%",padding:"14px 16px",border:`1px solid ${C.border}`,borderRadius:12,fontSize:15,color:C.t1,background:C.bgElev,fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:52};
 
   // Indicador de pasos
-  const pasos = ["lista","datos","pago","confirmado"];
+  const pasos = ["lista","datos","confirmado"];
   const pasoIdx = pasos.indexOf(paso);
   const StepBar = () => (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:0,marginBottom:24,padding:"0 8px"}}>
-      {[{i:0,l:"Horario"},{i:1,l:"Datos"},{i:2,l:"Pago"}].map(({i,l})=>(
+      {[{i:0,l:"Horario"},{i:1,l:"Datos y pago"}].map(({i,l})=>(
         <div key={i} style={{display:"flex",alignItems:"center",flex:i<2?"1":"0"}}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
             <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,
@@ -476,87 +476,64 @@ const PortalCliente = () => {
             ← Volver
           </button>
           <div style={{...card,padding:"24px"}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:18}}>Tus datos</div>
             {/* Resumen */}
-            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${C.borderL}`}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.t1}}>{fmtFechaLegible(fecha)}</div>
-              <div style={{fontSize:13,color:C.t2,marginTop:4}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs · {gs(totalSel)}</div>
+            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"12px 16px",marginBottom:16,border:`1px solid ${C.borderL}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{fmtFechaLegible(fecha)}</div>
+                <div style={{fontSize:12,color:C.t2,marginTop:2}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
+              </div>
+              <div style={{fontSize:16,fontWeight:800,color:C.coral}}>{gs(totalSel)}</div>
             </div>
+
             {/* Welcome card cliente reconocido */}
-            {clienteEncontrado&&<div style={{background:`linear-gradient(135deg,rgba(52,212,144,0.10),rgba(52,212,144,0.02))`,border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"14px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:12,animation:"pSlide 0.25s ease-out"}}>
-              <div style={{width:44,height:44,borderRadius:"50%",background:avatarBg(clienteEncontrado.nombre),color:avatarFg(clienteEncontrado.nombre),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:16,flexShrink:0,border:`2px solid ${avatarFg(clienteEncontrado.nombre)}40`}}>{initials(clienteEncontrado.nombre)}</div>
+            {clienteEncontrado&&<div style={{background:`linear-gradient(135deg,rgba(52,212,144,0.10),rgba(52,212,144,0.02))`,border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:10,animation:"pSlide 0.25s ease-out"}}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:avatarBg(clienteEncontrado.nombre),color:avatarFg(clienteEncontrado.nombre),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,flexShrink:0}}>{initials(clienteEncontrado.nombre)}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:700,color:C.green,marginBottom:2}}>¡Hola de nuevo, {clienteEncontrado.nombre.split(" ")[0]}!</div>
-                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.5}}>
-                  {(()=>{const tu=turnos.filter(t=>t.cliente_id===clienteEncontrado.id).length;return tu>0?`Ya tenés ${tu} turno${tu!==1?"s":""} con nosotros.`:"Bienvenido al portal.";})()}
-                  {clienteEncontrado.saldo_favor>0&&<span> Tenés <strong>{gs(clienteEncontrado.saldo_favor)}</strong> a favor.</span>}
+                <div style={{fontSize:13,fontWeight:700,color:C.green}}>¡Hola de nuevo, {clienteEncontrado.nombre.split(" ")[0]}!</div>
+                <div style={{fontSize:11,color:"#5ABDA8",marginTop:1}}>
+                  {(()=>{const tu=turnos.filter(t=>t.cliente_id===clienteEncontrado.id).length;return tu>0?`${tu} turno${tu!==1?"s":""} con nosotros.`:"Bienvenido al portal.";})()}
+                  {clienteEncontrado.saldo_favor>0&&<span> Saldo: <strong>{gs(clienteEncontrado.saldo_favor)}</strong></span>}
                 </div>
               </div>
-              <span style={{fontSize:18}}>👋</span>
             </div>}
-            <div style={{marginBottom:16}}>
-              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Nombre completo</label>
-              <input type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={inpP} placeholder="Tu nombre y apellido"/>
-            </div>
-            <div style={{marginBottom:20}}>
-              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Numero de telefono</label>
-              <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpP} placeholder="0981 xxx xxx"/>
-            </div>
-            {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
-            <button onClick={()=>{if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completa tu nombre y telefono.");return;}setMsg("");setPaso("pago");}}
-              style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)"}}>
-              Ir a pagar →
-            </button>
-          </div>
-        </>}
 
-        {/* PASO PAGO */}
-        {paso==="pago"&&<>
-          <StepBar/>
-          <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
-            ← Volver
-          </button>
-          <div style={{...card,padding:"24px"}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:18}}>Completa tu pago</div>
-
-            {/* Desglose */}
-            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"16px",marginBottom:16,border:`1px solid ${C.borderL}`}}>
-              <div style={{fontSize:11,color:C.t3,textTransform:"uppercase",letterSpacing:0.6,marginBottom:10}}>Detalle</div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.t2,marginBottom:4}}><span>{slotsSel.length} hora{slotsSel.length>1?"s":""} · {fmtFechaLegible(fecha)}</span><span>{gs(subtotalSinDesc)}</span></div>
-              {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow,marginBottom:4}}><span>Descuento del dia (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
-              {descRef>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.green,marginBottom:4}}><span>Codigo referido ({refMatch?.nombre?.split(" ")[0]})</span><span>-{gs(descRef)}</span></div>}
-              {descSaldo>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.green,marginBottom:4}}><span>Saldo a favor</span><span>-{gs(descSaldo)}</span></div>}
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:17,fontWeight:800,color:C.t1,marginTop:10,paddingTop:10,borderTop:`1px solid ${C.border}`}}><span>Total</span><span style={{color:C.coral}}>{gs(totalSel)}</span></div>
+            {/* Nombre y teléfono */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+              <div>
+                <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Nombre completo</label>
+                <input type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={inpP} placeholder="Tu nombre"/>
+              </div>
+              <div>
+                <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Teléfono</label>
+                <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpP} placeholder="0981 xxx xxx"/>
+              </div>
             </div>
 
             {/* Saldo a favor */}
             {clienteEncontrado && saldoDisponible>0 && (
-              <div style={{background:C.greenBg,border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+              <div style={{background:C.greenBg,border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"10px 14px",marginBottom:12}}>
                 <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
-                  <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${usarSaldo?C.green:C.border}`,background:usarSaldo?C.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setUsarSaldo(s=>!s)}>
-                    {usarSaldo&&<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  <div style={{width:20,height:20,borderRadius:5,border:`2px solid ${usarSaldo?C.green:C.border}`,background:usarSaldo?C.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setUsarSaldo(s=>!s)}>
+                    {usarSaldo&&<svg width="10" height="8" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:600,color:C.green}}>Tenes {gs(saldoDisponible)} de saldo a favor</div>
-                    <div style={{fontSize:11,color:"#5ABDA8",marginTop:2}}>Ganado por referidos. Marca para usarlo.</div>
-                  </div>
+                  <div style={{fontSize:12,color:C.green,fontWeight:600}}>Usar {gs(saldoDisponible)} de saldo a favor</div>
                 </label>
               </div>
             )}
 
-            {/* Selector metodo pago */}
-            <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:0.5}}>Metodo de pago</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+            {/* Método de pago */}
+            <div style={{fontSize:11,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Método de pago</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {[
                 {id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WA",icon:"🏦"},
                 {id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},
               ].map(({id,title,sub,icon})=>(
                 <div key={id} onClick={()=>setMetodoPago(id)}
-                     style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{fontSize:18,flexShrink:0}}>{icon}</div>
+                     style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{fontSize:16,flexShrink:0}}>{icon}</div>
                   <div>
-                    <div style={{fontSize:13,fontWeight:700,color:metodoPago===id?C.coral:C.t1,marginBottom:2}}>{title}</div>
-                    <div style={{fontSize:11,color:C.t3,lineHeight:1.3}}>{sub}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:metodoPago===id?C.coral:C.t1}}>{title}</div>
+                    <div style={{fontSize:10,color:C.t3,lineHeight:1.3}}>{sub}</div>
                   </div>
                 </div>
               ))}
@@ -564,45 +541,51 @@ const PortalCliente = () => {
 
             {/* Datos transferencia */}
             {metodoPago==="transferencia"&&(
-              <div style={{background:C.bgElev,borderRadius:12,padding:"16px",marginBottom:14,border:`1px solid ${C.border}`}}>
-                <div style={{fontSize:13,color:C.t1,lineHeight:2}}>
+              <div style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${C.border}`}}>
+                <div style={{fontSize:12,color:C.t1,lineHeight:1.9}}>
                   <div><span style={{color:C.t3}}>Banco:</span> <strong>UENO</strong></div>
-                  <div><span style={{color:C.t3}}>Alias:</span> <strong style={{fontSize:15,letterSpacing:1.5,color:C.coral}}>80168039-5</strong></div>
+                  <div><span style={{color:C.t3}}>Alias:</span> <strong style={{letterSpacing:1.2,color:C.coral}}>80168039-5</strong></div>
                   <div><span style={{color:C.t3}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
                 </div>
-                <div style={{marginTop:12,padding:"10px 12px",background:C.greenBg,borderRadius:8,border:`1px solid ${C.greenBd}`,fontSize:12,color:"#5ABDA8",lineHeight:1.7}}>
-                  1. Transfera al alias <strong>80168039-5</strong><br/>
-                  2. Toca el boton verde<br/>
-                  3. Envia la foto del comprobante por WhatsApp
+                <div style={{marginTop:10,padding:"8px 12px",background:C.greenBg,borderRadius:8,border:`1px solid ${C.greenBd}`,fontSize:11,color:"#5ABDA8",lineHeight:1.7}}>
+                  1. Transferí al alias <strong>80168039-5</strong><br/>
+                  2. Tocá el botón verde<br/>
+                  3. Enviá el comprobante por WhatsApp
                 </div>
               </div>
             )}
 
             {/* Datos pagopar */}
             {metodoPago==="pagopar"&&(
-              <div style={{background:C.bgElev,borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${C.border}`}}>
-                <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Cedula de identidad <span style={{color:C.coral}}>*</span></label>
-                <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpP} placeholder="Numero de CI (sin puntos)"/>
-                <div style={{fontSize:11,color:C.t3,marginTop:6}}>Requerido por la pasarela de pago.</div>
+              <div style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${C.border}`}}>
+                <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad <span style={{color:C.coral}}>*</span></label>
+                <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpP} placeholder="Número de CI (sin puntos)"/>
+                <div style={{fontSize:11,color:C.t3,marginTop:4}}>Requerido por la pasarela de pago.</div>
               </div>
             )}
 
-            {/* Codigo referido */}
-            <div style={{background:C.bgElev,borderRadius:12,padding:"14px 16px",marginBottom:16,border:`1px solid ${refValido?C.greenBd:refMatch&&!refValido?C.redBd:C.border}`,transition:"border-color 0.2s"}}>
-              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Codigo de referido <span style={{color:C.t3,fontWeight:400}}>(opcional · {refDescPct}% descuento)</span></label>
+            {/* Código referido */}
+            <div style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${refValido?C.greenBd:refMatch&&!refValido?C.redBd:C.border}`,transition:"border-color 0.2s"}}>
+              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Código de referido <span style={{color:C.t3,fontWeight:400}}>(opcional · {refDescPct}% off)</span></label>
               <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpP,textTransform:"uppercase",letterSpacing:1}} placeholder="REF-ABCD1234"/>
-              {refValido&&<div style={{fontSize:12,color:C.green,marginTop:8,display:"flex",alignItems:"center",gap:6}}>✓ {codigoInstit?codigoInstit.nombre:`Codigo de ${refMatch?.nombre||"referido"}`} — {refDescPct}% aplicado ({gs(descRef)})</div>}
-              {refMatch&&!refValido&&<div style={{fontSize:12,color:C.red,marginTop:8}}>No podes usar tu propio codigo</div>}
-              {refCodeNorm.length>=4&&!refValido&&!refMatch&&<div style={{fontSize:12,color:C.yellow,marginTop:8}}>Codigo no encontrado</div>}
-              {!refCodeNorm&&<div style={{fontSize:11,color:C.t3,marginTop:6}}>Un amigo te invito? Pedile su codigo y obtene {refDescPct}% off.</div>}
+              {refValido&&<div style={{fontSize:11,color:C.green,marginTop:6,display:"flex",alignItems:"center",gap:5}}>✓ {codigoInstit?codigoInstit.nombre:`Código de ${refMatch?.nombre||"referido"}`} — {refDescPct}% ({gs(descRef)})</div>}
+              {refMatch&&!refValido&&<div style={{fontSize:11,color:C.red,marginTop:6}}>No podés usar tu propio código</div>}
+              {refCodeNorm.length>=4&&!refValido&&!refMatch&&<div style={{fontSize:11,color:C.yellow,marginTop:6}}>Código no encontrado</div>}
             </div>
 
-            {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
+            {/* Desglose si hay descuentos */}
+            {(ahorroDia>0||descRef>0||descSaldo>0)&&<div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:10,padding:"10px 14px",marginBottom:12,border:`1px solid ${C.borderL}`,fontSize:12}}>
+              {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.yellow,marginBottom:2}}><span>Descuento del día (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
+              {descRef>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.green,marginBottom:2}}><span>Código referido</span><span>-{gs(descRef)}</span></div>}
+              {descSaldo>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.green,marginBottom:2}}><span>Saldo a favor</span><span>-{gs(descSaldo)}</span></div>}
+              <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,color:C.t1,marginTop:6,paddingTop:6,borderTop:`1px solid ${C.border}`}}><span>Total</span><span style={{color:C.coral}}>{gs(totalSel)}</span></div>
+            </div>}
 
-            {/* Boton segun metodo */}
+            {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:12}}>{msg}</div>}
+
             {metodoPago==="transferencia"?(
               <button onClick={async()=>{
-                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completa tu nombre y telefono.");return;}
+                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
                 setSaving(true);setMsg("");
                 try {
                   const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
@@ -612,7 +595,7 @@ const PortalCliente = () => {
                   const horasStr=slotsSel.map(h=>`${h}:00`).join(", ");
                   fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
                   setPaso("confirmado");
-                } catch(e){console.error(e);setMsg("Error de conexion. Intenta de nuevo.");}
+                } catch(e){console.error(e);setMsg("Error de conexión. Intentá de nuevo.");}
                 setSaving(false);
               }} disabled={saving}
                 style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)",opacity:saving?0.7:1}}>
@@ -620,19 +603,19 @@ const PortalCliente = () => {
               </button>
             ):(
               <button onClick={async()=>{
-                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completa tus datos.");return;}
-                if(!form.documento.trim()){setMsg("Ingresa tu cedula de identidad.");return;}
-                if(slotsSel.length===0){setMsg("Selecciona al menos un horario.");return;}
+                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tus datos.");return;}
+                if(!form.documento.trim()){setMsg("Ingresá tu cédula de identidad.");return;}
+                if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
                 setSaving(true);setMsg("");
                 try {
                   const r = await fetch("/api/pagopar/crear-pago",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),documento:form.documento.trim(),fecha,slots:slotsSel,total:totalSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0,saldoUsado:descSaldo})});
                   const d = await r.json();
                   if(!r.ok||!d.checkout_url){setMsg((d.error||"Error iniciando pago.")+(d.detail?` (${d.detail})`:""));console.error("[crear-pago]",d);setSaving(false);return;}
                   window.location.href = d.checkout_url;
-                } catch(e){console.error(e);setMsg("Error de conexion. Intenta de nuevo.");setSaving(false);}
+                } catch(e){console.error(e);setMsg("Error de conexión. Intentá de nuevo.");setSaving(false);}
               }} disabled={saving||!form.documento.trim()}
                 style={{width:"100%",padding:"15px",background:!form.documento.trim()?"#1A2A48":`linear-gradient(135deg,${C.coral},${C.coralD})`,color:!form.documento.trim()?C.t3:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:(!form.documento.trim()||saving)?"not-allowed":"pointer",fontFamily:"var(--font-sans)",boxShadow:form.documento.trim()?"0 6px 20px rgba(224,91,40,0.3)":"none",opacity:saving?0.7:1,transition:"all 0.2s"}}>
-                {saving?"Procesando...":(!form.documento.trim()?"Ingresa tu CI para continuar":"Pagar online →")}
+                {saving?"Procesando...":(!form.documento.trim()?"Ingresá tu CI para continuar":"Pagar online →")}
               </button>
             )}
           </div>
