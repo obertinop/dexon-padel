@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { C, DIAS, ADMIN_TEL, LOGO, LOGO_STYLE_DARK, card } from "../lib/constants.js";
 import { useIsMobile, useFeriados } from "../lib/hooks.js";
 import { db, apiHeaders } from "../lib/api.js";
@@ -29,6 +29,8 @@ const PortalCliente = () => {
   const [abonoTurnos,setAbonoTurnos] = useState([]);
   const [diasBloqueados,setDiasBloqueados] = useState([]);
   const [mostrarEfectivo,setMostrarEfectivo] = useState(false);
+  const [btnReservarVisible,setBtnReservarVisible] = useState(true);
+  const btnReservarRef = useRef(null);
 
   const isDiaBloqueado = f => diasBloqueados.find(d=>d.fecha===f&&d.tipo==='bloqueado')||null;
   const feriadoDates = feriados.map(f=>f.date);
@@ -55,6 +57,14 @@ const PortalCliente = () => {
         setClima(dias);
       }).catch(()=>{});
   },[]);
+
+  useEffect(()=>{
+    const el = btnReservarRef.current;
+    if(!el) return;
+    const obs = new IntersectionObserver(([e])=>setBtnReservarVisible(e.isIntersecting),{threshold:0.5});
+    obs.observe(el);
+    return ()=>obs.disconnect();
+  },[btnReservarRef.current]);
 
   const horasArr = (() => {
     const especial = diasBloqueados.find(d=>d.fecha===fecha&&d.tipo==='horario');
@@ -317,11 +327,20 @@ const PortalCliente = () => {
               {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow,marginBottom:6}}><span>Descuento del dia (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
               <div style={{display:"flex",justifyContent:"space-between",fontSize:17,color:C.coral,fontWeight:800,paddingTop:8,borderTop:`1px solid ${C.border}`}}><span>Total</span><span>{gs(totalSel)}</span></div>
             </div>
-            <button onClick={()=>setPaso("datos")}
+            <button ref={btnReservarRef} onClick={()=>setPaso("datos")}
               style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)"}}>
               Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
             </button>
           </>}
+          {/* Botón flotante mobile — aparece cuando el botón principal sale del viewport */}
+          {isMobile&&paso==="lista"&&slotsSel.length>0&&!btnReservarVisible&&(
+            <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"12px 16px",background:`linear-gradient(0deg,${C.bg} 60%,transparent)`,paddingBottom:`calc(env(safe-area-inset-bottom) + 12px)`,zIndex:200,pointerEvents:"none"}}>
+              <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 32px rgba(224,91,40,0.5)",pointerEvents:"all",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+                <span>Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""}</span>
+                <span style={{background:"rgba(255,255,255,0.2)",borderRadius:8,padding:"2px 8px",fontSize:14,fontWeight:800}}>{gs(totalSel)}</span>
+              </button>
+            </div>
+          )}
           </>
         ):(
           /* ── DESKTOP: 2 columnas ── */
