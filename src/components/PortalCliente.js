@@ -60,11 +60,11 @@ const PortalCliente = () => {
 
   useEffect(()=>{
     const el = btnReservarRef.current;
-    if(!el) return;
-    const obs = new IntersectionObserver(([e])=>setBtnReservarVisible(e.isIntersecting),{threshold:0.5});
+    if(!el) { setBtnReservarVisible(true); return; }
+    const obs = new IntersectionObserver(([e])=>setBtnReservarVisible(e.isIntersecting),{threshold:0.2});
     obs.observe(el);
     return ()=>obs.disconnect();
-  },[btnReservarRef.current]);
+  },[slotsSel.length]);
 
   const horasArr = (() => {
     const especial = diasBloqueados.find(d=>d.fecha===fecha&&d.tipo==='horario');
@@ -332,12 +332,31 @@ const PortalCliente = () => {
               Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
             </button>
           </>}
-          {/* Botón flotante mobile — aparece cuando el botón principal sale del viewport */}
+          {/* Botón flotante mobile */}
           {isMobile&&paso==="lista"&&slotsSel.length>0&&!btnReservarVisible&&(
-            <div style={{position:"fixed",bottom:0,left:0,right:0,padding:"12px 16px",background:`linear-gradient(0deg,${C.bg} 60%,transparent)`,paddingBottom:`calc(env(safe-area-inset-bottom) + 12px)`,zIndex:200,pointerEvents:"none"}}>
-              <button onClick={()=>setPaso("datos")} style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 32px rgba(224,91,40,0.5)",pointerEvents:"all",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-                <span>Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""}</span>
-                <span style={{background:"rgba(255,255,255,0.2)",borderRadius:8,padding:"2px 8px",fontSize:14,fontWeight:800}}>{gs(totalSel)}</span>
+            <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:200,pointerEvents:"none",
+              padding:"20px 16px",paddingBottom:`calc(env(safe-area-inset-bottom) + 16px)`,
+              background:"linear-gradient(to top, rgba(8,14,26,0.98) 55%, transparent)"}}>
+              <button onClick={()=>setPaso("datos")} style={{
+                width:"100%",border:"none",borderRadius:18,cursor:"pointer",fontFamily:"var(--font-sans)",
+                pointerEvents:"all",overflow:"hidden",
+                background:`linear-gradient(135deg,${C.coral},#C94E1E)`,
+                boxShadow:"0 8px 40px rgba(224,91,40,0.55), 0 2px 8px rgba(0,0,0,0.4)",
+                display:"flex",alignItems:"center",padding:"4px 4px 4px 20px",gap:12,
+              }}>
+                <div style={{flex:1,textAlign:"left"}}>
+                  <div style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:-0.2}}>
+                    Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""}
+                  </div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:1}}>
+                    {slotsSel.map(h=>`${h}:00`).join(" · ")} hs
+                  </div>
+                </div>
+                <div style={{background:"rgba(0,0,0,0.25)",borderRadius:14,padding:"14px 18px",
+                  display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minWidth:84}}>
+                  <div style={{fontSize:13,fontWeight:900,color:"#fff",lineHeight:1.1}}>{gs(totalSel)}</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",marginTop:2}}>total</div>
+                </div>
               </button>
             </div>
           )}
