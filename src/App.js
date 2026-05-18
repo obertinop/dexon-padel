@@ -421,6 +421,76 @@ export default function App() {
 
   const tabActual=TABS.find(t=>t.id===tab);
 
+  const DiaConfigModal=()=>{
+    const diaActual = diasBloqueados.find(d=>d.fecha===dayConfigFecha);
+    const feriado = getFeriado(dayConfigFecha);
+    const [tipo,setTipo] = useState(diaActual?.tipo||"normal");
+    const [motivo,setMotivo] = useState(diaActual?.motivo||"");
+    const [hIni,setHIni] = useState(diaActual?.hora_inicio??cfg.hora_inicio);
+    const [hFin,setHFin] = useState(diaActual?.hora_fin??cfg.hora_fin);
+    const [savingDia,setSavingDia] = useState(false);
+    const hOptions = Array.from({length:24},(_,i)=>i);
+    const guardar = async()=>{
+      setSavingDia(true);
+      try{
+        if(tipo==="normal"){
+          if(diaActual) await api(`dias_bloqueados?id=eq.${diaActual.id}`,{method:"DELETE"},tk);
+        } else if(diaActual){
+          await api(`dias_bloqueados?id=eq.${diaActual.id}`,{method:"PATCH",body:JSON.stringify({tipo,motivo,hora_inicio:tipo==="horario"?Number(hIni):null,hora_fin:tipo==="horario"?Number(hFin):null}),prefer:"return=representation"},tk);
+        } else {
+          await api("dias_bloqueados",{method:"POST",body:JSON.stringify({fecha:dayConfigFecha,tipo,motivo,hora_inicio:tipo==="horario"?Number(hIni):null,hora_fin:tipo==="horario"?Number(hFin):null}),prefer:"return=representation"},tk);
+        }
+        await load(); setDayConfigFecha(null);
+      }catch(e){notify(e.message,"error");}
+      setSavingDia(false);
+    };
+    const label = dayConfigFecha ? fmtFechaLegible(dayConfigFecha) : "";
+    return <Modal show={!!dayConfigFecha} onClose={()=>setDayConfigFecha(null)} title={`Configurar — ${label}`} width={400}>
+      {feriado&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:20}}>🇵🇾</span>
+        <div>
+          <div style={{fontSize:13,fontWeight:600,color:C.yellow}}>{feriado.localName}</div>
+          <div style={{fontSize:11,color:C.t3,marginTop:2}}>Feriado nacional</div>
+        </div>
+      </div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        {[{v:"normal",label:"Normal",desc:"Horario habitual del día",icon:"✅"},
+          {v:"horario",label:"Horario especial",desc:"Definís apertura y cierre para este día",icon:"🕐"},
+          {v:"bloqueado",label:"Cancha cerrada",desc:"No se pueden hacer reservas",icon:"🔒"},
+        ].map(op=><button key={op.v} onClick={()=>setTipo(op.v)}
+          style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,
+            border:`2px solid ${tipo===op.v?C.coral:C.border}`,
+            background:tipo===op.v?"rgba(224,91,40,0.08)":"transparent",
+            cursor:"pointer",textAlign:"left",fontFamily:"var(--font-sans)"}}>
+          <span style={{fontSize:20,flexShrink:0}}>{op.icon}</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:tipo===op.v?C.coral:C.t1}}>{op.label}</div>
+            <div style={{fontSize:11,color:C.t3,marginTop:1}}>{op.desc}</div>
+          </div>
+        </button>)}
+      </div>
+      {tipo==="horario"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        <div><label style={lbl}>Apertura</label>
+          <select value={hIni} onChange={e=>setHIni(Number(e.target.value))} style={inp}>
+            {hOptions.map(h=><option key={h} value={h}>{h}:00</option>)}
+          </select>
+        </div>
+        <div><label style={lbl}>Cierre</label>
+          <select value={hFin} onChange={e=>setHFin(Number(e.target.value))} style={inp}>
+            {hOptions.map(h=><option key={h} value={h}>{h}:00</option>)}
+          </select>
+        </div>
+      </div>}
+      {tipo==="bloqueado"&&<div style={{marginBottom:16}}>
+        <label style={lbl}>Motivo</label>
+        <input value={motivo} onChange={e=>setMotivo(e.target.value)} placeholder="Ej: Mantenimiento, lluvia..." style={inp}/>
+      </div>}
+      <button onClick={guardar} disabled={savingDia} style={{width:"100%",padding:"12px",background:C.coral,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:savingDia?"wait":"pointer",fontFamily:"var(--font-sans)"}}>
+        {savingDia?"Guardando...":"Guardar"}
+      </button>
+    </Modal>;
+  };
+
   const skeletonBg=`linear-gradient(90deg,${C.bgElev} 25%,${C.bgCard} 50%,${C.bgElev} 75%)`;
   const SK=({h=60,r=10,mb=8})=><div style={{height:h,borderRadius:r,marginBottom:mb,background:skeletonBg,backgroundSize:"400% 100%",animation:"shimmer 1.5s ease infinite"}}/>;
   const contenidoTab=loading
