@@ -605,6 +605,11 @@ const PortalCliente = () => {
                 <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Cédula de identidad <span style={{color:C.coral}}>*</span></label>
                 <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpP} placeholder="Número de CI (sin puntos)"/>
                 <div style={{fontSize:11,color:C.t3,marginTop:4}}>Requerido por la pasarela de pago.</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:12}}>
+                  {["Visa","Mastercard","Tigo Money","Billetera Personal","QR BCP","PIX"].map(m=>(
+                    <span key={m} style={{padding:"3px 8px",borderRadius:6,background:C.bg,border:`1px solid ${C.border}`,fontSize:10,color:C.t3,fontWeight:500}}>{m}</span>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -657,6 +662,10 @@ const PortalCliente = () => {
                 {saving?"Procesando...":(!form.documento.trim()?"Ingresá tu CI para continuar":"Pagar online →")}
               </button>
             )}
+            <div style={{textAlign:"center",fontSize:11,color:C.t3,marginTop:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <svg width="11" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              {metodoPago==="pagopar"?"Pago seguro procesado por Pagopar":metodoPago==="transferencia"?"Tu reserva se confirma al acreditar la transferencia":"Tu lugar queda reservado"}
+            </div>
           </div>
         </>}
 
