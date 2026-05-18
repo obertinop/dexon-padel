@@ -28,6 +28,7 @@ const PortalCliente = () => {
   const [codigosRef,setCodigosRef] = useState([]);
   const [abonoTurnos,setAbonoTurnos] = useState([]);
   const [diasBloqueados,setDiasBloqueados] = useState([]);
+  const [mostrarEfectivo,setMostrarEfectivo] = useState(false);
 
   const isDiaBloqueado = f => diasBloqueados.find(d=>d.fecha===f&&d.tipo==='bloqueado')||null;
   const feriadoDates = feriados.map(f=>f.date);
@@ -143,12 +144,12 @@ const PortalCliente = () => {
   const inpP = {width:"100%",padding:"14px 16px",border:`1px solid ${C.border}`,borderRadius:12,fontSize:15,color:C.t1,background:C.bgElev,fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:52};
 
   // Indicador de pasos
-  const pasos = ["lista","datos","confirmado"];
+  const pasos = ["lista","datos","pago","confirmado"];
   const pasoIdx = pasos.indexOf(paso);
   const StepBar = () => (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:0,marginBottom:24,padding:"0 8px"}}>
-      {[{i:0,l:"Horario"},{i:1,l:"Datos y pago"}].map(({i,l})=>(
-        <div key={i} style={{display:"flex",alignItems:"center",flex:i<2?"1":"0"}}>
+      {[{i:0,l:"Horario"},{i:1,l:"Datos"},{i:2,l:"Pago"}].map(({i,l})=>(
+        <div key={i} style={{display:"flex",alignItems:"center",flex:i<3?"1":"0"}}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
             <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,
               background:pasoIdx>i?C.green:pasoIdx===i?C.coral:C.bgElev,
@@ -160,7 +161,7 @@ const PortalCliente = () => {
             </div>
             <div style={{fontSize:10,color:pasoIdx>=i?C.t2:C.t3,fontWeight:pasoIdx===i?600:400}}>{l}</div>
           </div>
-          {i<2&&<div style={{flex:1,height:2,background:pasoIdx>i?C.green:C.border,marginBottom:18,marginLeft:4,marginRight:4,transition:"background 0.3s"}}/>}
+          {i<3&&<div style={{flex:1,height:2,background:pasoIdx>i?C.green:C.border,marginBottom:18,marginLeft:4,marginRight:4,transition:"background 0.3s"}}/>}
         </div>
       ))}
     </div>
@@ -523,13 +524,56 @@ const PortalCliente = () => {
               </div>
             )}
 
+            {/* Código referido */}
+            <div style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${refValido?C.greenBd:refMatch&&!refValido?C.redBd:C.border}`,transition:"border-color 0.2s"}}>
+              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Código de referido <span style={{color:C.t3,fontWeight:400}}>(opcional · {refDescPct}% off)</span></label>
+              <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpP,textTransform:"uppercase",letterSpacing:1}} placeholder="REF-ABCD1234"/>
+              {refValido&&<div style={{fontSize:11,color:C.green,marginTop:6,display:"flex",alignItems:"center",gap:5}}>✓ {codigoInstit?codigoInstit.nombre:`Código de ${refMatch?.nombre||"referido"}`} — {refDescPct}% ({gs(descRef)})</div>}
+              {refMatch&&!refValido&&<div style={{fontSize:11,color:C.red,marginTop:6}}>No podés usar tu propio código</div>}
+              {refCodeNorm.length>=4&&!refValido&&!refMatch&&<div style={{fontSize:11,color:C.yellow,marginTop:6}}>Código no encontrado</div>}
+            </div>
+
+            {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:12}}>{msg}</div>}
+
+            <button onClick={()=>{
+              if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
+              setMsg("");setPaso("pago");
+            }} style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)"}}>
+              Continuar →
+            </button>
+          </div>
+        </>}
+
+        {/* PASO PAGO */}
+        {paso==="pago"&&<>
+          <StepBar/>
+          <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
+            ← Volver
+          </button>
+          <div style={{...card,padding:"24px"}}>
+            {/* Resumen */}
+            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"12px 16px",marginBottom:16,border:`1px solid ${C.borderL}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{fmtFechaLegible(fecha)}</div>
+                <div style={{fontSize:12,color:C.t2,marginTop:2}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
+              </div>
+              <div style={{fontSize:16,fontWeight:800,color:C.coral}}>{gs(totalSel)}</div>
+            </div>
+
+            {/* Desglose si hay descuentos */}
+            {(ahorroDia>0||descRef>0||descSaldo>0)&&<div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:10,padding:"10px 14px",marginBottom:12,border:`1px solid ${C.borderL}`,fontSize:12}}>
+              {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.yellow,marginBottom:2}}><span>Descuento del día (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
+              {descRef>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.green,marginBottom:2}}><span>Código referido</span><span>-{gs(descRef)}</span></div>}
+              {descSaldo>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.green,marginBottom:2}}><span>Saldo a favor</span><span>-{gs(descSaldo)}</span></div>}
+              <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,color:C.t1,marginTop:6,paddingTop:6,borderTop:`1px solid ${C.border}`}}><span>Total</span><span style={{color:C.coral}}>{gs(totalSel)}</span></div>
+            </div>}
+
             {/* Método de pago */}
             <div style={{fontSize:11,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Método de pago</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {[
                 {id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WA",icon:"🏦"},
                 {id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},
-                ...(puedeEfectivo?[{id:"efectivo",title:"Pagar en el lugar",sub:"Efectivo al llegar",icon:"💵"}]:[]),
               ].map(({id,title,sub,icon})=>(
                 <div key={id} onClick={()=>setMetodoPago(id)}
                      style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:8}}>
@@ -567,28 +611,40 @@ const PortalCliente = () => {
               </div>
             )}
 
-            {/* Código referido */}
-            <div style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${refValido?C.greenBd:refMatch&&!refValido?C.redBd:C.border}`,transition:"border-color 0.2s"}}>
-              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:6}}>Código de referido <span style={{color:C.t3,fontWeight:400}}>(opcional · {refDescPct}% off)</span></label>
-              <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpP,textTransform:"uppercase",letterSpacing:1}} placeholder="REF-ABCD1234"/>
-              {refValido&&<div style={{fontSize:11,color:C.green,marginTop:6,display:"flex",alignItems:"center",gap:5}}>✓ {codigoInstit?codigoInstit.nombre:`Código de ${refMatch?.nombre||"referido"}`} — {refDescPct}% ({gs(descRef)})</div>}
-              {refMatch&&!refValido&&<div style={{fontSize:11,color:C.red,marginTop:6}}>No podés usar tu propio código</div>}
-              {refCodeNorm.length>=4&&!refValido&&!refMatch&&<div style={{fontSize:11,color:C.yellow,marginTop:6}}>Código no encontrado</div>}
-            </div>
-
-            {/* Desglose si hay descuentos */}
-            {(ahorroDia>0||descRef>0||descSaldo>0)&&<div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:10,padding:"10px 14px",marginBottom:12,border:`1px solid ${C.borderL}`,fontSize:12}}>
-              {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.yellow,marginBottom:2}}><span>Descuento del día (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
-              {descRef>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.green,marginBottom:2}}><span>Código referido</span><span>-{gs(descRef)}</span></div>}
-              {descSaldo>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.green,marginBottom:2}}><span>Saldo a favor</span><span>-{gs(descSaldo)}</span></div>}
-              <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,color:C.t1,marginTop:6,paddingTop:6,borderTop:`1px solid ${C.border}`}}><span>Total</span><span style={{color:C.coral}}>{gs(totalSel)}</span></div>
-            </div>}
+            {/* Efectivo cliente habitual (oculto por defecto) */}
+            {puedeEfectivo&&metodoPago!=="efectivo"&&(
+              <button onClick={()=>{setMostrarEfectivo(s=>!s);}} style={{width:"100%",marginBottom:12,padding:"9px 14px",background:"transparent",border:`1px dashed ${C.border}`,borderRadius:10,fontSize:12,color:C.t3,cursor:"pointer",fontFamily:"var(--font-sans)",textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
+                <span>¿Sos cliente habitual?</span>
+                <span style={{color:C.t2,fontWeight:600}}>{mostrarEfectivo?"Ocultar opciones ↑":"Ver más opciones →"}</span>
+              </button>
+            )}
+            {puedeEfectivo&&mostrarEfectivo&&metodoPago!=="efectivo"&&(
+              <div onClick={()=>{setMetodoPago("efectivo");setMostrarEfectivo(false);}}
+                style={{border:`2px solid ${C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:C.bgElev,marginBottom:12,display:"flex",alignItems:"center",gap:8,transition:"all 0.15s"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor=C.coral}
+                onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                <div style={{fontSize:16}}>💵</div>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:C.t1}}>Pagar en el lugar</div>
+                  <div style={{fontSize:10,color:C.t3}}>Efectivo al llegar · Solo clientes habituales</div>
+                </div>
+              </div>
+            )}
+            {metodoPago==="efectivo"&&(
+              <div style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",marginBottom:12,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{fontSize:20}}>💵</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:C.t1,marginBottom:2}}>Pagar en el lugar</div>
+                  <div style={{fontSize:12,color:C.t3}}>Abonás en efectivo al llegar.</div>
+                </div>
+                <button onClick={()=>{setMetodoPago("transferencia");setMostrarEfectivo(false);}} style={{background:"none",border:"none",color:C.t3,cursor:"pointer",fontSize:11,fontFamily:"var(--font-sans)"}}>Cambiar</button>
+              </div>
+            )}
 
             {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:12}}>{msg}</div>}
 
             {metodoPago==="transferencia"?(
               <button onClick={async()=>{
-                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
                 setSaving(true);setMsg("");
                 try {
                   const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
@@ -606,7 +662,6 @@ const PortalCliente = () => {
               </button>
             ):metodoPago==="efectivo"?(
               <button onClick={async()=>{
-                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
                 setSaving(true);setMsg("");
                 try {
                   const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:false,metodoPago:"efectivo"})});
@@ -622,9 +677,7 @@ const PortalCliente = () => {
               </button>
             ):(
               <button onClick={async()=>{
-                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tus datos.");return;}
                 if(!form.documento.trim()){setMsg("Ingresá tu cédula de identidad.");return;}
-                if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
                 setSaving(true);setMsg("");
                 try {
                   const r = await fetch("/api/pagopar/crear-pago",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),documento:form.documento.trim(),fecha,slots:slotsSel,total:totalSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0,saldoUsado:descSaldo})});

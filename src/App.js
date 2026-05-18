@@ -221,7 +221,7 @@ export default function App() {
       if(sena>0)await db.post("caja",{descripcion:`Seña - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:t.id},tk);
       await load();closeM();
       const c=cById(Number(form.cliente_id));
-      if(c?.telefono){const wm=`¡Hola ${c.nombre}! 🎾\nTu reserva en *${cfg.nombre_club}* está confirmada:\n📅 *${form.fecha}* a las *${Number(form.hora)}:00hs*\n💰 *${gs(precio)}*\n¡Te esperamos!`;setDlg({type:"wsp",cliente:c,msg:wm});}
+      if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios:`${Number(form.hora)}:00hs`,monto:gs(precio),forma_pago:"Pago online"})}).catch(()=>{});}
     } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
