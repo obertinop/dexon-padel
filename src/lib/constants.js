@@ -1,0 +1,39 @@
+// ── CONSTANTES GLOBALES ──
+export const SUPA_URL = "https://wirsrkuxzltedqdkrdak.supabase.co";
+export const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpcnNya3V4emx0ZWRxZGtyZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjEzMjMsImV4cCI6MjA5MjYzNzMyM30.BjxD2R5bgBUHyalpwFhRzsGEzOnCx4PH9Sb65d609VI";
+export const ADMIN_TEL = "595994952201";
+export const LOGO = "/logo.svg";
+export const LOGO_STYLE_DARK = { objectFit: "contain", filter: "brightness(0) invert(1)" };
+export const LOGO_STYLE_LIGHT = { objectFit: "contain" };
+
+export const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+export const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+export const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+// ── PALETA ──
+export const C = {
+  bg:"#060D1A", bgCard:"#0C1628", bgElev:"#101D38", bgHover:"#162240",
+  border:"#1A2E55", borderL:"#223870",
+  coral:"#E05B28", coralL:"#FF7040", coralD:"#B84520", coralAlpha:"rgba(224,91,40,0.12)",
+  blue:"#0A1628", blueM:"#1A3070",
+  t1:"#EEF2FF", t2:"#8AA0CC", t3:"#4A6088",
+  green:"#34D490", greenBg:"#071E12", greenBd:"#0F4025",
+  yellow:"#F5C060", yellowBg:"#1A1208", yellowBd:"#3A2A10",
+  red:"#F06060", redBg:"#1A0808", redBd:"#4A1010",
+  purple:"#A080FF", purpleBg:"#120A30", purpleBd:"#2A1A60",
+  info:"#5AA0F0", infoBg:"#081830",
+};
+export const TX = { p:C.t1, s:C.t2, t:C.t3 };
+export const BR = {
+  coral:C.coral, coralL:"#FAECE7", coralD:C.coralD,
+  blue:C.blue, blueM:C.blueM, blueL:"#E6EEFF", dark:C.bg,
+  ok:C.green, okL:C.greenBg, warn:"#854F0B", warnL:"#FAEEDA",
+  danger:"#A32D2D", dangerL:"#FCEBEB", info:C.info, infoL:C.infoBg,
+  purple:C.purple, purpleL:C.purpleBg,
+};
+
+// ── ESTILOS BASE ──
+export const inp = { padding:"8px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, width:"100%", background:C.blue, color:C.t1, fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
+export const card = { background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:14, padding:"16px 18px" };
+export const metric = { background:C.bg, borderRadius:12, padding:"14px 16px", border:`1px solid ${C.border}` };
+export const lbl = { fontSize:12, color:C.t2, fontWeight:500, marginBottom:5, display:"block" };
