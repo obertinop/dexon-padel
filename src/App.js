@@ -229,7 +229,7 @@ export default function App() {
   const confirmarTurno = async t=>{
     setSaving(true);
     try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
-    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
+    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){const esEfectivo=t.metodo_pago==="efectivo";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});}
     setDlg(null);await load();}
     catch(e){notify(e.message,"error");}
     setSaving(false);

@@ -71,6 +71,21 @@ export default async function handler(req, res) {
         ],
       }],
     };
+  } else if (tipo === "confirmacion_presencial") {
+    // Template: dexon_confirmacion_presencial
+    // {{1}} nombre, {{2}} fecha, {{3}} horarios
+    templateCliente = {
+      name: "dexon_confirmacion_presencial",
+      language: { code: "es" },
+      components: [{
+        type: "body",
+        parameters: [
+          { type: "text", text: nombre },
+          { type: "text", text: fecha || "-" },
+          { type: "text", text: horarios || "-" },
+        ],
+      }],
+    };
   } else if (tipo === "transferencia_pendiente") {
     // Template: dexon_reserva_transferencia
     // {{1}} nombre, {{2}} fecha, {{3}} horarios, {{4}} monto
@@ -99,6 +114,8 @@ export default async function handler(req, res) {
     if (r.ok) {
       const textoLegible = (tipo === "pago_confirmado" || tipo === "confirmacion_manual")
         ? `✅ Reserva confirmada\n📅 ${fecha || "-"} a las ${horarios || "-"}\n💰 ${monto || "-"}\n💳 ${forma_pago || "Pago online"}`
+        : tipo === "confirmacion_presencial"
+        ? `✅ Reserva confirmada (pago en el lugar)\n📅 ${fecha || "-"} a las ${horarios || "-"}`
         : `⏳ Reserva pendiente de confirmación\n📅 ${fecha || "-"} a las ${horarios || "-"}\n💰 ${monto || "-"}`;
       try {
         await sb.from("whatsapp_mensajes").insert({
@@ -120,6 +137,8 @@ export default async function handler(req, res) {
 
     const textoAdmin = tipo === "reprogramacion"
       ? `🔄 Turno reprogramado\n\n👤 ${nombre}\n📞 ${telefono}\n📅 ${fecha || "-"} a las ${horarios || "-"}\n📝 Motivo: ${req.body.motivo || "-"}`
+      : tipo === "confirmacion_presencial"
+      ? `✅ Turno confirmado (pago en el lugar)\n\n👤 ${nombre}\n📞 ${telefono}\n📅 ${fecha || "-"} a las ${horarios || "-"}\n💵 Efectivo al llegar`
       : `📋 Nueva reserva\n\n👤 ${nombre}\n📞 ${telefono}\n📅 ${fecha || "-"} a las ${horarios || "-"}\n💰 ${monto || "-"}\n💳 ${metodo}`;
 
     const rAdmin = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
