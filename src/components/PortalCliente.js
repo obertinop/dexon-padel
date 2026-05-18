@@ -186,7 +186,7 @@ const PortalCliente = () => {
       </div>
 
       {/* CONTENIDO */}
-      <div style={{maxWidth:isMobile?500:1140,margin:"0 auto",padding:isMobile?"20px 14px 40px":"20px 32px 36px"}}>
+      <div style={{maxWidth:600,margin:"0 auto",padding:isMobile?"20px 14px 40px":"20px 32px 36px"}}>
        <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
 
         {/* PASO LISTA */}
