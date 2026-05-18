@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 // ── lib ──
-import { C, DIAS, DIAS_FULL, MESES, card, metric, inp, lbl } from "./lib/constants.js";
+import { C, DIAS, DIAS_FULL, MESES, card, metric, inp, lbl, LOGO, LOGO_STYLE_DARK } from "./lib/constants.js";
 import { auth, api, db } from "./lib/api.js";
 import { useIsMobile, useFeriados } from "./lib/hooks.js";
-import { gs, hoy, fmtFechaLegible, fmtD, initials, avatarBg, avatarFg } from "./lib/utils.js";
+import { gs, hoy, fmtFechaLegible, fmtD, initials, avatarBg, avatarFg, genRefCode } from "./lib/utils.js";
 
 // ── components ──
 import Login from "./components/Login.js";
