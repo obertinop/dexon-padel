@@ -571,20 +571,16 @@ const PortalCliente = () => {
             {/* Método de pago */}
             <div style={{fontSize:11,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Método de pago</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-              {[
-                {id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WA",icon:"🏦"},
-                {id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},
-                ...(puedeEfectivo?[{id:"efectivo",title:"Pagar en el lugar",sub:"Efectivo al llegar",icon:"💵"}]:[]),
-              ].map(({id,title,sub,icon})=>(
+              {(()=>{const opts=[{id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WA",icon:"🏦"},{id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},...(puedeEfectivo?[{id:"efectivo",title:"Pagar en el lugar",sub:"Efectivo al llegar",icon:"💵"}]:[])];return opts.map(({id,title,sub,icon},idx)=>(
                 <div key={id} onClick={()=>setMetodoPago(id)}
-                     style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:8}}>
+                     style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"10px 12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:8,gridColumn:opts.length%2!==0&&idx===opts.length-1?"1 / -1":""}}>
                   <div style={{fontSize:16,flexShrink:0}}>{icon}</div>
                   <div>
                     <div style={{fontSize:12,fontWeight:700,color:metodoPago===id?C.coral:C.t1}}>{title}</div>
                     <div style={{fontSize:10,color:C.t3,lineHeight:1.3}}>{sub}</div>
                   </div>
                 </div>
-              ))}
+              ));})()}
             </div>
 
             {/* Datos transferencia */}
