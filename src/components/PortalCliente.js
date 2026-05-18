@@ -137,674 +137,589 @@ const PortalCliente = () => {
     </div>
   );
 
-  // ── INPUT STYLE ──
-  const inpP = {
-    width:"100%",
-    padding:"15px 18px",
-    border:`1.5px solid ${C.border}`,
-    borderRadius:14,
-    fontSize:15,
-    color:C.t1,
-    background:C.bgElev,
-    fontFamily:"var(--font-sans)",
-    outline:"none",
-    boxSizing:"border-box",
-    minHeight:54,
-    transition:"border-color 0.2s",
-  };
+  // Estilos portal
+  const inpP = {width:"100%",padding:"14px 16px",border:`1px solid ${C.border}`,borderRadius:12,fontSize:15,color:C.t1,background:C.bgElev,fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box",minHeight:52};
 
-  // ── PILL STEP BAR ──
+  // Indicador de pasos
   const pasos = ["lista","datos","pago","confirmado"];
   const pasoIdx = pasos.indexOf(paso);
   const StepBar = () => (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:32}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:0,marginBottom:24,padding:"0 8px"}}>
       {[{i:0,l:"Horario"},{i:1,l:"Datos"},{i:2,l:"Pago"}].map(({i,l})=>(
-        <React.Fragment key={i}>
-          <div style={{
-            display:"flex",alignItems:"center",gap:7,
-            padding:"7px 16px",
-            borderRadius:100,
-            background:pasoIdx===i?C.coral:pasoIdx>i?"rgba(52,212,144,0.12)":"rgba(255,255,255,0.04)",
-            border:`1.5px solid ${pasoIdx===i?C.coral:pasoIdx>i?C.greenBd:C.border}`,
-            transition:"all 0.3s",
-          }}>
-            <div style={{
-              width:20,height:20,borderRadius:"50%",
-              display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:11,fontWeight:800,
-              background:pasoIdx===i?"rgba(255,255,255,0.2)":pasoIdx>i?C.green:"transparent",
-              color:pasoIdx===i?"#fff":pasoIdx>i?"#fff":C.t3,
+        <div key={i} style={{display:"flex",alignItems:"center",flex:i<2?"1":"0"}}>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+            <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,
+              background:pasoIdx>i?C.green:pasoIdx===i?C.coral:C.bgElev,
+              color:pasoIdx>=i?"#fff":C.t3,
+              border:`2px solid ${pasoIdx>i?C.green:pasoIdx===i?C.coral:C.border}`,
+              transition:"all 0.3s"
             }}>
-              {pasoIdx>i?(
-                <svg width="10" height="8" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              ):(i+1)}
+              {pasoIdx>i?"✓":i+1}
             </div>
-            <span style={{fontSize:12,fontWeight:700,color:pasoIdx===i?"#fff":pasoIdx>i?C.green:C.t3,letterSpacing:0.2}}>{l}</span>
+            <div style={{fontSize:10,color:pasoIdx>=i?C.t2:C.t3,fontWeight:pasoIdx===i?600:400}}>{l}</div>
           </div>
-          {i<2&&<div style={{width:20,height:1.5,background:pasoIdx>i?C.greenBd:C.border,borderRadius:2,transition:"background 0.3s"}}/>}
-        </React.Fragment>
+          {i<2&&<div style={{flex:1,height:2,background:pasoIdx>i?C.green:C.border,marginBottom:18,marginLeft:4,marginRight:4,transition:"background 0.3s"}}/>}
+        </div>
       ))}
-    </div>
-  );
-
-  // ── SHARED SECTION LABEL ──
-  const SectionLabel = ({children}) => (
-    <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>{children}</div>
-  );
-
-  // ── ALERT BANNERS ──
-  const AlertBanner = ({bg,border,icon,title,titleColor,sub,subColor,badge}) => (
-    <div style={{background:bg,border:`1px solid ${border}`,borderRadius:16,padding:"16px 18px",marginBottom:14,display:"flex",alignItems:"flex-start",gap:14}}>
-      <div style={{fontSize:26,flexShrink:0,lineHeight:1}}>{icon}</div>
-      <div style={{flex:1}}>
-        <div style={{fontSize:14,fontWeight:700,color:titleColor,marginBottom:3}}>{title}</div>
-        <div style={{fontSize:12,color:subColor,lineHeight:1.5}}>{sub}</div>
-      </div>
-      {badge}
     </div>
   );
 
   return (
     <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)",background:C.bg}}>
-      <style>{`
-        @keyframes pSlide{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .pc-inp:focus{border-color:${C.coral}!important;box-shadow:0 0 0 3px rgba(224,91,40,0.12)!important;}
-        .pc-btn-hover:hover{opacity:0.9;transform:translateY(-1px);}
-        .pc-slot-hover:hover{background:${C.bgHover}!important;}
-      `}</style>
-
-      {/* ── HEADER ── */}
-      <div style={{background:`linear-gradient(180deg,#0A1830 0%,${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:-60,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle,rgba(224,91,40,0.18) 0%,transparent 60%)",pointerEvents:"none",zIndex:0}}/>
-        <div style={{position:"absolute",top:10,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(52,212,144,0.10) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
-        <div style={{maxWidth:560,margin:"0 auto",padding:isMobile?"8px 18px":"6px 24px",position:"relative",zIndex:1}}>
+      <style>{`@keyframes pSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      {/* HEADER */}
+      <div style={{background:`linear-gradient(180deg, #0A1830 0%, ${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-60,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle, rgba(224,91,40,0.18) 0%, transparent 60%)",pointerEvents:"none",zIndex:0}}/>
+        <div style={{position:"absolute",top:10,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle, rgba(52,212,144,0.10) 0%, transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+        <div style={{maxWidth:500,margin:"0 auto",padding:isMobile?"6px 16px":"4px 20px",position:"relative",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <img src={LOGO} alt="DEXON" onError={e=>{e.target.style.display="none";}} style={{height:isMobile?72:76,...LOGO_STYLE_DARK}}/>
             </div>
             <a href={`https://wa.me/${ADMIN_TEL}`} target="_blank" rel="noreferrer"
-               style={{display:"flex",alignItems:"center",gap:8,padding:"9px 16px",background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,textDecoration:"none"}}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+               style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.25)",borderRadius:10,textDecoration:"none",minHeight:40}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
               <span style={{fontSize:13,color:"#25D366",fontWeight:600}}>WhatsApp</span>
             </a>
           </div>
         </div>
       </div>
 
-      {/* ── CONTENIDO (max-width 520px centered = mobile-app feel) ── */}
-      <div style={{maxWidth:520,margin:"0 auto",padding:isMobile?"20px 16px 56px":"28px 20px 56px"}}>
-        <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
+      {/* CONTENIDO */}
+      <div style={{maxWidth:600,margin:"0 auto",padding:isMobile?"20px 14px 40px":"20px 32px 36px"}}>
+       <div key={paso} style={{animation:"pSlide 0.3s ease-out"}}>
 
-          {/* ════════════════ PASO LISTA ════════════════ */}
-          {paso==="lista"&&(isMobile?(
-            /* ── MOBILE layout ── */
-            <>
-              <div style={{marginBottom:16}}>
-                <div style={{fontSize:11,color:C.t3,fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:1.5}}>Día de juego</div>
-                <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()} blockedDates={blockedDates} feriadoDates={feriadoDates}/>
+        {/* PASO LISTA */}
+        {paso==="lista"&&(isMobile?(
+          /* ── MOBILE: layout original ── */
+          <>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.6}}>Día de juego</div>
+            <CalendarioMini value={fecha} onChange={e=>{setFecha(e);setSlotsSel([]);}} min={hoy()} blockedDates={blockedDates} feriadoDates={feriadoDates}/>
+          </div>
+          {isDiaBloqueado(fecha)&&<div style={{background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28,flexShrink:0}}>🔒</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:C.red}}>Cancha cerrada</div>
+              <div style={{fontSize:12,color:"#E8A8A8",marginTop:2,lineHeight:1.4}}>{isDiaBloqueado(fecha).motivo||"No disponible este día."}</div>
+            </div>
+          </div>}
+          {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28,flexShrink:0}}>🇵🇾</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Feriado nacional — {getFeriado(fecha).localName}</div>
+              <div style={{fontSize:12,color:"#E8C898",marginTop:2,lineHeight:1.4}}>El horario puede estar extendido. Consultá disponibilidad.</div>
+            </div>
+          </div>}
+          {climaFecha&&<div style={{...card,marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{fontSize:36,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.t1}}>Pronostico — Tavapy</div>
+              <div style={{fontSize:12,color:C.t2,marginTop:3}}>{climaFecha.max}° max · {climaFecha.min}° min · {climaFecha.lluvia}% lluvia</div>
+            </div>
+            {climaFecha.lluvia>=60&&<Badge type="info">Lluvia probable</Badge>}
+            {climaFecha.lluvia<20&&<Badge type="ok">Buen dia</Badge>}
+          </div>}
+          {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28,flexShrink:0}}>🎉</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Dia de descuento — {descPct}% off</div>
+              <div style={{fontSize:12,color:"#E8C898",marginTop:2,lineHeight:1.4}}>Descuento aplicado automaticamente en todos los precios.</div>
+            </div>
+          </div>}
+          <div style={{marginBottom:10}}>
+            {libres.length>0&&libres.length<=3&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,background:"rgba(240,96,96,0.08)",border:"1px solid rgba(240,96,96,0.25)",marginBottom:8}}>
+              <span style={{fontSize:16}}>⚡</span>
+              <span style={{fontSize:13,fontWeight:600,color:C.red}}>¡Solo {libres.length} horario{libres.length!==1?"s":""} disponible{libres.length!==1?"s":""}!</span>
+            </div>}
+            <div style={{display:"flex",gap:2,height:7,borderRadius:6,overflow:"hidden"}}>
+              {horasArr.map(h=>{const occ=!!(ocupado(h)||pasado(h));const pico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;return<div key={h} style={{flex:1,background:occ?C.redBg:pico?"rgba(224,91,40,0.5)":C.green,opacity:occ?0.7:1}}/>;  })}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:10,color:C.t3}}>
+              <span>{cfg.hora_inicio}:00</span>
+              <span style={{display:"flex",gap:10,alignItems:"center"}}>
+                <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:7,height:7,borderRadius:1,background:C.green,display:"inline-block"}}/>Libre</span>
+                <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:7,height:7,borderRadius:1,background:"rgba(224,91,40,0.5)",display:"inline-block"}}/>Pico</span>
+                <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:7,height:7,borderRadius:1,background:C.redBg,display:"inline-block"}}/>Ocupado</span>
+              </span>
+              <span>{cfg.hora_fin}:00</span>
+            </div>
+          </div>
+          <div style={{...card,overflow:"hidden",marginBottom:12,padding:0}}>
+            <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+              <div style={{minWidth:0,flex:1}}>
+                <div style={{fontSize:14,fontWeight:600,color:C.t1}}>Horarios disponibles</div>
+                <div style={{fontSize:12,color:C.t3,marginTop:3,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{color:libres.length<=3&&libres.length>0?C.red:C.green,fontWeight:700}}>{libres.length}</span>
+                  <span>de</span>
+                  <span style={{color:C.t2,fontWeight:600}}>{horasArr.length}</span>
+                  <span>disponibles</span>
+                </div>
               </div>
-
-              {isDiaBloqueado(fecha)&&<AlertBanner bg={C.redBg} border={C.redBd} icon="🔒" title="Cancha cerrada" titleColor={C.red} sub={isDiaBloqueado(fecha).motivo||"No disponible este día."} subColor="#E8A8A8"/>}
-              {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<AlertBanner bg="rgba(245,192,96,0.08)" border={C.yellowBd} icon="🇵🇾" title={`Feriado nacional — ${getFeriado(fecha).localName}`} titleColor={C.yellow} sub="El horario puede estar extendido. Consultá disponibilidad." subColor="#E8C898"/>}
-              {climaFecha&&(
-                <div style={{...card,marginBottom:14,display:"flex",alignItems:"center",gap:14,borderRadius:16}}>
-                  <div style={{fontSize:32,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
+              {slotsSel.length>0&&<div style={{background:"rgba(224,91,40,0.12)",color:C.coral,fontSize:12,fontWeight:700,padding:"5px 11px",borderRadius:20,border:`1px solid ${C.coralD}`,flexShrink:0}}>{slotsSel.length} seleccionado{slotsSel.length>1?"s":""}</div>}
+            </div>
+            {libres.length===0&&<div style={{padding:"32px",textAlign:"center",color:C.t3,fontSize:13}}>Sin horarios disponibles para este dia.</div>}
+            {libres.map(h=>{
+              const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
+              const selec=slotsSel.includes(h);
+              const tieneDesc=diaTieneDesc();
+              const precioOriginal=precioH(h);
+              const precioFinal=precioConDesc(h);
+              return (
+                <div key={h} onClick={()=>toggleSlot(h)}
+                     style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",borderBottom:`1px solid ${C.border}`,cursor:"pointer",
+                             background:selec?`linear-gradient(90deg,${C.bgHover},${C.bgElev})`:"transparent",
+                             transition:"background 0.15s"}}>
+                  <div style={{width:52,height:52,borderRadius:14,flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                               background:selec?C.coral:isPico?"rgba(224,91,40,0.1)":C.bgElev,
+                               border:`1.5px solid ${selec?C.coral:isPico?C.coralAlpha:C.border}`,
+                               transition:"all 0.15s"}}>
+                    <div style={{fontSize:16,fontWeight:700,color:selec?"#fff":isPico?C.coral:C.t1,lineHeight:1}}>{h}</div>
+                    <div style={{fontSize:9,color:selec?"rgba(255,255,255,0.7)":C.t3,marginTop:2}}>hs</div>
+                  </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:600,color:C.t1}}>Pronóstico · Tavapy</div>
-                    <div style={{fontSize:12,color:C.t2,marginTop:3}}>{climaFecha.max}° max · {climaFecha.min}° min · {climaFecha.lluvia}% lluvia</div>
+                    <div style={{fontSize:14,fontWeight:500,color:C.t1}}>{h}:00 — {h+1}:00</div>
+                    <div style={{fontSize:12,color:C.t3,marginTop:2,display:"flex",alignItems:"center",gap:6}}>
+                      {isPico?<span style={{color:C.coral}}>Horario pico</span>:<span>Tarifa normal</span>}
+                      {tieneDesc&&<span style={{color:C.yellow}}>· -{descPct}%</span>}
+                    </div>
                   </div>
-                  {climaFecha.lluvia>=60&&<Badge type="info">Lluvia probable</Badge>}
-                  {climaFecha.lluvia<20&&<Badge type="ok">Buen día</Badge>}
-                </div>
-              )}
-              {diaTieneDesc()&&<AlertBanner bg={`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`} border={C.yellowBd} icon="🎉" title={`Día de descuento — ${descPct}% off`} titleColor={C.yellow} sub="Descuento aplicado automáticamente en todos los precios." subColor="#E8C898"/>}
-
-              {/* Barra disponibilidad */}
-              <div style={{marginBottom:16}}>
-                {libres.length>0&&libres.length<=3&&(
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 16px",borderRadius:12,background:"rgba(240,96,96,0.08)",border:"1px solid rgba(240,96,96,0.22)",marginBottom:10}}>
-                    <span style={{fontSize:14}}>⚡</span>
-                    <span style={{fontSize:13,fontWeight:700,color:C.red}}>¡Solo {libres.length} horario{libres.length!==1?"s":""} disponible{libres.length!==1?"s":""}!</span>
+                  <div style={{textAlign:"right"}}>
+                    {tieneDesc&&<div style={{fontSize:11,color:C.t3,textDecoration:"line-through",lineHeight:1,marginBottom:2}}>{gs(precioOriginal)}</div>}
+                    <div style={{fontSize:15,fontWeight:700,color:selec?C.coral:tieneDesc?C.yellow:C.t1}}>{gs(precioFinal)}</div>
                   </div>
-                )}
-                <div style={{display:"flex",gap:2,height:6,borderRadius:6,overflow:"hidden",marginBottom:6}}>
-                  {horasArr.map(h=>{const occ=!!(ocupado(h)||pasado(h));const pico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;return<div key={h} style={{flex:1,background:occ?C.redBg:pico?"rgba(224,91,40,0.5)":C.green,opacity:occ?0.6:1}}/>;  })}
+                  <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${selec?C.coral:C.border}`,background:selec?C.coral:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
+                    {selec&&<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.t3}}>
-                  <span>{cfg.hora_inicio}:00</span>
-                  <span style={{display:"flex",gap:10,alignItems:"center"}}>
-                    <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:1,background:C.green,display:"inline-block"}}/>Libre</span>
-                    <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:1,background:"rgba(224,91,40,0.5)",display:"inline-block"}}/>Pico</span>
-                    <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:1,background:C.redBg,display:"inline-block"}}/>Ocupado</span>
-                  </span>
-                  <span>{cfg.hora_fin}:00</span>
+              );
+            })}
+          </div>
+          {ocupados.length>0&&<div style={{...card,padding:0,marginBottom:16,opacity:0.6}}>
+            <div style={{padding:"10px 18px",borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontSize:12,fontWeight:500,color:C.t3}}>No disponibles</div>
+            </div>
+            {ocupados.map(h=>(
+              <div key={h} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 18px",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{fontSize:13,color:C.t3}}>{h}:00 — {h+1}:00</div>
+                <span style={{fontSize:11,background:C.bgElev,color:C.t3,padding:"3px 10px",borderRadius:100,border:`1px solid ${C.border}`}}>Ocupado</span>
+              </div>
+            ))}
+          </div>}
+          {slotsSel.length>0&&<>
+            <div style={{...card,marginBottom:12,background:C.bgElev}}>
+              <div style={{fontSize:12,color:C.t3,marginBottom:8}}>Seleccionados · {slotsSel.length}h</div>
+              <div style={{fontSize:14,fontWeight:600,color:C.t1,marginBottom:10}}>{slotsSel.map(h=>`${h}:00`).join(" · ")} hs</div>
+              {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.t2,marginBottom:4}}><span>Subtotal</span><span style={{textDecoration:"line-through"}}>{gs(subtotalSinDesc)}</span></div>}
+              {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow,marginBottom:6}}><span>Descuento del dia (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:17,color:C.coral,fontWeight:800,paddingTop:8,borderTop:`1px solid ${C.border}`}}><span>Total</span><span>{gs(totalSel)}</span></div>
+            </div>
+            <button onClick={()=>setPaso("datos")}
+              style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)"}}>
+              Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
+            </button>
+          </>}
+          </>
+        ):(
+          /* ── DESKTOP: 2 columnas ── */
+          <>
+          <StepBar/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 360px",gap:36,alignItems:"start"}}>
+            {/* COLUMNA IZQUIERDA */}
+            <div>
+              <h1 style={{fontSize:28,fontWeight:900,color:C.t1,margin:"0 0 6px",letterSpacing:-0.8,lineHeight:1.1}}>¿Cuándo querés jugar?</h1>
+              <p style={{fontSize:13,color:C.t2,margin:"0 0 16px",lineHeight:1.5}}>Elegí día y horarios disponibles. Podés reservar hasta 4 horas seguidas.</p>
+              {/* Pills de fecha */}
+              <div style={{display:"flex",gap:8,marginBottom:18,overflowX:"auto",paddingBottom:4}}>
+                {Array.from({length:14},(_,i)=>{
+                  const d=new Date(); d.setDate(d.getDate()+i);
+                  const ds=d.toISOString().slice(0,10);
+                  const sel=ds===fecha;
+                  return(
+                    <button key={ds} onClick={()=>{setFecha(ds);setSlotsSel([]);}}
+                      style={{flexShrink:0,minWidth:60,padding:"10px 8px",borderRadius:12,
+                        border:`2px solid ${sel?C.coral:C.border}`,
+                        background:sel?C.coral:"transparent",
+                        cursor:"pointer",fontFamily:"var(--font-sans)",textAlign:"center",
+                        transition:"all 0.15s"}}>
+                      <div style={{fontSize:9,color:sel?"rgba(255,255,255,0.75)":C.t3,fontWeight:700,letterSpacing:1,marginBottom:4}}>{i===0?"HOY":DIAS[d.getDay()].toUpperCase()}</div>
+                      <div style={{fontSize:20,fontWeight:800,color:sel?"#fff":C.t1}}>{d.getDate()}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Banners feriado / bloqueado / descuento */}
+              {isDiaBloqueado(fecha)&&<div style={{background:C.redBg,border:`1px solid ${C.redBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:18}}>🔒</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.red}}>Cancha cerrada</div>
+                  <div style={{fontSize:12,color:"#E8A8A8",marginTop:2}}>{isDiaBloqueado(fecha).motivo||"No disponible este día."}</div>
+                </div>
+              </div>}
+              {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<div style={{background:"rgba(245,192,96,0.08)",border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:18}}>🇵🇾</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Feriado nacional — {getFeriado(fecha).localName}</div>
+                  <div style={{fontSize:12,color:"#E8C898",marginTop:2}}>El horario puede estar extendido. Consultá disponibilidad.</div>
+                </div>
+              </div>}
+              {diaTieneDesc()&&<div style={{background:`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`,border:`1px solid ${C.yellowBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:18}}>🎉</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.yellow}}>Día de descuento — {descPct}% off</div>
+                  <div style={{fontSize:12,color:"#E8C898",marginTop:2}}>Descuento aplicado automáticamente en todos los precios.</div>
+                </div>
+              </div>}
+              {/* Header de slots */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:1.5}}>
+                  Horarios disponibles{fecha?` · ${DIAS[diaFecha]?.toUpperCase()} ${new Date(fecha+"T00:00:00").getDate()}`:""}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.t2}}>
+                  <span style={{width:7,height:7,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>
+                  Hora pico
                 </div>
               </div>
-
-              {/* Slots card */}
-              <div style={{background:C.bgCard,borderRadius:20,border:`1px solid ${C.border}`,overflow:"hidden",marginBottom:14}}>
-                <div style={{padding:"16px 20px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
-                  <div style={{minWidth:0,flex:1}}>
-                    <div style={{fontSize:15,fontWeight:700,color:C.t1}}>Horarios disponibles</div>
-                    <div style={{fontSize:12,color:C.t3,marginTop:3,display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{color:libres.length<=3&&libres.length>0?C.red:C.green,fontWeight:700}}>{libres.length}</span>
-                      <span>de</span>
-                      <span style={{color:C.t2,fontWeight:600}}>{horasArr.length}</span>
-                      <span>disponibles</span>
-                    </div>
-                  </div>
-                  {slotsSel.length>0&&(
-                    <div style={{background:"rgba(224,91,40,0.12)",color:C.coral,fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:100,border:`1px solid rgba(224,91,40,0.3)`,flexShrink:0}}>
-                      {slotsSel.length} seleccionado{slotsSel.length>1?"s":""}
-                    </div>
-                  )}
-                </div>
-                {libres.length===0&&<div style={{padding:"36px",textAlign:"center",color:C.t3,fontSize:13}}>Sin horarios disponibles para este día.</div>}
-                {libres.map(h=>{
+              {/* Grid 4 columnas */}
+              {libres.length===0&&<div style={{padding:"48px 0",textAlign:"center",color:C.t3,fontSize:14}}>Sin horarios disponibles para este día.</div>}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
+                {horasArr.map(h=>{
+                  const occ=!!(ocupado(h)||pasado(h));
+                  const sel=slotsSel.includes(h);
                   const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
-                  const selec=slotsSel.includes(h);
                   const tieneDesc=diaTieneDesc();
-                  const precioOriginal=precioH(h);
                   const precioFinal=precioConDesc(h);
-                  return (
-                    <div key={h} className="pc-slot-hover" onClick={()=>toggleSlot(h)}
-                         style={{display:"flex",alignItems:"center",gap:14,padding:"15px 20px",borderBottom:`1px solid ${C.border}`,cursor:"pointer",
-                                 background:selec?`linear-gradient(90deg,rgba(224,91,40,0.1),rgba(224,91,40,0.04))`:"transparent",
-                                 transition:"background 0.15s"}}>
-                      <div style={{width:50,height:50,borderRadius:14,flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-                                   background:selec?C.coral:isPico?"rgba(224,91,40,0.08)":C.bgElev,
-                                   border:`2px solid ${selec?C.coral:isPico?"rgba(224,91,40,0.2)":C.border}`,
-                                   transition:"all 0.15s"}}>
-                        <div style={{fontSize:17,fontWeight:800,color:selec?"#fff":isPico?C.coral:C.t1,lineHeight:1}}>{h}</div>
-                        <div style={{fontSize:9,color:selec?"rgba(255,255,255,0.6)":C.t3,marginTop:2,fontWeight:600,letterSpacing:0.5}}>hs</div>
-                      </div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:14,fontWeight:600,color:C.t1,marginBottom:3}}>{h}:00 — {h+1}:00</div>
-                        <div style={{fontSize:12,color:C.t3,display:"flex",alignItems:"center",gap:6}}>
-                          {isPico?<span style={{color:C.coral,fontWeight:600}}>Hora pico</span>:<span>Tarifa normal</span>}
-                          {tieneDesc&&<span style={{color:C.yellow,fontWeight:600}}>· -{descPct}%</span>}
-                        </div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        {tieneDesc&&<div style={{fontSize:11,color:C.t3,textDecoration:"line-through",lineHeight:1,marginBottom:3}}>{gs(precioOriginal)}</div>}
-                        <div style={{fontSize:15,fontWeight:800,color:selec?C.coral:tieneDesc?C.yellow:C.t1}}>{gs(precioFinal)}</div>
-                      </div>
-                      <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${selec?C.coral:C.border}`,background:selec?C.coral:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
-                        {selec&&<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      </div>
+                  const precioOriginal=precioH(h);
+                  return(
+                    <div key={h} onClick={()=>!occ&&toggleSlot(h)}
+                      style={{padding:"12px 10px",borderRadius:12,
+                        border:`2px solid ${sel?C.coral:occ?"rgba(255,255,255,0.06)":isPico?C.coralAlpha:C.border}`,
+                        background:sel?`linear-gradient(135deg,${C.coral},${C.coralD})`:occ?C.bgElev:isPico?"rgba(224,91,40,0.04)":"rgba(255,255,255,0.02)",
+                        cursor:occ?"default":"pointer",
+                        opacity:occ?0.45:1,
+                        position:"relative",
+                        transition:"all 0.15s",
+                        userSelect:"none"}}>
+                      {isPico&&!occ&&!sel&&<span style={{position:"absolute",top:10,right:12,width:7,height:7,borderRadius:"50%",background:C.coral}}/>}
+                      {sel&&<span style={{position:"absolute",top:10,right:12,display:"flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",background:"rgba(255,255,255,0.25)"}}>
+                        <svg width="10" height="8" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>}
+                      <div style={{fontSize:16,fontWeight:800,color:sel?"#fff":occ?C.t3:C.t1,marginBottom:4,lineHeight:1}}>{h}:00</div>
+                      {occ
+                        ?<div style={{fontSize:12,color:C.t3}}>Reservado</div>
+                        :<>
+                          {tieneDesc&&<div style={{fontSize:11,color:sel?"rgba(255,255,255,0.55)":"rgba(255,255,255,0.3)",textDecoration:"line-through",lineHeight:1,marginBottom:2}}>{gs(precioOriginal)}</div>}
+                          <div style={{fontSize:13,fontWeight:600,color:sel?"rgba(255,255,255,0.85)":tieneDesc?C.yellow:C.t2}}>{gs(precioFinal)}</div>
+                        </>
+                      }
                     </div>
                   );
                 })}
               </div>
-
-              {ocupados.length>0&&(
-                <div style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,overflow:"hidden",marginBottom:16,opacity:0.55}}>
-                  <div style={{padding:"12px 20px",borderBottom:`1px solid ${C.border}`}}>
-                    <div style={{fontSize:12,fontWeight:600,color:C.t3}}>No disponibles</div>
-                  </div>
-                  {ocupados.map(h=>(
-                    <div key={h} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px",borderBottom:`1px solid ${C.border}`}}>
-                      <div style={{fontSize:13,color:C.t3}}>{h}:00 — {h+1}:00</div>
-                      <span style={{fontSize:11,background:C.bgElev,color:C.t3,padding:"3px 10px",borderRadius:100,border:`1px solid ${C.border}`}}>Ocupado</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {slotsSel.length>0&&(
-                <>
-                  <div style={{background:`linear-gradient(135deg,${C.bgCard},${C.bgElev})`,borderRadius:18,border:`1px solid ${C.borderL}`,padding:"18px 20px",marginBottom:14}}>
-                    <div style={{fontSize:11,color:C.t3,fontWeight:700,textTransform:"uppercase",letterSpacing:1.2,marginBottom:10}}>Resumen · {slotsSel.length}h seleccionada{slotsSel.length>1?"s":""}</div>
-                    <div style={{fontSize:15,fontWeight:700,color:C.t1,marginBottom:12}}>{slotsSel.map(h=>`${h}:00`).join(" · ")} hs</div>
-                    {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.t2,marginBottom:4}}><span>Subtotal</span><span style={{textDecoration:"line-through"}}>{gs(subtotalSinDesc)}</span></div>}
-                    {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow,marginBottom:8}}><span>Descuento del día (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:19,color:C.coral,fontWeight:900,paddingTop:10,borderTop:`1px solid ${C.border}`}}><span>Total</span><span>{gs(totalSel)}</span></div>
-                  </div>
-                  <button className="pc-btn-hover" onClick={()=>setPaso("datos")}
-                    style={{width:"100%",padding:"17px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:16,fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 28px rgba(224,91,40,0.35)",transition:"all 0.2s",letterSpacing:0.2}}>
-                    Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""} →
-                  </button>
-                </>
-              )}
-            </>
-          ):(
-            /* ── DESKTOP: single column, centered narrow ── */
-            <>
-              <StepBar/>
-              <div style={{marginBottom:28}}>
-                <h1 style={{fontSize:30,fontWeight:900,color:C.t1,margin:"0 0 6px",letterSpacing:-0.8,lineHeight:1.1}}>¿Cuándo querés jugar?</h1>
-                <p style={{fontSize:14,color:C.t2,margin:"0 0 20px",lineHeight:1.5}}>Elegí día y horarios disponibles. Podés reservar hasta 4 horas seguidas.</p>
-
-                {/* Date pills */}
-                <div style={{display:"flex",gap:8,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
-                  {Array.from({length:14},(_,i)=>{
-                    const d=new Date(); d.setDate(d.getDate()+i);
-                    const ds=d.toISOString().slice(0,10);
-                    const sel=ds===fecha;
-                    return(
-                      <button key={ds} onClick={()=>{setFecha(ds);setSlotsSel([]);}}
-                        style={{flexShrink:0,minWidth:58,padding:"10px 8px",borderRadius:14,
-                          border:`2px solid ${sel?C.coral:C.border}`,
-                          background:sel?C.coral:"transparent",
-                          cursor:"pointer",fontFamily:"var(--font-sans)",textAlign:"center",
-                          transition:"all 0.15s"}}>
-                        <div style={{fontSize:9,color:sel?"rgba(255,255,255,0.7)":C.t3,fontWeight:700,letterSpacing:1,marginBottom:4}}>{i===0?"HOY":DIAS[d.getDay()].toUpperCase()}</div>
-                        <div style={{fontSize:20,fontWeight:800,color:sel?"#fff":C.t1}}>{d.getDate()}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Banners */}
-                {isDiaBloqueado(fecha)&&<AlertBanner bg={C.redBg} border={C.redBd} icon="🔒" title="Cancha cerrada" titleColor={C.red} sub={isDiaBloqueado(fecha).motivo||"No disponible este día."} subColor="#E8A8A8"/>}
-                {!isDiaBloqueado(fecha)&&getFeriado(fecha)&&<AlertBanner bg="rgba(245,192,96,0.08)" border={C.yellowBd} icon="🇵🇾" title={`Feriado nacional — ${getFeriado(fecha).localName}`} titleColor={C.yellow} sub="El horario puede estar extendido. Consultá disponibilidad." subColor="#E8C898"/>}
-                {diaTieneDesc()&&<AlertBanner bg={`linear-gradient(135deg,${C.yellowBg},rgba(58,42,16,0.8))`} border={C.yellowBd} icon="🎉" title={`Día de descuento — ${descPct}% off`} titleColor={C.yellow} sub="Descuento aplicado automáticamente en todos los precios." subColor="#E8C898"/>}
-                {climaFecha&&(
-                  <div style={{...card,marginBottom:16,display:"flex",alignItems:"center",gap:14,borderRadius:16}}>
-                    <div style={{fontSize:32,flexShrink:0}}>{climaIcon(climaFecha.code)}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:600,color:C.t1}}>Pronóstico · Tavapy</div>
-                      <div style={{fontSize:12,color:C.t2,marginTop:3}}>{climaFecha.max}° max · {climaFecha.min}° min · {climaFecha.lluvia}% lluvia</div>
-                    </div>
-                    {climaFecha.lluvia>=60&&<Badge type="info">Lluvia probable</Badge>}
-                    {climaFecha.lluvia<20&&<Badge type="ok">Buen día</Badge>}
-                  </div>
-                )}
-
-                {/* Availability bar */}
-                <div style={{marginBottom:20}}>
-                  {libres.length>0&&libres.length<=3&&(
-                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 16px",borderRadius:12,background:"rgba(240,96,96,0.08)",border:"1px solid rgba(240,96,96,0.22)",marginBottom:12}}>
-                      <span style={{fontSize:14}}>⚡</span>
-                      <span style={{fontSize:13,fontWeight:700,color:C.red}}>¡Solo {libres.length} horario{libres.length!==1?"s":""} disponible{libres.length!==1?"s":""}!</span>
-                    </div>
-                  )}
-                  <div style={{display:"flex",gap:2,height:6,borderRadius:6,overflow:"hidden",marginBottom:6}}>
-                    {horasArr.map(h=>{const occ=!!(ocupado(h)||pasado(h));const pico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;return<div key={h} style={{flex:1,background:occ?C.redBg:pico?"rgba(224,91,40,0.5)":C.green,opacity:occ?0.6:1}}/>;  })}
-                  </div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:C.t3}}>
-                    <span>{cfg.hora_inicio}:00</span>
-                    <span style={{display:"flex",gap:14,alignItems:"center"}}>
-                      <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:7,height:7,borderRadius:2,background:C.green,display:"inline-block"}}/>Libre</span>
-                      <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:7,height:7,borderRadius:2,background:"rgba(224,91,40,0.5)",display:"inline-block"}}/>Pico</span>
-                      <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:7,height:7,borderRadius:2,background:C.redBg,display:"inline-block"}}/>Ocupado</span>
-                    </span>
-                    <span>{cfg.hora_fin}:00</span>
-                  </div>
-                </div>
-
-                {/* Slot header */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                  <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:1.5}}>
-                    Horarios{fecha?` · ${DIAS[diaFecha]?.toUpperCase()} ${new Date(fecha+"T00:00:00").getDate()}`:""}
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.t2}}>
-                    <span style={{width:7,height:7,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>
-                    Hora pico
-                  </div>
-                </div>
-
-                {/* Slot grid */}
-                {libres.length===0&&<div style={{padding:"48px 0",textAlign:"center",color:C.t3,fontSize:14}}>Sin horarios disponibles para este día.</div>}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                  {horasArr.map(h=>{
-                    const occ=!!(ocupado(h)||pasado(h));
-                    const sel=slotsSel.includes(h);
-                    const isPico=h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin;
-                    const tieneDesc=diaTieneDesc();
-                    const precioFinal=precioConDesc(h);
-                    const precioOriginal=precioH(h);
-                    return(
-                      <div key={h} onClick={()=>!occ&&toggleSlot(h)}
-                        style={{padding:"14px 10px",borderRadius:14,
-                          border:`2px solid ${sel?C.coral:occ?"rgba(255,255,255,0.05)":isPico?"rgba(224,91,40,0.2)":C.border}`,
-                          background:sel?`linear-gradient(135deg,${C.coral},${C.coralD})`:occ?C.bgElev:isPico?"rgba(224,91,40,0.04)":"rgba(255,255,255,0.02)",
-                          cursor:occ?"default":"pointer",
-                          opacity:occ?0.45:1,
-                          position:"relative",
-                          transition:"all 0.15s",
-                          userSelect:"none"}}>
-                        {isPico&&!occ&&!sel&&<span style={{position:"absolute",top:10,right:12,width:7,height:7,borderRadius:"50%",background:C.coral}}/>}
-                        {sel&&<span style={{position:"absolute",top:10,right:12,display:"flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",background:"rgba(255,255,255,0.22)"}}>
-                          <svg width="10" height="8" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </span>}
-                        <div style={{fontSize:17,fontWeight:800,color:sel?"#fff":occ?C.t3:C.t1,marginBottom:5,lineHeight:1}}>{h}:00</div>
-                        {occ
-                          ?<div style={{fontSize:11,color:C.t3}}>Reservado</div>
-                          :<>
-                            {tieneDesc&&<div style={{fontSize:11,color:sel?"rgba(255,255,255,0.5)":"rgba(255,255,255,0.3)",textDecoration:"line-through",lineHeight:1,marginBottom:2}}>{gs(precioOriginal)}</div>}
-                            <div style={{fontSize:13,fontWeight:600,color:sel?"rgba(255,255,255,0.85)":tieneDesc?C.yellow:C.t2}}>{gs(precioFinal)}</div>
-                          </>
-                        }
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{display:"flex",gap:16,fontSize:11,color:C.t3,marginBottom:24}}>
-                  <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.coral,display:"inline-block"}}/>Seleccionado</span>
-                  <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>Hora pico</span>
-                  <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.bgElev,border:`1px solid ${C.border}`,display:"inline-block"}}/>Reservado</span>
-                </div>
-
-                {/* Resumen + CTA */}
-                {slotsSel.length>0&&(
-                  <div style={{background:`linear-gradient(135deg,${C.bgCard},${C.bgElev})`,borderRadius:20,border:`1px solid ${C.borderL}`,padding:"22px 24px",boxShadow:"0 8px 32px rgba(0,0,0,0.25)"}}>
-                    <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:1.5,marginBottom:14}}>Tu reserva</div>
+              {/* Leyenda */}
+              <div style={{display:"flex",gap:16,fontSize:11,color:C.t3}}>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.coral,display:"inline-block"}}/>Seleccionado</span>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:"50%",background:C.coral,display:"inline-block"}}/>Hora pico</span>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:2,background:C.bgElev,border:`1px solid ${C.border}`,display:"inline-block"}}/>Reservado</span>
+              </div>
+            </div>
+            {/* COLUMNA DERECHA — Sticky */}
+            <div style={{position:"sticky",top:20}}>
+              <div style={{background:C.bgCard,borderRadius:18,border:`1px solid ${C.border}`,padding:"20px 20px",boxShadow:"0 12px 48px rgba(0,0,0,0.35)"}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:2,marginBottom:14}}>Tu reserva</div>
+                {slotsSel.length>0?(
+                  <>
                     <div style={{fontSize:20,fontWeight:800,color:C.t1,marginBottom:4}}>{fmtFechaLegible(fecha)}</div>
-                    <div style={{fontSize:15,fontWeight:700,color:C.coral,marginBottom:18}}>
+                    <div style={{fontSize:15,fontWeight:700,color:C.coral,marginBottom:16}}>
                       {Math.min(...slotsSel)}:00 — {Math.max(...slotsSel)+1}:00
                     </div>
-                    <div style={{borderTop:`1px solid ${C.border}`,paddingTop:14,marginBottom:14,display:"flex",flexDirection:"column",gap:10}}>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.t2}}>
+                    <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12,marginBottom:12,display:"flex",flexDirection:"column",gap:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.t2}}>
                         <span>{slotsSel.length} horario{slotsSel.length>1?"s":""}</span>
                         <span>{gs(subtotalSinDesc)}</span>
                       </div>
-                      {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.yellow}}>
+                      {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow}}>
                         <span>Descuento {DIAS[diaFecha]?.toLowerCase()}</span>
                         <span>— {gs(ahorroDia)}</span>
                       </div>}
                     </div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,paddingTop:4,borderTop:`1px solid ${C.border}`}}>
-                      <span style={{fontSize:15,fontWeight:700,color:C.t1}}>Total</span>
-                      <span style={{fontSize:26,fontWeight:900,color:C.coral}}>{gs(totalSel)}</span>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,paddingTop:4,borderTop:`1px solid ${C.border}`}}>
+                      <span style={{fontSize:14,fontWeight:700,color:C.t1}}>Total</span>
+                      <span style={{fontSize:22,fontWeight:900,color:C.coral}}>{gs(totalSel)}</span>
                     </div>
-                    <button className="pc-btn-hover" onClick={()=>setPaso("datos")}
-                      style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)",marginBottom:14,transition:"all 0.2s",letterSpacing:0.2}}>
+                    <button onClick={()=>setPaso("datos")}
+                      style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 8px 24px rgba(224,91,40,0.35)",marginBottom:12,transition:"opacity 0.15s"}}>
                       Continuar →
                     </button>
                     <div style={{textAlign:"center",fontSize:11,color:C.t3,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                       <svg width="11" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                       Pago seguro · Pagopar / Transferencia
                     </div>
-                  </div>
-                )}
-                {slotsSel.length===0&&(
-                  <div style={{textAlign:"center",padding:"32px 0",color:C.t3}}>
-                    <div style={{fontSize:40,marginBottom:12}}>📅</div>
-                    <div style={{fontSize:15,fontWeight:600,color:C.t2,marginBottom:6}}>Seleccioná un horario</div>
-                    <div style={{fontSize:13,lineHeight:1.6}}>Podés elegir hasta 4 horas seguidas</div>
-                  </div>
-                )}
-              </div>
-            </>
-          ))}
-
-          {/* ════════════════ PASO DATOS ════════════════ */}
-          {paso==="datos"&&(
-            <>
-              <StepBar/>
-              <button onClick={()=>{setPaso("lista");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:24,fontFamily:"var(--font-sans)",padding:0,fontWeight:600}}>
-                ← Volver
-              </button>
-
-              {/* Resumen pill */}
-              <div style={{background:`linear-gradient(135deg,rgba(224,91,40,0.08),rgba(224,91,40,0.03))`,borderRadius:16,padding:"16px 20px",marginBottom:24,border:`1px solid rgba(224,91,40,0.2)`}}>
-                <div style={{fontSize:16,fontWeight:800,color:C.t1,marginBottom:6}}>{fmtFechaLegible(fecha)}</div>
-                <div style={{fontSize:13,color:C.t2,display:"flex",alignItems:"center",gap:8}}>
-                  <span>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs</span>
-                  <span style={{color:C.border}}>·</span>
-                  <span style={{color:C.coral,fontWeight:700}}>{gs(totalSel)}</span>
-                </div>
-              </div>
-
-              {/* Welcome card */}
-              {clienteEncontrado&&(
-                <div style={{background:`linear-gradient(135deg,rgba(52,212,144,0.08),rgba(52,212,144,0.02))`,border:`1px solid ${C.greenBd}`,borderRadius:16,padding:"16px 18px",marginBottom:24,display:"flex",alignItems:"center",gap:14,animation:"pSlide 0.25s ease-out"}}>
-                  <div style={{width:46,height:46,borderRadius:"50%",background:avatarBg(clienteEncontrado.nombre),color:avatarFg(clienteEncontrado.nombre),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,flexShrink:0,border:`2px solid ${avatarFg(clienteEncontrado.nombre)}40`}}>{initials(clienteEncontrado.nombre)}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:15,fontWeight:700,color:C.green,marginBottom:3}}>¡Hola de nuevo, {clienteEncontrado.nombre.split(" ")[0]}!</div>
-                    <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.5}}>
-                      {(()=>{const tu=turnos.filter(t=>t.cliente_id===clienteEncontrado.id).length;return tu>0?`Ya tenés ${tu} turno${tu!==1?"s":""} con nosotros.`:"Bienvenido al portal.";})()}
-                      {clienteEncontrado.saldo_favor>0&&<span> Tenés <strong>{gs(clienteEncontrado.saldo_favor)}</strong> a favor.</span>}
-                    </div>
-                  </div>
-                  <span style={{fontSize:20}}>👋</span>
-                </div>
-              )}
-
-              <div style={{background:C.bgCard,borderRadius:20,border:`1px solid ${C.border}`,padding:"24px 22px"}}>
-                <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:22,letterSpacing:-0.3}}>Tus datos</div>
-                <div style={{marginBottom:20}}>
-                  <label style={{fontSize:13,color:C.t2,fontWeight:700,display:"block",marginBottom:10,letterSpacing:0.2}}>Nombre completo</label>
-                  <input className="pc-inp" type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={inpP} placeholder="Tu nombre y apellido"/>
-                </div>
-                <div style={{marginBottom:24}}>
-                  <label style={{fontSize:13,color:C.t2,fontWeight:700,display:"block",marginBottom:10,letterSpacing:0.2}}>Número de teléfono</label>
-                  <input className="pc-inp" type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpP} placeholder="0981 xxx xxx"/>
-                </div>
-                {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:12,padding:"12px 16px",fontSize:13,marginBottom:18,fontWeight:500}}>{msg}</div>}
-                <button className="pc-btn-hover" onClick={()=>{if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}setMsg("");setPaso("pago");}}
-                  style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)",transition:"all 0.2s",letterSpacing:0.2}}>
-                  Ir a pagar →
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* ════════════════ PASO PAGO ════════════════ */}
-          {paso==="pago"&&(
-            <>
-              <StepBar/>
-              <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:24,fontFamily:"var(--font-sans)",padding:0,fontWeight:600}}>
-                ← Volver
-              </button>
-
-              {/* Desglose */}
-              <div style={{background:`linear-gradient(135deg,${C.bgCard},${C.bgElev})`,borderRadius:20,padding:"20px 22px",marginBottom:18,border:`1px solid ${C.borderL}`}}>
-                <div style={{fontSize:11,color:C.t3,textTransform:"uppercase",letterSpacing:1.5,marginBottom:14,fontWeight:700}}>Detalle de reserva</div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.t2,marginBottom:8}}><span>{slotsSel.length} hora{slotsSel.length>1?"s":""} · {fmtFechaLegible(fecha)}</span><span>{gs(subtotalSinDesc)}</span></div>
-                {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.yellow,marginBottom:8}}><span>Descuento del día (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
-                {descRef>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.green,marginBottom:8}}><span>Código referido ({refMatch?.nombre?.split(" ")[0]})</span><span>-{gs(descRef)}</span></div>}
-                {descSaldo>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:C.green,marginBottom:8}}><span>Saldo a favor</span><span>-{gs(descSaldo)}</span></div>}
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:20,fontWeight:900,color:C.t1,marginTop:14,paddingTop:14,borderTop:`1px solid ${C.border}`}}><span>Total</span><span style={{color:C.coral}}>{gs(totalSel)}</span></div>
-              </div>
-
-              {/* Saldo a favor */}
-              {clienteEncontrado && saldoDisponible>0 && (
-                <div style={{background:C.greenBg,border:`1px solid ${C.greenBd}`,borderRadius:16,padding:"16px 18px",marginBottom:18}}>
-                  <label style={{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
-                    <div style={{width:24,height:24,borderRadius:8,border:`2px solid ${usarSaldo?C.green:C.border}`,background:usarSaldo?C.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setUsarSaldo(s=>!s)}>
-                      {usarSaldo&&<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:14,fontWeight:700,color:C.green,marginBottom:3}}>Tenés {gs(saldoDisponible)} de saldo a favor</div>
-                      <div style={{fontSize:12,color:"#5ABDA8",marginTop:2}}>Ganado por referidos. Marcá para usarlo.</div>
-                    </div>
-                  </label>
-                </div>
-              )}
-
-              {/* Método de pago */}
-              <div style={{background:C.bgCard,borderRadius:20,border:`1px solid ${C.border}`,padding:"22px 22px",marginBottom:0}}>
-                <div style={{fontSize:13,color:C.t2,fontWeight:700,marginBottom:16,textTransform:"uppercase",letterSpacing:1}}>Método de pago</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-                  {[
-                    {id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WhatsApp",icon:"🏦"},
-                    {id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},
-                  ].map(({id,title,sub,icon})=>(
-                    <div key={id} onClick={()=>setMetodoPago(id)}
-                         style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:16,padding:"18px 16px",cursor:"pointer",background:metodoPago===id?"rgba(224,91,40,0.08)":C.bgElev,transition:"all 0.2s",position:"relative"}}>
-                      {metodoPago===id&&<div style={{position:"absolute",top:12,right:12,width:18,height:18,borderRadius:"50%",background:C.coral,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        <svg width="9" height="7" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </div>}
-                      <div style={{fontSize:26,marginBottom:10}}>{icon}</div>
-                      <div style={{fontSize:14,fontWeight:700,color:metodoPago===id?C.coral:C.t1,marginBottom:4}}>{title}</div>
-                      <div style={{fontSize:11,color:C.t3,lineHeight:1.5}}>{sub}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Datos transferencia */}
-                {metodoPago==="transferencia"&&(
-                  <div style={{background:C.bgElev,borderRadius:14,padding:"18px",marginBottom:18,border:`1px solid ${C.border}`}}>
-                    <div style={{fontSize:13,color:C.t1,lineHeight:2.2}}>
-                      <div><span style={{color:C.t3}}>Banco:</span> <strong>UENO</strong></div>
-                      <div><span style={{color:C.t3}}>Alias:</span> <strong style={{fontSize:16,letterSpacing:1.5,color:C.coral}}>80168039-5</strong></div>
-                      <div><span style={{color:C.t3}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
-                    </div>
-                    <div style={{marginTop:14,padding:"12px 14px",background:C.greenBg,borderRadius:10,border:`1px solid ${C.greenBd}`,fontSize:12,color:"#5ABDA8",lineHeight:1.8}}>
-                      1. Transferí al alias <strong>80168039-5</strong><br/>
-                      2. Tocá el botón verde<br/>
-                      3. Enviá la foto del comprobante por WhatsApp
-                    </div>
-                  </div>
-                )}
-
-                {/* Datos pagopar */}
-                {metodoPago==="pagopar"&&(
-                  <div style={{background:C.bgElev,borderRadius:14,padding:"18px",marginBottom:18,border:`1px solid ${C.border}`}}>
-                    <label style={{fontSize:13,color:C.t2,fontWeight:700,display:"block",marginBottom:10}}>Cédula de identidad <span style={{color:C.coral}}>*</span></label>
-                    <input className="pc-inp" type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpP} placeholder="Número de CI (sin puntos)"/>
-                    <div style={{fontSize:11,color:C.t3,marginTop:8}}>Requerido por la pasarela de pago.</div>
-                  </div>
-                )}
-
-                {/* Código referido */}
-                <div style={{background:C.bgElev,borderRadius:14,padding:"18px",marginBottom:20,border:`1.5px solid ${refValido?C.greenBd:refMatch&&!refValido?C.redBd:C.border}`,transition:"border-color 0.2s"}}>
-                  <label style={{fontSize:13,color:C.t2,fontWeight:700,display:"block",marginBottom:10}}>
-                    Código de referido
-                    <span style={{color:C.t3,fontWeight:400,fontSize:12,marginLeft:8}}>opcional · {refDescPct}% descuento</span>
-                  </label>
-                  <input className="pc-inp" type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpP,textTransform:"uppercase",letterSpacing:2}} placeholder="REF-ABCD1234"/>
-                  {refValido&&<div style={{fontSize:13,color:C.green,marginTop:10,display:"flex",alignItems:"center",gap:6,fontWeight:600}}>
-                    <svg width="14" height="11" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    {codigoInstit?codigoInstit.nombre:`Código de ${refMatch?.nombre||"referido"}`} — {refDescPct}% aplicado ({gs(descRef)})
-                  </div>}
-                  {refMatch&&!refValido&&<div style={{fontSize:12,color:C.red,marginTop:8,fontWeight:600}}>No podés usar tu propio código</div>}
-                  {refCodeNorm.length>=4&&!refValido&&!refMatch&&<div style={{fontSize:12,color:C.yellow,marginTop:8}}>Código no encontrado</div>}
-                  {!refCodeNorm&&<div style={{fontSize:12,color:C.t3,marginTop:8}}>¿Un amigo te invitó? Pedile su código y obtenés {refDescPct}% off.</div>}
-                </div>
-
-                {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:12,padding:"12px 16px",fontSize:13,marginBottom:18,fontWeight:500}}>{msg}</div>}
-
-                {/* Botón según método */}
-                {metodoPago==="transferencia"?(
-                  <button className="pc-btn-hover" onClick={async()=>{
-                    if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tu nombre y teléfono.");return;}
-                    setSaving(true);setMsg("");
-                    try {
-                      const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
-                      const d = await r.json();
-                      if(!r.ok){setMsg(d.error||"Error al guardar. Intentalo de nuevo.");setSaving(false);return;}
-                      setMiCodigo(d.referrer_code||"");
-                      const horasStr=slotsSel.map(h=>`${h}:00`).join(", ");
-                      fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
-                      setPaso("confirmado");
-                    } catch(e){console.error(e);setMsg("Error de conexión. Intentá de nuevo.");}
-                    setSaving(false);
-                  }} disabled={saving}
-                    style={{width:"100%",padding:"16px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)",opacity:saving?0.7:1,transition:"all 0.2s",letterSpacing:0.2}}>
-                    {saving?"Guardando...":"Confirmar reserva →"}
-                  </button>
+                  </>
                 ):(
-                  <button className="pc-btn-hover" onClick={async()=>{
-                    if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completá tus datos.");return;}
-                    if(!form.documento.trim()){setMsg("Ingresá tu cédula de identidad.");return;}
-                    if(slotsSel.length===0){setMsg("Seleccioná al menos un horario.");return;}
-                    setSaving(true);setMsg("");
-                    try {
-                      const r = await fetch("/api/pagopar/crear-pago",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),documento:form.documento.trim(),fecha,slots:slotsSel,total:totalSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0,saldoUsado:descSaldo})});
-                      const d = await r.json();
-                      if(!r.ok||!d.checkout_url){setMsg((d.error||"Error iniciando pago.")+(d.detail?` (${d.detail})`:""));console.error("[crear-pago]",d);setSaving(false);return;}
-                      window.location.href = d.checkout_url;
-                    } catch(e){console.error(e);setMsg("Error de conexión. Intentá de nuevo.");setSaving(false);}
-                  }} disabled={saving||!form.documento.trim()}
-                    style={{width:"100%",padding:"16px",background:!form.documento.trim()?"#1A2A48":`linear-gradient(135deg,${C.coral},${C.coralD})`,color:!form.documento.trim()?C.t3:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:800,cursor:(!form.documento.trim()||saving)?"not-allowed":"pointer",fontFamily:"var(--font-sans)",boxShadow:form.documento.trim()?"0 6px 20px rgba(224,91,40,0.3)":"none",opacity:saving?0.7:1,transition:"all 0.2s",letterSpacing:0.2}}>
-                    {saving?"Procesando...":(!form.documento.trim()?"Ingresá tu CI para continuar":"Pagar online →")}
-                  </button>
+                  <div style={{textAlign:"center",padding:"24px 0",color:C.t3}}>
+                    <div style={{fontSize:36,marginBottom:10}}>📅</div>
+                    <div style={{fontSize:14,fontWeight:600,color:C.t2,marginBottom:4}}>Seleccioná un horario</div>
+                    <div style={{fontSize:12,lineHeight:1.5}}>Podés elegir hasta<br/>4 horas seguidas</div>
+                  </div>
                 )}
               </div>
-            </>
-          )}
+            </div>
+          </div>
+          </>
+        ))}
 
-          {/* ════════════════ PASO CONFIRMADO ════════════════ */}
-          {paso==="confirmado"&&(
-            <>
-              {/* Ticket card */}
-              <div style={{borderRadius:24,overflow:"hidden",boxShadow:"0 24px 64px rgba(0,0,0,0.5)",marginBottom:20}}>
-                {/* Header */}
-                <div style={{background:metodoPago==="transferencia"?`linear-gradient(135deg,#071E12,#0A2A18)`:`linear-gradient(135deg,#071E12,#092A18)`,padding:"32px 24px 26px",textAlign:"center",position:"relative"}}>
-                  <div style={{width:76,height:76,borderRadius:"50%",background:"rgba(52,212,144,0.12)",border:`2px solid ${C.greenBd}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 16px",boxShadow:"0 0 48px rgba(52,212,144,0.2)"}}>
-                    {metodoPago==="transferencia"?"⏳":"✓"}
-                  </div>
-                  <div style={{fontSize:24,fontWeight:900,color:C.green,marginBottom:8,letterSpacing:-0.5}}>
-                    {metodoPago==="transferencia"?"¡Reserva recibida!":"¡Reserva confirmada!"}
-                  </div>
-                  <div style={{fontSize:13,color:"rgba(52,212,144,0.6)",lineHeight:1.6}}>
-                    {metodoPago==="transferencia"?"Te avisamos al confirmar tu transferencia":"Tu turno está reservado, ¡nos vemos!"}
-                  </div>
-                </div>
-                {/* Torn edge */}
-                <div style={{display:"flex",alignItems:"center",background:C.bgCard,height:22,position:"relative"}}>
-                  <div style={{position:"absolute",left:-11,width:22,height:22,borderRadius:"50%",background:C.bg,zIndex:1}}/>
-                  <div style={{flex:1,borderTop:`2px dashed ${C.border}`,margin:"0 16px"}}/>
-                  <div style={{position:"absolute",right:-11,width:22,height:22,borderRadius:"50%",background:C.bg,zIndex:1}}/>
-                </div>
-                {/* Body */}
-                <div style={{background:C.bgCard,padding:"22px 24px 26px"}}>
-                  <div style={{textAlign:"center",marginBottom:20}}>
-                    <div style={{fontSize:11,color:C.t3,letterSpacing:1.2,textTransform:"uppercase",marginBottom:6}}>{cfg.nombre_club} · Tavapy</div>
-                    <div style={{fontSize:28,fontWeight:900,color:C.t1,letterSpacing:-0.5}}>{fmtFechaLegible(fecha)}</div>
-                    <div style={{fontSize:20,fontWeight:700,color:C.coral,marginTop:6}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
-                    {[{l:"Duración",v:`${slotsSel.length}h`},{l:"Total",v:gs(totalSel)},{l:"A nombre de",v:form.nombre.split(" ")[0]},{l:"Método",v:metodoPago==="transferencia"?"Transferencia":"Pago online"}].map(({l,v})=>(
-                      <div key={l} style={{background:C.bgElev,borderRadius:12,padding:"12px 14px",border:`1px solid ${C.border}`}}>
-                        <div style={{fontSize:10,color:C.t3,textTransform:"uppercase",letterSpacing:0.8,marginBottom:4}}>{l}</div>
-                        <div style={{fontSize:14,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {metodoPago==="transferencia"&&(
-                    <div style={{background:"rgba(52,212,144,0.06)",border:`1px solid ${C.greenBd}`,borderRadius:14,padding:"14px 18px",marginBottom:16}}>
-                      <div style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:6}}>Próximo paso</div>
-                      <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.7}}>Transferí al alias <strong>80168039-5</strong> (UENO) y enviá el comprobante respondiendo el WhatsApp que te mandamos.</div>
-                    </div>
-                  )}
-                  {/* Compartir */}
-                  {(()=>{
-                    const txt=`🎾 Reservé en ${cfg.nombre_club}\n📅 ${fmtFechaLegible(fecha)}\n🕐 ${slotsSel.map(h=>`${h}:00`).join(" — ")} hs\n💰 ${gs(totalSel)}\n\n👉 https://www.dexon.com.py`;
-                    const share=async()=>{
-                      if(navigator.share){
-                        try{await navigator.share({title:"Mi reserva en DEXON Padel",text:txt});}catch(e){}
-                      } else {
-                        window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,"_blank");
-                      }
-                    };
-                    return <button onClick={share} style={{width:"100%",padding:"13px",background:C.bgElev,color:C.t1,border:`1px solid ${C.border}`,borderRadius:12,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all 0.15s"}}
-                      onMouseEnter={e=>{e.currentTarget.style.background=C.bgHover;e.currentTarget.style.borderColor=C.coralD;}}
-                      onMouseLeave={e=>{e.currentTarget.style.background=C.bgElev;e.currentTarget.style.borderColor=C.border;}}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                      Compartir mi turno
-                    </button>;
-                  })()}
+        {/* PASO DATOS */}
+        {paso==="datos"&&<>
+          <StepBar/>
+          <button onClick={()=>{setPaso("lista");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
+            ← Volver
+          </button>
+          <div style={{...card,padding:"24px"}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:18}}>Tus datos</div>
+            {/* Resumen */}
+            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${C.borderL}`}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.t1}}>{fmtFechaLegible(fecha)}</div>
+              <div style={{fontSize:13,color:C.t2,marginTop:4}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs · {gs(totalSel)}</div>
+            </div>
+            {/* Welcome card cliente reconocido */}
+            {clienteEncontrado&&<div style={{background:`linear-gradient(135deg,rgba(52,212,144,0.10),rgba(52,212,144,0.02))`,border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"14px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:12,animation:"pSlide 0.25s ease-out"}}>
+              <div style={{width:44,height:44,borderRadius:"50%",background:avatarBg(clienteEncontrado.nombre),color:avatarFg(clienteEncontrado.nombre),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:16,flexShrink:0,border:`2px solid ${avatarFg(clienteEncontrado.nombre)}40`}}>{initials(clienteEncontrado.nombre)}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:C.green,marginBottom:2}}>¡Hola de nuevo, {clienteEncontrado.nombre.split(" ")[0]}!</div>
+                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.5}}>
+                  {(()=>{const tu=turnos.filter(t=>t.cliente_id===clienteEncontrado.id).length;return tu>0?`Ya tenés ${tu} turno${tu!==1?"s":""} con nosotros.`:"Bienvenido al portal.";})()}
+                  {clienteEncontrado.saldo_favor>0&&<span> Tenés <strong>{gs(clienteEncontrado.saldo_favor)}</strong> a favor.</span>}
                 </div>
               </div>
+              <span style={{fontSize:18}}>👋</span>
+            </div>}
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Nombre completo</label>
+              <input type="text" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} style={inpP} placeholder="Tu nombre y apellido"/>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Numero de telefono</label>
+              <input type="tel" value={form.telefono} onChange={e=>setForm(f=>({...f,telefono:e.target.value}))} style={inpP} placeholder="0981 xxx xxx"/>
+            </div>
+            {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
+            <button onClick={()=>{if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completa tu nombre y telefono.");return;}setMsg("");setPaso("pago");}}
+              style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)"}}>
+              Ir a pagar →
+            </button>
+          </div>
+        </>}
 
-              {/* Código referido */}
-              {miCodigo&&(
-                <div style={{background:"linear-gradient(135deg,#1A0A30,#0A1820)",borderRadius:20,padding:"22px",marginBottom:16,border:`1px solid ${C.purpleBd}`}}>
-                  <div style={{fontSize:14,fontWeight:700,color:C.yellow,marginBottom:14}}>Tu código de referido</div>
-                  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-                    <div style={{flex:1,background:C.bg,border:`1.5px dashed ${C.yellowBd}`,borderRadius:12,padding:"14px",fontSize:20,fontWeight:900,color:C.yellow,letterSpacing:3,textAlign:"center"}}>{miCodigo}</div>
-                    <button onClick={()=>{navigator.clipboard.writeText(miCodigo);setMsg("¡Copiado!");setTimeout(()=>setMsg(""),1500);}} style={{padding:"14px 18px",background:C.yellowBg,color:C.yellow,border:`1px solid ${C.yellowBd}`,borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",whiteSpace:"nowrap"}}>Copiar</button>
+        {/* PASO PAGO */}
+        {paso==="pago"&&<>
+          <StepBar/>
+          <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
+            ← Volver
+          </button>
+          <div style={{...card,padding:"24px"}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:18}}>Completa tu pago</div>
+
+            {/* Desglose */}
+            <div style={{background:`linear-gradient(135deg,${C.bgHover},${C.bgElev})`,borderRadius:12,padding:"16px",marginBottom:16,border:`1px solid ${C.borderL}`}}>
+              <div style={{fontSize:11,color:C.t3,textTransform:"uppercase",letterSpacing:0.6,marginBottom:10}}>Detalle</div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.t2,marginBottom:4}}><span>{slotsSel.length} hora{slotsSel.length>1?"s":""} · {fmtFechaLegible(fecha)}</span><span>{gs(subtotalSinDesc)}</span></div>
+              {ahorroDia>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.yellow,marginBottom:4}}><span>Descuento del dia (-{descPct}%)</span><span>-{gs(ahorroDia)}</span></div>}
+              {descRef>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.green,marginBottom:4}}><span>Codigo referido ({refMatch?.nombre?.split(" ")[0]})</span><span>-{gs(descRef)}</span></div>}
+              {descSaldo>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.green,marginBottom:4}}><span>Saldo a favor</span><span>-{gs(descSaldo)}</span></div>}
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:17,fontWeight:800,color:C.t1,marginTop:10,paddingTop:10,borderTop:`1px solid ${C.border}`}}><span>Total</span><span style={{color:C.coral}}>{gs(totalSel)}</span></div>
+            </div>
+
+            {/* Saldo a favor */}
+            {clienteEncontrado && saldoDisponible>0 && (
+              <div style={{background:C.greenBg,border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+                <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                  <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${usarSaldo?C.green:C.border}`,background:usarSaldo?C.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setUsarSaldo(s=>!s)}>
+                    {usarSaldo&&<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
-                  <div style={{fontSize:12,color:"#E8C898",lineHeight:1.7,marginBottom:14}}>Compartilo con amigos. Cuando reserven con tu código, ambos obtienen descuento.</div>
-                  <button onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent(`Reservá en ${cfg.nombre_club} con mi código *${miCodigo}* y obtenés ${refDescPct}% de descuento.\n\n👉 Reservá acá: https://www.dexon.com.py`)}`,"_blank")}
-                    style={{width:"100%",padding:"13px",background:"#25D366",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
-                    Compartir por WhatsApp
-                  </button>
-                </div>
-              )}
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:600,color:C.green}}>Tenes {gs(saldoDisponible)} de saldo a favor</div>
+                    <div style={{fontSize:11,color:"#5ABDA8",marginTop:2}}>Ganado por referidos. Marca para usarlo.</div>
+                  </div>
+                </label>
+              </div>
+            )}
 
-              <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});setReferrerCode("");setMiCodigo("");setUsarSaldo(false);}}
-                style={{width:"100%",padding:"15px",background:"transparent",color:C.t2,border:`1px solid ${C.border}`,borderRadius:14,fontSize:14,cursor:"pointer",fontFamily:"var(--font-sans)",fontWeight:600}}>
-                Volver al inicio
+            {/* Selector metodo pago */}
+            <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:0.5}}>Metodo de pago</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+              {[
+                {id:"transferencia",title:"Transferencia",sub:"UENO · Comprobante WA",icon:"🏦"},
+                {id:"pagopar",title:"Pago online",sub:"Tarjeta · PIX · Tigo · QR",icon:"💳"},
+              ].map(({id,title,sub,icon})=>(
+                <div key={id} onClick={()=>setMetodoPago(id)}
+                     style={{border:`2px solid ${metodoPago===id?C.coral:C.border}`,borderRadius:12,padding:"12px",cursor:"pointer",background:metodoPago===id?C.coralAlpha:C.bgElev,transition:"all 0.15s",display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{fontSize:18,flexShrink:0}}>{icon}</div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:metodoPago===id?C.coral:C.t1,marginBottom:2}}>{title}</div>
+                    <div style={{fontSize:11,color:C.t3,lineHeight:1.3}}>{sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Datos transferencia */}
+            {metodoPago==="transferencia"&&(
+              <div style={{background:C.bgElev,borderRadius:12,padding:"16px",marginBottom:14,border:`1px solid ${C.border}`}}>
+                <div style={{fontSize:13,color:C.t1,lineHeight:2}}>
+                  <div><span style={{color:C.t3}}>Banco:</span> <strong>UENO</strong></div>
+                  <div><span style={{color:C.t3}}>Alias:</span> <strong style={{fontSize:15,letterSpacing:1.5,color:C.coral}}>80168039-5</strong></div>
+                  <div><span style={{color:C.t3}}>Concepto:</span> <strong>Reserva DEXON</strong></div>
+                </div>
+                <div style={{marginTop:12,padding:"10px 12px",background:C.greenBg,borderRadius:8,border:`1px solid ${C.greenBd}`,fontSize:12,color:"#5ABDA8",lineHeight:1.7}}>
+                  1. Transfera al alias <strong>80168039-5</strong><br/>
+                  2. Toca el boton verde<br/>
+                  3. Envia la foto del comprobante por WhatsApp
+                </div>
+              </div>
+            )}
+
+            {/* Datos pagopar */}
+            {metodoPago==="pagopar"&&(
+              <div style={{background:C.bgElev,borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1px solid ${C.border}`}}>
+                <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Cedula de identidad <span style={{color:C.coral}}>*</span></label>
+                <input type="text" inputMode="numeric" value={form.documento} onChange={e=>setForm(f=>({...f,documento:e.target.value.replace(/\D/g,"")}))} style={inpP} placeholder="Numero de CI (sin puntos)"/>
+                <div style={{fontSize:11,color:C.t3,marginTop:6}}>Requerido por la pasarela de pago.</div>
+              </div>
+            )}
+
+            {/* Codigo referido */}
+            <div style={{background:C.bgElev,borderRadius:12,padding:"14px 16px",marginBottom:16,border:`1px solid ${refValido?C.greenBd:refMatch&&!refValido?C.redBd:C.border}`,transition:"border-color 0.2s"}}>
+              <label style={{fontSize:12,color:C.t2,fontWeight:600,display:"block",marginBottom:8}}>Codigo de referido <span style={{color:C.t3,fontWeight:400}}>(opcional · {refDescPct}% descuento)</span></label>
+              <input type="text" value={referrerCode} onChange={e=>setReferrerCode(e.target.value.toUpperCase())} style={{...inpP,textTransform:"uppercase",letterSpacing:1}} placeholder="REF-ABCD1234"/>
+              {refValido&&<div style={{fontSize:12,color:C.green,marginTop:8,display:"flex",alignItems:"center",gap:6}}>✓ {codigoInstit?codigoInstit.nombre:`Codigo de ${refMatch?.nombre||"referido"}`} — {refDescPct}% aplicado ({gs(descRef)})</div>}
+              {refMatch&&!refValido&&<div style={{fontSize:12,color:C.red,marginTop:8}}>No podes usar tu propio codigo</div>}
+              {refCodeNorm.length>=4&&!refValido&&!refMatch&&<div style={{fontSize:12,color:C.yellow,marginTop:8}}>Codigo no encontrado</div>}
+              {!refCodeNorm&&<div style={{fontSize:11,color:C.t3,marginTop:6}}>Un amigo te invito? Pedile su codigo y obtene {refDescPct}% off.</div>}
+            </div>
+
+            {msg&&<div style={{background:C.redBg,color:C.red,border:`1px solid ${C.redBd}`,borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:14}}>{msg}</div>}
+
+            {/* Boton segun metodo */}
+            {metodoPago==="transferencia"?(
+              <button onClick={async()=>{
+                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completa tu nombre y telefono.");return;}
+                setSaving(true);setMsg("");
+                try {
+                  const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
+                  const d = await r.json();
+                  if(!r.ok){setMsg(d.error||"Error al guardar. Intentalo de nuevo.");setSaving(false);return;}
+                  setMiCodigo(d.referrer_code||"");
+                  const horasStr=slotsSel.map(h=>`${h}:00`).join(", ");
+                  fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
+                  setPaso("confirmado");
+                } catch(e){console.error(e);setMsg("Error de conexion. Intenta de nuevo.");}
+                setSaving(false);
+              }} disabled={saving}
+                style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${C.coral},${C.coralD})`,color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",boxShadow:"0 6px 20px rgba(224,91,40,0.3)",opacity:saving?0.7:1}}>
+                {saving?"Guardando...":"Confirmar reserva →"}
               </button>
-            </>
+            ):(
+              <button onClick={async()=>{
+                if(!form.nombre.trim()||!form.telefono.trim()){setMsg("Completa tus datos.");return;}
+                if(!form.documento.trim()){setMsg("Ingresa tu cedula de identidad.");return;}
+                if(slotsSel.length===0){setMsg("Selecciona al menos un horario.");return;}
+                setSaving(true);setMsg("");
+                try {
+                  const r = await fetch("/api/pagopar/crear-pago",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),documento:form.documento.trim(),fecha,slots:slotsSel,total:totalSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0,saldoUsado:descSaldo})});
+                  const d = await r.json();
+                  if(!r.ok||!d.checkout_url){setMsg((d.error||"Error iniciando pago.")+(d.detail?` (${d.detail})`:""));console.error("[crear-pago]",d);setSaving(false);return;}
+                  window.location.href = d.checkout_url;
+                } catch(e){console.error(e);setMsg("Error de conexion. Intenta de nuevo.");setSaving(false);}
+              }} disabled={saving||!form.documento.trim()}
+                style={{width:"100%",padding:"15px",background:!form.documento.trim()?"#1A2A48":`linear-gradient(135deg,${C.coral},${C.coralD})`,color:!form.documento.trim()?C.t3:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:(!form.documento.trim()||saving)?"not-allowed":"pointer",fontFamily:"var(--font-sans)",boxShadow:form.documento.trim()?"0 6px 20px rgba(224,91,40,0.3)":"none",opacity:saving?0.7:1,transition:"all 0.2s"}}>
+                {saving?"Procesando...":(!form.documento.trim()?"Ingresa tu CI para continuar":"Pagar online →")}
+              </button>
+            )}
+          </div>
+        </>}
+
+        {/* PASO CONFIRMADO */}
+        {paso==="confirmado"&&<>
+          {/* Ticket */}
+          <div style={{borderRadius:20,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)",marginBottom:16}}>
+            {/* Header */}
+            <div style={{background:metodoPago==="transferencia"?`linear-gradient(135deg,#071E12,#0A2A18)`:`linear-gradient(135deg,#071E12,#092A18)`,padding:"20px 20px 16px",textAlign:"center",position:"relative"}}>
+              <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(52,212,144,0.15)",border:`2px solid ${C.greenBd}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,margin:"0 auto 10px",boxShadow:"0 0 24px rgba(52,212,144,0.2)"}}>
+                {metodoPago==="transferencia"?"⏳":"✓"}
+              </div>
+              <div style={{fontSize:18,fontWeight:800,color:C.green,marginBottom:4,letterSpacing:-0.3}}>
+                {metodoPago==="transferencia"?"¡Reserva recibida!":"¡Reserva confirmada!"}
+              </div>
+              <div style={{fontSize:13,color:"rgba(52,212,144,0.65)",lineHeight:1.5}}>
+                {metodoPago==="transferencia"?"Te avisamos al confirmar tu transferencia":"Tu turno está reservado, ¡nos vemos!"}
+              </div>
+            </div>
+            {/* Torn edge */}
+            <div style={{display:"flex",alignItems:"center",background:C.bgCard,height:22,position:"relative"}}>
+              <div style={{position:"absolute",left:-11,width:22,height:22,borderRadius:"50%",background:C.bg,zIndex:1}}/>
+              <div style={{flex:1,borderTop:`2px dashed ${C.border}`,margin:"0 16px"}}/>
+              <div style={{position:"absolute",right:-11,width:22,height:22,borderRadius:"50%",background:C.bg,zIndex:1}}/>
+            </div>
+            {/* Body */}
+            <div style={{background:C.bgCard,padding:"18px 22px 22px"}}>
+              <div style={{textAlign:"center",marginBottom:16}}>
+                <div style={{fontSize:11,color:C.t3,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{cfg.nombre_club} · Tavapy</div>
+                <div style={{fontSize:20,fontWeight:800,color:C.t1,letterSpacing:-0.3}}>{fmtFechaLegible(fecha)}</div>
+                <div style={{fontSize:18,fontWeight:700,color:C.coral,marginTop:4}}>{slotsSel.map(h=>`${h}:00`).join(" — ")} hs</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+                {[{l:"Duración",v:`${slotsSel.length}h`},{l:"Total",v:gs(totalSel)},{l:"A nombre de",v:form.nombre.split(" ")[0]},{l:"Método",v:metodoPago==="transferencia"?"Transferencia":"Pago online"}].map(({l,v})=>(
+                  <div key={l} style={{background:C.bgElev,borderRadius:10,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+                    <div style={{fontSize:10,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>{l}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              {metodoPago==="transferencia"&&<div style={{background:"rgba(52,212,144,0.06)",border:`1px solid ${C.greenBd}`,borderRadius:12,padding:"12px 16px",marginBottom:12}}>
+                <div style={{fontSize:12,fontWeight:700,color:C.green,marginBottom:4}}>Próximo paso</div>
+                <div style={{fontSize:12,color:"#5ABDA8",lineHeight:1.6}}>Transferí al alias <strong>80168039-5</strong> (UENO) y enviá el comprobante respondiendo el WhatsApp que te mandamos.</div>
+              </div>}
+              {/* Botón compartir */}
+              {(()=>{
+                const txt=`🎾 Reservé en ${cfg.nombre_club}\n📅 ${fmtFechaLegible(fecha)}\n🕐 ${slotsSel.map(h=>`${h}:00`).join(" — ")} hs\n💰 ${gs(totalSel)}\n\n👉 https://www.dexon.com.py`;
+                const share=async()=>{
+                  if(navigator.share){
+                    try{await navigator.share({title:"Mi reserva en DEXON Padel",text:txt});}catch(e){}
+                  } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,"_blank");
+                  }
+                };
+                return <button onClick={share} style={{width:"100%",padding:"12px",background:C.bgElev,color:C.t1,border:`1px solid ${C.border}`,borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all 0.15s"}}
+                  onMouseEnter={e=>{e.currentTarget.style.background=C.bgHover;e.currentTarget.style.borderColor=C.coralD;}}
+                  onMouseLeave={e=>{e.currentTarget.style.background=C.bgElev;e.currentTarget.style.borderColor=C.border;}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                  Compartir mi turno
+                </button>;
+              })()}
+            </div>
+          </div>
+
+          {miCodigo&&(
+            <div style={{background:"linear-gradient(135deg,#1A0A30,#0A1820)",borderRadius:14,padding:"18px",marginBottom:12,border:`1px solid ${C.purpleBd}`}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.yellow,marginBottom:12}}>Tu codigo de referido</div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <div style={{flex:1,background:C.bg,border:`1.5px dashed ${C.yellowBd}`,borderRadius:10,padding:"12px",fontSize:18,fontWeight:800,color:C.yellow,letterSpacing:2,textAlign:"center"}}>{miCodigo}</div>
+                <button onClick={()=>{navigator.clipboard.writeText(miCodigo);setMsg("Copiado!");setTimeout(()=>setMsg(""),1500);}} style={{padding:"12px 16px",background:C.yellowBg,color:C.yellow,border:`1px solid ${C.yellowBd}`,borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)",whiteSpace:"nowrap"}}>Copiar</button>
+              </div>
+              <div style={{fontSize:12,color:"#E8C898",lineHeight:1.6,marginBottom:12}}>Compartilo con amigos. Cuando reserven con tu codigo, ambos obtienen descuento.</div>
+              <button onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent(`Reservá en ${cfg.nombre_club} con mi código *${miCodigo}* y obtenés ${refDescPct}% de descuento.\n\n👉 Reservá acá: https://www.dexon.com.py`)}`,"_blank")}
+                style={{width:"100%",padding:"11px",background:"#25D366",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+                Compartir por WhatsApp
+              </button>
+            </div>
           )}
-        </div>
+
+          <button onClick={()=>{setPaso("lista");setSlotsSel([]);setForm({nombre:"",telefono:"",documento:""});setReferrerCode("");setMiCodigo("");setUsarSaldo(false);}}
+            style={{width:"100%",padding:"13px",background:"transparent",color:C.t2,border:`1px solid ${C.border}`,borderRadius:12,fontSize:14,cursor:"pointer",fontFamily:"var(--font-sans)"}}>
+            Volver al inicio
+          </button>
+        </>}
+       </div>
       </div>
     </div>
   );
