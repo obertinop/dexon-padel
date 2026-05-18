@@ -682,7 +682,7 @@ export default function App() {
           setSaving(true);
           try{
             await db.patch("turnos",form.id,{fecha:nF,hora:Number(nH),motivo_reprog:form.motivo_reprog||""},tk);
-            if(form.cliente?.telefono){const motivos={cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};const razon=motivos[form.motivo_reprog]||"";enviarWsp(form.cliente.telefono,`¡Hola ${form.cliente.nombre}! Tu turno ha sido reprogramado ${razon}.\n\n📅 Nuevo turno:\nFecha: ${nF}\nHora: ${nH}:00\n\n¿Alguna duda? Nos contactamos 😊`);}
+            if(form.cliente?.telefono){const motivos={cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};const razon=motivos[form.motivo_reprog]||"";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"reprogramacion",nombre:form.cliente.nombre,telefono:form.cliente.telefono,fecha:fmtFechaLegible(nF),horarios:`${nH}:00hs`,motivo:razon})}).catch(()=>{});}
             await load();notify("Turno reprogramado","ok");setTimeout(()=>{closeM();setReprogramFecha("");setReprogramHora("");},700);
           }catch(e){console.error(e);notify("Error al reprogramar","error");}
           setSaving(false);

@@ -55,6 +55,22 @@ export default async function handler(req, res) {
         ],
       }],
     };
+  } else if (tipo === "reprogramacion") {
+    // Template: dexon_reprogramacion
+    // {{1}} nombre, {{2}} fecha, {{3}} horarios, {{4}} motivo
+    templateCliente = {
+      name: "dexon_reprogramacion",
+      language: { code: "es" },
+      components: [{
+        type: "body",
+        parameters: [
+          { type: "text", text: nombre },
+          { type: "text", text: fecha || "-" },
+          { type: "text", text: horarios || "-" },
+          { type: "text", text: req.body.motivo || "motivos internos" },
+        ],
+      }],
+    };
   } else if (tipo === "transferencia_pendiente") {
     // Template: dexon_reserva_transferencia
     // {{1}} nombre, {{2}} fecha, {{3}} horarios, {{4}} monto
@@ -102,13 +118,9 @@ export default async function handler(req, res) {
       ? `Pagopar - ${forma_pago || "online"}`
       : forma_pago || "Transferencia bancaria";
 
-    const textoAdmin =
-      `📋 Nueva reserva\n\n` +
-      `👤 ${nombre}\n` +
-      `📞 ${telefono}\n` +
-      `📅 ${fecha || "-"} a las ${horarios || "-"}\n` +
-      `💰 ${monto || "-"}\n` +
-      `💳 ${metodo}`;
+    const textoAdmin = tipo === "reprogramacion"
+      ? `🔄 Turno reprogramado\n\n👤 ${nombre}\n📞 ${telefono}\n📅 ${fecha || "-"} a las ${horarios || "-"}\n📝 Motivo: ${req.body.motivo || "-"}`
+      : `📋 Nueva reserva\n\n👤 ${nombre}\n📞 ${telefono}\n📅 ${fecha || "-"} a las ${horarios || "-"}\n💰 ${monto || "-"}\n💳 ${metodo}`;
 
     const rAdmin = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
       method: "POST",
