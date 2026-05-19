@@ -650,8 +650,8 @@ function Reagendar({ turno, back, showToast, refresh }) {
 
   useEffect(() => {
     const d = dias[dayIdx];
-    const fecha = d.toISOString().slice(0, 10);
-    clienteData.disponibilidad(fecha, fecha).then(d => setSlots(d?.slots || [])).catch(() => setSlots([]));
+    const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    clienteData.disponibilidad(ymd).then(r => setSlots(r?.slots || [])).catch(() => setSlots([]));
   }, [dayIdx]);
 
   const confirmar = async () => {

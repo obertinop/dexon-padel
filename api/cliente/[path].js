@@ -396,40 +396,28 @@ async function handleDisponibilidad(req, res) {
   const { cliente, client, error } = await autenticarCliente(req);
   if (error) return res.status(401).json({ error });
 
-  const { desde, hasta } = req.query || {};
-  if (!desde || !hasta) return res.status(400).json({ error: "Faltan parámetros desde y hasta" });
-
-  const desdeDate = desde.slice(0, 10);
-  const hastaDate = hasta.slice(0, 10);
+  const fecha = (req.query.fecha || req.query.desde || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return res.status(400).json({ error: "Falta parámetro fecha (YYYY-MM-DD)" });
 
   const [{ data: ocupados }, { data: cfgArr }] = await Promise.all([
-    client.from("turnos").select("fecha,hora").neq("estado", "cancelado")
-      .gte("fecha", desdeDate).lte("fecha", hastaDate),
+    client.from("turnos").select("hora").neq("estado", "cancelado").eq("fecha", fecha),
     client.from("config").select("hora_inicio,hora_fin,tarifa_base,tarifa_pico,hora_pico_inicio,hora_pico_fin").limit(1),
   ]);
 
   const cfg = cfgArr?.[0] || { hora_inicio: 10, hora_fin: 24, tarifa_base: 80000, tarifa_pico: 100000, hora_pico_inicio: 19, hora_pico_fin: 22 };
-  const ocupadosSet = new Set((ocupados || []).map(t => `${t.fecha}|${t.hora}`));
+  const ocupadas = new Set((ocupados || []).map(t => Number(t.hora)));
+  const ahoraMs = Date.now();
 
   const slots = [];
-  const ahora = new Date();
-  const cur = new Date(desdeDate + "T00:00:00");
-  const fin = new Date(hastaDate + "T00:00:00");
-
-  while (cur <= fin) {
-    const fechaStr = cur.toISOString().slice(0, 10);
-    for (let h = Number(cfg.hora_inicio); h < Number(cfg.hora_fin); h++) {
-      if (new Date(`${fechaStr}T${String(h).padStart(2, "0")}:00:00`) <= ahora) continue;
-      if (!ocupadosSet.has(`${fechaStr}|${h}`)) {
-        const esPico = h >= Number(cfg.hora_pico_inicio) && h < Number(cfg.hora_pico_fin);
-        slots.push({
-          inicio: `${fechaStr}T${String(h).padStart(2, "0")}:00:00`,
-          precio: esPico ? cfg.tarifa_pico : cfg.tarifa_base,
-          esPico,
-        });
-      }
-    }
-    cur.setDate(cur.getDate() + 1);
+  for (let h = Number(cfg.hora_inicio); h < Number(cfg.hora_fin); h++) {
+    if (ocupadas.has(h)) continue;
+    if (new Date(`${fecha}T${String(h).padStart(2, "0")}:00:00Z`).getTime() <= ahoraMs) continue;
+    const esPico = h >= Number(cfg.hora_pico_inicio) && h < Number(cfg.hora_pico_fin);
+    slots.push({
+      inicio: `${fecha}T${String(h).padStart(2, "0")}:00:00`,
+      precio: esPico ? Number(cfg.tarifa_pico) : Number(cfg.tarifa_base),
+      esPico,
+    });
   }
 
   return res.status(200).json({ slots });

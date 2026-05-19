@@ -59,8 +59,8 @@ export const clienteData = {
   me: () => call("/api/cliente/me"),
 
   // Slots disponibles para reagendar / reservar (rango de fechas)
-  disponibilidad: (desde, hasta) =>
-    call(`/api/cliente/disponibilidad?desde=${desde}&hasta=${hasta}`),
+  disponibilidad: (fecha) =>
+    call(`/api/cliente/disponibilidad?fecha=${fecha}`),
 
   // Acciones sobre turno propio
   cancelarTurno: (turno_id) =>
