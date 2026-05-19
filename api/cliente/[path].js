@@ -86,8 +86,14 @@ async function handleAuthSend(req, res) {
     }
   }
 
-  const { data: cli } = await client.from("clientes").select("id").eq("telefono", tel).maybeSingle();
-  const isNewClient = !cli;
+  const telNorm9s = tel.replace(/^595/, "").slice(-9);
+  const formatosSend = [...new Set([tel, `0${telNorm9s}`, `595${telNorm9s}`, telNorm9s])];
+  let cliExiste = null;
+  for (const fmt of formatosSend) {
+    const { data } = await client.from("clientes").select("id").eq("telefono", fmt).maybeSingle();
+    if (data) { cliExiste = data; break; }
+  }
+  const isNewClient = !cliExiste;
   const codigo = String(Math.floor(100000 + Math.random() * 900000));
   const expira = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -161,7 +167,14 @@ async function handleAuthVerify(req, res) {
 
   await client.from("otp_codes").update({ usado: true }).eq("id", otp.id);
 
-  let { data: cli } = await client.from("clientes").select("*").eq("telefono", tel).maybeSingle();
+  // Buscar por múltiples formatos: 595XXXXXXXXX, 0XXXXXXXXX, XXXXXXXXX
+  const telNorm9 = tel.replace(/^595/, "").slice(-9);
+  const formatos = [...new Set([tel, `0${telNorm9}`, `595${telNorm9}`, telNorm9])];
+  let cli = null;
+  for (const fmt of formatos) {
+    const { data } = await client.from("clientes").select("*").eq("telefono", fmt).maybeSingle();
+    if (data) { cli = data; break; }
+  }
 
   if (!cli) {
     if (!nombre?.trim() || !apellido?.trim()) {
