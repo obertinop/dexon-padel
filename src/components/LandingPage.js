@@ -72,6 +72,7 @@ function LandingPage({ onAdmin }) {
         )}
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
           {!isMobile&&<button style={st.btnOutline} onClick={onAdmin}>Admin</button>}
+          {!isMobile&&<button style={st.btnOutline} onClick={()=>window.location.href="/cuenta"}>Mi cuenta</button>}
           <button style={st.btnSolid} onClick={()=>window.location.href="/reservar"}>Reservar →</button>
           {isMobile&&<button onClick={()=>setMenuOpen(!menuOpen)} style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:"0 4px",fontFamily:"var(--font-sans)"}}>{menuOpen?"✕":"☰"}</button>}
         </div>
@@ -83,6 +84,7 @@ function LandingPage({ onAdmin }) {
           <div style={st.mobileLink} onClick={()=>scrollTo("cancha")}>La cancha</div>
           <div style={st.mobileLink} onClick={()=>scrollTo("ubicacion")}>Ubicación</div>
           <div style={st.mobileLink} onClick={()=>scrollTo("contacto")}>Contacto</div>
+          <div style={st.mobileLink} onClick={()=>window.location.href="/cuenta"}>Mi cuenta</div>
           <div style={{...st.mobileLink,color:coral}} onClick={onAdmin}>Administración</div>
         </div>
       )}

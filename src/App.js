@@ -11,6 +11,7 @@ import Login from "./components/Login.js";
 import PortalCliente from "./components/PortalCliente.js";
 import LandingPage from "./components/LandingPage.js";
 import ResultadoPago from "./components/ResultadoPago.js";
+import MiCuenta from "./components/MiCuenta.js";
 import WhatsAppPanel, { ReenviarConfirmacionBtn } from "./components/WhatsAppPanel.js";
 import DiasBloquedosPanel from "./components/DiasBloquedosPanel.js";
 import { Avatar, WhatsAppIcon, Badge, Btn, FG, Inp, Sel, R2, Div, Empty, estadoBadge, tipoBadge, Modal, Dialog } from "./components/UI.js";
@@ -33,6 +34,8 @@ export default function App() {
   if(esResultado) return <ResultadoPago/>;
   const esPortal = window.location.pathname.startsWith("/reservar");
   if(esPortal) return <PortalCliente/>;
+  const esCuenta = window.location.pathname.startsWith("/cuenta") || window.location.pathname.startsWith("/mi-cuenta");
+  if(esCuenta) return <MiCuenta/>;
   const esAdmin = window.location.pathname.startsWith("/admin");
   if(!esAdmin) return <LandingPage onAdmin={()=>window.location.href="/admin"}/>;
 
