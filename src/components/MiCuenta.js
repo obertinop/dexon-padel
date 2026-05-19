@@ -272,21 +272,9 @@ function LoginScreen({ onSent }) {
           background: `radial-gradient(ellipse 100% 80% at 10% 110%, rgba(224,91,40,0.30) 0%, ${C.bg} 60%)`,
           borderRight: `1px solid ${C.border}` }}>
           {/* Logo difuminado de fondo */}
-          <img src={LOGO} alt="" aria-hidden style={{ position: "absolute", height: 320, ...LOGO_STYLE_DARK, opacity: 0.06, top: "50%", left: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none" }} />
+          <img src={LOGO} alt="" aria-hidden style={{ position: "absolute", height: 320, ...LOGO_STYLE_DARK, opacity: 0.06, top: "50%", left: "15%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none" }} />
           <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK, alignSelf: "flex-start" }} />
           <div>
-            <svg viewBox="0 0 400 300" style={{ width: "100%", maxWidth: 320, display: "block", margin: "0 auto 36px", opacity: 0.25 }}>
-              <defs>
-                <linearGradient id="court-hero" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#E05B28" />
-                  <stop offset="100%" stopColor="#B84520" />
-                </linearGradient>
-              </defs>
-              <rect x="90" y="30" width="220" height="240" rx="8" fill="url(#court-hero)" stroke="#fff" strokeOpacity="0.4" strokeWidth="2" />
-              <line x1="200" y1="30" x2="200" y2="270" stroke="#fff" strokeOpacity="1" strokeWidth="5" />
-              <line x1="310" y1="150" x2="90" y2="150" stroke="#fff" strokeOpacity="1" strokeWidth="5" />
-              <rect x="90" y="60" width="220" height="180" fill="none" stroke="#fff" strokeOpacity="0.6" strokeWidth="1" />
-            </svg>
             <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 20 }}>
               Tu próximo partido<br/><span style={{ color: C.coral }}>empieza acá.</span>
             </div>
