@@ -1124,10 +1124,9 @@ function SlotsGrid({ slots, selected, onSelect }) {
       {slots.length === 0 && <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 40, color: C.t3 }}>No hay horarios para este día</div>}
       {slots.map(s => {
         const isSel = selected === s.inicio;
-        const dis = !s.disponible;
         return (
-          <button key={s.id || s.inicio} onClick={() => !dis && onSelect(s.inicio)} disabled={dis}
-            style={{ padding: "14px 6px", background: isSel ? `linear-gradient(135deg, ${C.coral}, ${C.coralD})` : (dis ? "transparent" : C.bgCard), border: `1px solid ${isSel ? "transparent" : (dis ? "transparent" : C.border)}`, borderRadius: 12, color: isSel ? "#fff" : (dis ? C.t3 : C.t1), cursor: dis ? "not-allowed" : "pointer", fontFamily: "inherit", fontWeight: 700, opacity: dis ? 0.4 : 1, textDecoration: dis ? "line-through" : "none" }}>
+          <button key={s.inicio} onClick={() => onSelect(s.inicio)}
+            style={{ padding: "14px 6px", background: isSel ? `linear-gradient(135deg, ${C.coral}, ${C.coralD})` : C.bgCard, border: `1px solid ${isSel ? "transparent" : C.border}`, borderRadius: 12, color: isSel ? "#fff" : C.t1, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
             {hhmm(s.inicio)}
           </button>
         );
