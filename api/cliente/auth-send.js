@@ -94,7 +94,7 @@ export default async function handler(req, res) {
         to: tel,
         type: "template",
         template: {
-          name: "dexon_codigo",
+          name: "codigo_dexon",
           language: { code: "es" },
           components: [{
             type: "body",
