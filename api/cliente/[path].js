@@ -177,24 +177,16 @@ async function handleAuthVerify(req, res) {
   }
 
   if (!cli) {
-    if (!nombre?.trim() || !apellido?.trim()) {
-      return res.status(409).json({ error: "Completá nombre y apellido para crear la cuenta.", needsRegistration: true });
+    if (!nombre?.trim()) {
+      return res.status(409).json({ error: "Completá tu nombre para crear la cuenta.", needsRegistration: true });
     }
+    const nombreCompleto = apellido?.trim() ? `${nombre.trim()} ${apellido.trim()}` : nombre.trim();
     const { data: nuevo, error: cErr } = await client.from("clientes").insert({
-      nombre: nombre.trim(), apellido: apellido.trim(), telefono: tel,
+      nombre: nombreCompleto, telefono: tel,
       referrer_code: genRefCode(), saldo_favor: 0,
     }).select().single();
     if (cErr) return res.status(500).json({ error: "No se pudo crear el cliente" });
     cli = nuevo;
-
-    if (codigo_referido?.trim()) {
-      const { data: refOwner } = await client.from("clientes")
-        .select("id").eq("referrer_code", codigo_referido.trim().toUpperCase()).maybeSingle();
-      if (refOwner && refOwner.id !== cli.id) {
-        await client.from("clientes")
-          .update({ referrer_code_used: codigo_referido.trim().toUpperCase() }).eq("id", cli.id);
-      }
-    }
   }
 
   const token = crypto.randomBytes(32).toString("base64url");
@@ -246,7 +238,7 @@ async function handleMe(req, res) {
     client.from("turnos").select("*").eq("cliente_id", cliente.id).lt("fecha", hoy).order("fecha", { ascending: false }).order("hora", { ascending: false }).limit(50),
     client.from("turnos").select("id,fecha,hora,precio,metodo_pago,created_at").eq("cliente_id", cliente.id).eq("cobrado", true).order("created_at", { ascending: false }).limit(50),
     client.from("cliente_favoritos").select("*").eq("cliente_id", cliente.id),
-    client.from("abonos").select("*").eq("cliente_id", cliente.id).eq("activo", true).maybeSingle(),
+    client.from("abonos").select("*").eq("cliente_id", cliente.id).eq("estado", "activo").maybeSingle(),
     client.from("turnos").select("id,fecha,hora,cliente_id", { count: "exact" }).eq("applied_referral_code", cliente.referrer_code || ""),
     client.from("config").select("referral_discount_percent").limit(1),
   ]);
@@ -293,7 +285,8 @@ async function handleTurnoAccion(req, res) {
   const HORAS_LIMITE = 12;
 
   if (accion === "cancelar" || accion === "reagendar") {
-    const horasFalta = (new Date(turno.inicio).getTime() - Date.now()) / 3600000;
+    const turnoISO = `${turno.fecha}T${String(turno.hora).padStart(2, "0")}:00:00`;
+    const horasFalta = (new Date(turnoISO).getTime() - Date.now()) / 3600000;
     if (horasFalta < HORAS_LIMITE) {
       return res.status(403).json({ error: `Solo podés ${accion} hasta ${HORAS_LIMITE}h antes del turno. Escribinos por WhatsApp.` });
     }
@@ -303,23 +296,19 @@ async function handleTurnoAccion(req, res) {
   }
 
   if (accion === "cancelar") {
-    await client.from("turnos").update({ estado: "cancelado", cancelado_en: new Date().toISOString() }).eq("id", turno.id);
+    await client.from("turnos").update({ estado: "cancelado" }).eq("id", turno.id);
     return res.status(200).json({ ok: true });
   }
 
   if (accion === "reagendar") {
     if (!nuevo_inicio) return res.status(400).json({ error: "Falta nuevo_inicio" });
-    const dur = nueva_duracion || turno.duracion || 60;
-    const finNuevo = new Date(new Date(nuevo_inicio).getTime() + dur * 60000).toISOString();
+    const nuevaFecha = nuevo_inicio.slice(0, 10);
+    const nuevaHora = Number(nuevo_inicio.slice(11, 13));
     const { data: choque } = await client.from("turnos").select("id")
       .neq("id", turno.id).neq("estado", "cancelado")
-      .lt("inicio", finNuevo).gt("fin", nuevo_inicio).limit(1);
+      .eq("fecha", nuevaFecha).eq("hora", nuevaHora).limit(1);
     if (choque?.length) return res.status(409).json({ error: "Ese horario ya está ocupado" });
-    await client.from("turnos").update({
-      inicio: nuevo_inicio, fin: finNuevo,
-      reagendado_en: new Date().toISOString(),
-      inicio_original: turno.inicio_original || turno.inicio,
-    }).eq("id", turno.id);
+    await client.from("turnos").update({ fecha: nuevaFecha, hora: nuevaHora }).eq("id", turno.id);
     return res.status(200).json({ ok: true });
   }
 
@@ -336,10 +325,9 @@ async function handlePerfil(req, res) {
   const { cliente, client, error } = await autenticarCliente(req);
   if (error) return res.status(401).json({ error });
 
-  const { nombre, apellido, email } = req.body || {};
+  const { nombre, email } = req.body || {};
   const campos = {};
-  if (nombre?.trim())   campos.nombre   = nombre.trim();
-  if (apellido?.trim()) campos.apellido = apellido.trim();
+  if (nombre?.trim()) campos.nombre = nombre.trim();
   if (email !== undefined) campos.email = email?.trim() || null;
 
   if (Object.keys(campos).length === 0) return res.status(400).json({ error: "Nada para actualizar" });
@@ -411,31 +399,34 @@ async function handleDisponibilidad(req, res) {
   const { desde, hasta } = req.query || {};
   if (!desde || !hasta) return res.status(400).json({ error: "Faltan parámetros desde y hasta" });
 
-  const desdeISO = new Date(desde).toISOString();
-  const hastaISO = new Date(hasta).toISOString();
+  const desdeDate = desde.slice(0, 10);
+  const hastaDate = hasta.slice(0, 10);
 
   const [{ data: ocupados }, { data: cfgArr }] = await Promise.all([
-    client.from("turnos").select("inicio,fin").neq("estado", "cancelado")
-      .gte("inicio", desdeISO).lte("inicio", hastaISO),
+    client.from("turnos").select("fecha,hora").neq("estado", "cancelado")
+      .gte("fecha", desdeDate).lte("fecha", hastaDate),
     client.from("config").select("hora_inicio,hora_fin,tarifa_base,tarifa_pico,hora_pico_inicio,hora_pico_fin").limit(1),
   ]);
 
   const cfg = cfgArr?.[0] || { hora_inicio: 10, hora_fin: 24, tarifa_base: 80000, tarifa_pico: 100000, hora_pico_inicio: 19, hora_pico_fin: 22 };
-  const ocupadosSet = new Set((ocupados || []).map(t => t.inicio));
+  const ocupadosSet = new Set((ocupados || []).map(t => `${t.fecha}|${t.hora}`));
 
-  // Generar slots de 1h por día en el rango
   const slots = [];
-  const cur = new Date(desdeISO);
-  const fin = new Date(hastaISO);
+  const ahora = new Date();
+  const cur = new Date(desdeDate + "T00:00:00");
+  const fin = new Date(hastaDate + "T00:00:00");
+
   while (cur <= fin) {
-    for (let h = cfg.hora_inicio; h < cfg.hora_fin; h++) {
-      const slotISO = new Date(cur);
-      slotISO.setHours(h, 0, 0, 0);
-      if (slotISO <= new Date()) continue; // no mostrar pasados
-      const iso = slotISO.toISOString();
-      if (!ocupadosSet.has(iso)) {
-        const esPico = h >= cfg.hora_pico_inicio && h < cfg.hora_pico_fin;
-        slots.push({ inicio: iso, precio: esPico ? cfg.tarifa_pico : cfg.tarifa_base, esPico });
+    const fechaStr = cur.toISOString().slice(0, 10);
+    for (let h = Number(cfg.hora_inicio); h < Number(cfg.hora_fin); h++) {
+      if (new Date(`${fechaStr}T${String(h).padStart(2, "0")}:00:00`) <= ahora) continue;
+      if (!ocupadosSet.has(`${fechaStr}|${h}`)) {
+        const esPico = h >= Number(cfg.hora_pico_inicio) && h < Number(cfg.hora_pico_fin);
+        slots.push({
+          inicio: `${fechaStr}T${String(h).padStart(2, "0")}:00:00`,
+          precio: esPico ? cfg.tarifa_pico : cfg.tarifa_base,
+          esPico,
+        });
       }
     }
     cur.setDate(cur.getDate() + 1);

@@ -482,7 +482,7 @@ function Dashboard({ data, go }) {
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => go("notif")} style={iconBtnStyle(40)}><Ico.bell /></button>
           <button onClick={() => go("perfil")} style={{ ...iconBtnStyle(40), padding: 0 }}>
-            <Avatar nombre={`${cliente.nombre} ${cliente.apellido}`} size={36} />
+            <Avatar nombre={cliente.nombre} size={36} />
           </button>
         </div>
       </div>
@@ -652,7 +652,7 @@ function Reagendar({ turno, back, showToast, refresh }) {
     const d = dias[dayIdx];
     const desde = new Date(d).toISOString();
     const hasta = new Date(d.getTime() + 86400000).toISOString();
-    clienteData.disponibilidad(desde, hasta).then(setSlots).catch(() => setSlots([]));
+    clienteData.disponibilidad(desde, hasta).then(d => setSlots(d?.slots || [])).catch(() => setSlots([]));
   }, [dayIdx]);
 
   const confirmar = async () => {
@@ -773,11 +773,10 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
   const { cliente } = data;
   const [editing, setEditing] = useState(false);
   const [nombre, setNombre] = useState(cliente.nombre);
-  const [apellido, setApellido] = useState(cliente.apellido);
   const [email, setEmail] = useState(cliente.email || "");
 
   const save = async () => {
-    try { await clienteData.updatePerfil({ nombre, apellido, email }); showToast("Datos actualizados"); setEditing(false); await refresh(); }
+    try { await clienteData.updatePerfil({ nombre, email }); showToast("Datos actualizados"); setEditing(false); await refresh(); }
     catch (e) { showToast(e.message); }
   };
 
@@ -785,8 +784,8 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
     <>
       <Header title="Mi cuenta" />
       <div style={{ padding: "8px 20px 18px", textAlign: "center" }}>
-        <Avatar nombre={`${cliente.nombre} ${cliente.apellido}`} size={84} />
-        <div style={{ fontSize: 19, fontWeight: 800, marginTop: 10 }}>{cliente.nombre} {cliente.apellido}</div>
+        <Avatar nombre={cliente.nombre} size={84} />
+        <div style={{ fontSize: 19, fontWeight: 800, marginTop: 10 }}>{cliente.nombre}</div>
       </div>
 
       <div style={{ padding: "0 20px 16px" }}>
@@ -799,13 +798,12 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
         {editing ? (
           <div style={card}>
             <Field label="Nombre"><input style={inp} value={nombre} onChange={e => setNombre(e.target.value)} /></Field>
-            <Field label="Apellido"><input style={inp} value={apellido} onChange={e => setApellido(e.target.value)} /></Field>
             <Field label="Email (opcional)"><input style={inp} value={email} onChange={e => setEmail(e.target.value)} /></Field>
             <Field label="WhatsApp"><input style={{ ...inp, color: C.t3 }} value={cliente.telefono} disabled /></Field>
           </div>
         ) : (
           <div style={card}>
-            <Row label="Nombre"><span style={{ fontWeight: 600 }}>{cliente.nombre} {cliente.apellido}</span></Row>
+            <Row label="Nombre"><span style={{ fontWeight: 600 }}>{cliente.nombre}</span></Row>
             <Row label="WhatsApp"><span style={{ fontWeight: 600 }}>{cliente.telefono}</span></Row>
             <Row label="Email"><span style={{ color: cliente.email ? C.t1 : C.t3 }}>{cliente.email || "—"}</span></Row>
           </div>
@@ -977,7 +975,8 @@ function Sidebar({ active, onChange, cliente, onLogout, canBack, onBack }) {
     { id: "referido", label: "Referidos", icon: <Ico.gift sz={18} /> },
     { id: "perfil",   label: "Mi cuenta", icon: <Ico.user sz={18} /> },
   ];
-  const initials = `${cliente.nombre?.[0] || ""}${cliente.apellido?.[0] || ""}`.toUpperCase();
+  const parts = (cliente.nombre || "").trim().split(" ");
+  const initials = (parts[0]?.[0] || "") + (parts[1]?.[0] || "").toUpperCase();
 
   return (
     <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: C.bgCard, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", zIndex: 50 }}>
@@ -991,7 +990,7 @@ function Sidebar({ active, onChange, cliente, onLogout, canBack, onBack }) {
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: C.bgElev, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px" }}>
           <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg, ${C.coral}, ${C.coralD})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{initials}</div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cliente.nombre} {cliente.apellido}</div>
+            <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cliente.nombre}</div>
             <div style={{ fontSize: 11, color: C.t2 }}>{fmtGs(cliente.saldo_favor)} a favor</div>
           </div>
         </div>
