@@ -228,6 +228,7 @@ function LoginScreen({ onSent }) {
   const [tel, setTel] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const isDesktop = useIsDesktop();
 
   const submit = async () => {
     if (tel.replace(/\D/g, "").length < 8) return setErr("Número incompleto");
@@ -239,34 +240,63 @@ function LoginScreen({ onSent }) {
     setLoading(false);
   };
 
-  return (
-    <div style={{ padding: "70px 24px 40px", minHeight: "100vh", display: "flex", flexDirection: "column",
-      background: `radial-gradient(ellipse 80% 60% at 50% 0%, rgba(224,91,40,0.18) 0%, ${C.bg} 60%)` }}>
-      <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <LogoText size={26} />
-      </div>
-      <h1 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 12px", letterSpacing: -1, lineHeight: 1.1 }}>
+  const form = (
+    <>
+      <h1 style={{ fontSize: isDesktop ? 34 : 30, fontWeight: 800, margin: "0 0 12px", letterSpacing: -1, lineHeight: 1.1 }}>
         Tu cancha,<br/><span style={{ color: C.coral }}>tu cuenta.</span>
       </h1>
       <p style={{ fontSize: 14, color: C.t2, lineHeight: 1.6, marginBottom: 28 }}>
         Ingresá tu número de WhatsApp y te enviamos un código para entrar.
       </p>
-
-      <label style={{ fontSize: 12, color: C.t2, fontWeight: 600, marginBottom: 8 }}>WhatsApp</label>
+      <label style={{ fontSize: 12, color: C.t2, fontWeight: 600, marginBottom: 8, display: "block" }}>WhatsApp</label>
       <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 14, padding: "0 4px 0 14px", marginBottom: 12 }}>
-        <span style={{ color: C.t2, fontWeight: 600, paddingRight: 10, borderRight: `1px solid ${C.border}` }}>🇵🇾 +595</span>
-        <input value={tel} onChange={e => setTel(e.target.value)} placeholder="0994 821 477" inputMode="tel"
+        <span style={{ color: C.t2, fontWeight: 600, paddingRight: 10, borderRight: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>🇵🇾 +595</span>
+        <input value={tel} onChange={e => setTel(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="0994 821 477" inputMode="tel"
           style={{ flex: 1, padding: "16px 14px", background: "transparent", border: "none", color: C.t1, fontSize: 16, fontFamily: "inherit", outline: "none", fontWeight: 500, letterSpacing: 0.5 }} />
       </div>
       {err && <div style={{ background: C.redBg, border: `1px solid ${C.redBd}`, color: C.red, padding: "10px 14px", borderRadius: 10, fontSize: 13, marginBottom: 14 }}>{err}</div>}
-
       <Btn v="primary" onClick={submit} disabled={loading} style={{ width: "100%", padding: "16px", borderRadius: 14, fontSize: 16, fontWeight: 700 }}>
         {loading ? "Enviando código…" : "Continuar →"}
       </Btn>
-
       <div style={{ marginTop: 18, fontSize: 12, color: C.t3, textAlign: "center", lineHeight: 1.5 }}>
         Te enviamos un código por WhatsApp.<br/>Al continuar aceptás los Términos y la Política de privacidad.
       </div>
+    </>
+  );
+
+  if (isDesktop) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", background: C.bg }}>
+        {/* Left — branding */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "48px 56px",
+          background: `radial-gradient(ellipse 100% 80% at 10% 110%, rgba(224,91,40,0.30) 0%, ${C.bg} 60%)`,
+          borderRight: `1px solid ${C.border}` }}>
+          <img src={LOGO} alt="Dexon" style={{ height: 36, ...LOGO_STYLE_DARK, alignSelf: "flex-start" }} />
+          <div>
+            <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 20 }}>
+              Tu cancha,<br/><span style={{ color: C.coral }}>tu cuenta.</span>
+            </div>
+            <div style={{ fontSize: 16, color: C.t2, lineHeight: 1.7, maxWidth: 380 }}>
+              Mirá tus próximos turnos, reagendá, cancelá y controlá tu saldo — todo en un lugar.
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: C.t3 }}>© {new Date().getFullYear()} Dexon Padel</div>
+        </div>
+        {/* Right — form */}
+        <div style={{ width: 460, display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px 56px" }}>
+          {form}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "70px 24px 40px", minHeight: "100vh", display: "flex", flexDirection: "column",
+      background: `radial-gradient(ellipse 80% 60% at 50% 0%, rgba(224,91,40,0.18) 0%, ${C.bg} 60%)` }}>
+      <div style={{ textAlign: "center", marginBottom: 36 }}>
+        <img src={LOGO} alt="Dexon" style={{ height: 32, ...LOGO_STYLE_DARK }} />
+      </div>
+      {form}
     </div>
   );
 }
