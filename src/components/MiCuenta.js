@@ -268,9 +268,11 @@ function LoginScreen({ onSent }) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", background: C.bg }}>
         {/* Left — branding */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "48px 56px",
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "48px 56px", position: "relative", overflow: "hidden",
           background: `radial-gradient(ellipse 100% 80% at 10% 110%, rgba(224,91,40,0.30) 0%, ${C.bg} 60%)`,
           borderRight: `1px solid ${C.border}` }}>
+          {/* Logo difuminado de fondo */}
+          <img src={LOGO} alt="" aria-hidden style={{ position: "absolute", height: 320, ...LOGO_STYLE_DARK, opacity: 0.06, top: "50%", left: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none" }} />
           <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK, alignSelf: "flex-start" }} />
           <div>
             <svg viewBox="0 0 400 300" style={{ width: "100%", maxWidth: 320, display: "block", margin: "0 auto 36px", opacity: 0.25 }}>
