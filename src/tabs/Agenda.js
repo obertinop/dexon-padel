@@ -6,7 +6,7 @@ import { useAdmin } from "../context/AdminContext.js";
 
 export default function Agenda() {
   const {
-    turnos, cfg,
+    turnos, cfg, abonos,
     isMobile, openM, setDlg, cById, iById,
     getSemana, turnosAbonados, semOff, setSemOff,
     nowTime, agendaDiaIdx, setAgendaDiaIdx,
@@ -15,7 +15,10 @@ export default function Agenda() {
     draggingId, setDraggingId, dragOver, setDragOver,
   } = useAdmin();
 
-  const dias = getSemana(); const h = hoy(); const extra = turnosAbonados(); const all = [...turnos, ...extra];
+  const dias = getSemana(); const h = hoy();
+  const abonoActivosIds = new Set(abonos.filter(a=>a.estado==="activo"&&a.fecha_vencimiento>=h).map(a=>a.id));
+  const extra = turnosAbonados();
+  const all = [...turnos.filter(t=>t.tipo!=="abono"||abonoActivosIds.has(t.abono_id)), ...extra];
   const timeCol = isMobile ? 30 : 52;
   const cellMinH = isMobile ? 32 : 40;
   const nowHr = nowTime.getHours();

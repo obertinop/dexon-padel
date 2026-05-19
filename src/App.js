@@ -194,7 +194,7 @@ export default function App() {
 
   const turnosAbonados = ()=>{
     const dias=getSemana();const gen=[];
-    abonos.filter(a=>a.estado==="activo").forEach(ab=>{
+    const h_=hoy();abonos.filter(a=>a.estado==="activo"&&a.fecha_vencimiento>=h_).forEach(ab=>{
       const slots=abono_turnos.filter(at=>at.abono_id===ab.id);
       dias.forEach(d=>{
         slots.forEach(s=>{
@@ -312,7 +312,7 @@ export default function App() {
     }
     if(turnosACrear.length>0) await db.post("turnos",turnosACrear,tk);
   };
-  const cancelarAbono = async id=>{setSaving(true);try{await db.patch("abonos",id,{estado:"cancelado"},tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
+  const cancelarAbono = async id=>{setSaving(true);try{await db.patch("abonos",id,{estado:"cancelado"},tk);await api(`turnos?abono_id=eq.${id}&fecha=gte.${hoy()}&estado=neq.cancelado`,{method:"PATCH",body:JSON.stringify({estado:"cancelado"}),prefer:"return=minimal"},tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarPlan = async()=>{if(!form.nombre||!form.horas_semana||!form.precio)return;setSaving(true);try{if(form.id)await db.patch("planes",form.id,{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);else await db.post("planes",{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarInstructor = async()=>{if(!form.nombre?.trim())return;setSaving(true);try{await db.post("instructores",{nombre:form.nombre.trim(),telefono:form.telefono||"",tarifa_clase:Number(form.tarifa_clase||0)},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarMovCaja = async()=>{if(!form.descripcion||!form.monto)return;setSaving(true);try{await db.post("caja",{descripcion:form.descripcion,tipo:form.tipo||"egreso",categoria:form.categoria||"gasto",monto:Number(form.monto),fecha:form.fecha||hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
