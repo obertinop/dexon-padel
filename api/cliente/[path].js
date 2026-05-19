@@ -223,29 +223,41 @@ async function handleMe(req, res) {
   const { cliente, client, error } = await autenticarCliente(req);
   if (error) return res.status(401).json({ error });
 
-  const ahora = new Date().toISOString();
+  const hoy = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+  // Adds a computed `inicio` ISO string and `pagado` alias so the frontend
+  // can use turno.inicio for dates/times (DB stores fecha + hora separately).
+  const enrichTurnos = (arr) => (arr || []).map(t => ({
+    ...t,
+    inicio: t.fecha ? `${t.fecha}T${String(t.hora || 0).padStart(2, "0")}:00:00` : null,
+    pagado: t.cobrado,
+  }));
 
   const [
-    { data: proximas },
-    { data: pasadas },
-    { data: pagos },
+    { data: proximasRaw },
+    { data: pasadasRaw },
+    { data: pagosRaw },
     { data: favoritos },
     { data: abono },
     { data: referidos, count: refCount },
     { data: cfgArr },
   ] = await Promise.all([
-    client.from("turnos").select("*").eq("cliente_id", cliente.id).gte("inicio", ahora).neq("estado", "cancelado").order("inicio", { ascending: true }).limit(20),
-    client.from("turnos").select("*").eq("cliente_id", cliente.id).lt("inicio", ahora).order("inicio", { ascending: false }).limit(50),
-    client.from("turnos").select("id,inicio,precio,metodo_pago,pagado_en").eq("cliente_id", cliente.id).eq("pagado", true).order("pagado_en", { ascending: false }).limit(50),
+    client.from("turnos").select("*").eq("cliente_id", cliente.id).gte("fecha", hoy).neq("estado", "cancelado").order("fecha", { ascending: true }).order("hora", { ascending: true }).limit(20),
+    client.from("turnos").select("*").eq("cliente_id", cliente.id).lt("fecha", hoy).order("fecha", { ascending: false }).order("hora", { ascending: false }).limit(50),
+    client.from("turnos").select("id,fecha,hora,precio,metodo_pago,created_at").eq("cliente_id", cliente.id).eq("cobrado", true).order("created_at", { ascending: false }).limit(50),
     client.from("cliente_favoritos").select("*").eq("cliente_id", cliente.id),
     client.from("abonos").select("*").eq("cliente_id", cliente.id).eq("activo", true).maybeSingle(),
-    client.from("clientes").select("id,nombre,apellido,creado_en", { count: "exact" }).eq("referrer_code_used", cliente.referrer_code).order("creado_en", { ascending: false }),
+    client.from("turnos").select("id,fecha,hora,cliente_id", { count: "exact" }).eq("applied_referral_code", cliente.referrer_code || ""),
     client.from("config").select("referral_discount_percent").limit(1),
   ]);
 
+  const proximas = enrichTurnos(proximasRaw);
+  const pasadas = enrichTurnos(pasadasRaw);
+  const pagos = enrichTurnos(pagosRaw);
+
   return res.status(200).json({
     cliente: {
-      id: cliente.id, nombre: cliente.nombre, apellido: cliente.apellido,
+      id: cliente.id, nombre: cliente.nombre, apellido: cliente.apellido || "",
       telefono: cliente.telefono, email: cliente.email,
       referrer_code: cliente.referrer_code, saldo_favor: cliente.saldo_favor || 0,
       notif: {
@@ -255,9 +267,9 @@ async function handleMe(req, res) {
         sms_urgente: cliente.notif_sms_urgente ?? true,
       },
     },
-    proximas: proximas || [],
-    pasadas: pasadas || [],
-    pagos: pagos || [],
+    proximas,
+    pasadas,
+    pagos,
     favoritos: favoritos || [],
     abono: abono || null,
     referidos: { total: refCount || 0, lista: referidos || [] },
