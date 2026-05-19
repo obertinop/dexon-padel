@@ -117,8 +117,13 @@ async function handleAuthSend(req, res) {
   });
   if (!r.ok) {
     const d = await r.json();
-    console.error("[auth-send] WA error:", JSON.stringify(d));
-    return res.status(500).json({ error: "No se pudo enviar el código por WhatsApp" });
+    const errCode = d?.error?.code;
+    const errMsg  = d?.error?.message;
+    const errData = d?.error?.error_data?.details;
+    console.error("[auth-send] WA error code:", errCode);
+    console.error("[auth-send] WA error msg:", errMsg);
+    if (errData) console.error("[auth-send] WA error details:", errData);
+    return res.status(500).json({ error: "No se pudo enviar el código por WhatsApp", wa_code: errCode, wa_msg: errMsg });
   }
 
   return res.status(200).json({ ok: true, isNewClient, expira_en: expira.toISOString() });
