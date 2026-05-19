@@ -702,7 +702,7 @@ function Reservar({ back, showToast, refresh }) {
 // ─────────────────────────────────────────────────────────────
 function Referido({ data, back, showToast }) {
   const { cliente, referidos } = data;
-  const REF_PCT = 10;
+  const REF_PCT = data.ref_pct || 10;
   const shareText = `Vení a jugar al pádel a Dexon. Reservá con mi código ${cliente.referrer_code} y obtenés ${REF_PCT}% de saldo a favor en tu primera reserva. https://dexon.com.py`;
 
   const share = async () => {

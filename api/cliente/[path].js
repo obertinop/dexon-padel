@@ -232,6 +232,7 @@ async function handleMe(req, res) {
     { data: favoritos },
     { data: abono },
     { data: referidos, count: refCount },
+    { data: cfgArr },
   ] = await Promise.all([
     client.from("turnos").select("*").eq("cliente_id", cliente.id).gte("inicio", ahora).neq("estado", "cancelado").order("inicio", { ascending: true }).limit(20),
     client.from("turnos").select("*").eq("cliente_id", cliente.id).lt("inicio", ahora).order("inicio", { ascending: false }).limit(50),
@@ -239,6 +240,7 @@ async function handleMe(req, res) {
     client.from("cliente_favoritos").select("*").eq("cliente_id", cliente.id),
     client.from("abonos").select("*").eq("cliente_id", cliente.id).eq("activo", true).maybeSingle(),
     client.from("clientes").select("id,nombre,apellido,creado_en", { count: "exact" }).eq("referrer_code_used", cliente.referrer_code).order("creado_en", { ascending: false }),
+    client.from("config").select("referral_discount_percent").limit(1),
   ]);
 
   return res.status(200).json({
@@ -259,6 +261,7 @@ async function handleMe(req, res) {
     favoritos: favoritos || [],
     abono: abono || null,
     referidos: { total: refCount || 0, lista: referidos || [] },
+    ref_pct: Number(cfgArr?.[0]?.referral_discount_percent) || 10,
   });
 }
 
