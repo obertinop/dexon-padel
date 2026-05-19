@@ -714,9 +714,9 @@ function Reservar({ back, showToast, refresh }) {
   useEffect(() => {
     const sess = clienteSession.get();
     if (sess?.cliente) {
-      const { nombre, apellido, telefono } = sess.cliente;
+      const { nombre, telefono } = sess.cliente;
       const params = new URLSearchParams({
-        nombre: `${nombre} ${apellido}`.trim(),
+        nombre: nombre || "",
         telefono: telefono || "",
       });
       window.location.href = `/reservar?${params}`;
