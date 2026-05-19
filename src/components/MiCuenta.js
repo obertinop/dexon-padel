@@ -272,7 +272,7 @@ function LoginScreen({ onSent }) {
           background: `radial-gradient(ellipse 100% 80% at 10% 110%, rgba(224,91,40,0.30) 0%, ${C.bg} 60%)`,
           borderRight: `1px solid ${C.border}` }}>
           {/* Logo difuminado de fondo */}
-          <img src={LOGO} alt="" aria-hidden style={{ position: "absolute", height: 320, ...LOGO_STYLE_DARK, opacity: 0.06, top: "50%", left: "15%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none" }} />
+          <img src={LOGO} alt="" aria-hidden style={{ position: "absolute", height: 500, ...LOGO_STYLE_DARK, opacity: 0.06, top: "50%", left: "40%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none" }} />
           <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK, alignSelf: "flex-start" }} />
           <div>
             <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 20 }}>
