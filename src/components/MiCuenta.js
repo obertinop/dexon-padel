@@ -288,10 +288,10 @@ function LoginScreen({ onSent }) {
               <rect x="90" y="60" width="220" height="180" fill="none" stroke="#fff" strokeOpacity="0.6" strokeWidth="1" />
             </svg>
             <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 20 }}>
-              Tu cancha,<br/><span style={{ color: C.coral }}>tu cuenta.</span>
+              Tu próximo partido<br/><span style={{ color: C.coral }}>empieza acá.</span>
             </div>
             <div style={{ fontSize: 16, color: C.t2, lineHeight: 1.7, maxWidth: 380 }}>
-              Mirá tus próximos turnos, reagendá, cancelá y controlá tu saldo — todo en un lugar.
+              Reservá cancha, gestioná turnos y controlá tu saldo desde un solo lugar.
             </div>
           </div>
           <div style={{ fontSize: 12, color: C.t3 }}>© {new Date().getFullYear()} Dexon Padel</div>
