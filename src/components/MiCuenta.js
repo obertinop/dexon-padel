@@ -453,11 +453,10 @@ function Dashboard({ data, go }) {
               <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>{abono.dia} {abono.hora}</div>
             </div>
           ) : (
-            <div onClick={() => go("favoritos")} style={{ ...card, cursor: "pointer" }}>
-              <div style={{ color: C.coral, marginBottom: 8 }}><Ico.heart sz={22} /></div>
+            <div style={{ ...card, opacity: 0.4 }}>
+              <div style={{ color: C.t3, marginBottom: 8 }}><Ico.heart sz={22} /></div>
               <div style={{ fontSize: 11, color: C.t2, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Favoritos</div>
-              <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>{data.favoritos.length}</div>
-              <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>Horarios guardados</div>
+              <div style={{ fontSize: 13, color: C.t2, marginTop: 4 }}>Próximamente</div>
             </div>
           )}
         </div>
@@ -522,7 +521,7 @@ function Dashboard({ data, go }) {
 
       <FeedCard onClick={() => go("referido")} icon={<Ico.wallet />} title={fmtGs(cliente.saldo_favor)} subtitle="Saldo a favor · usalo en tu próxima reserva" />
       {abono && <FeedCard onClick={() => go("abonos")} icon={<Ico.crown />} title="Abono activo" subtitle={`Activo · renueva ${fmtFecha(abono.fecha_renovacion || abono.creado_en)}`} />}
-      <FeedCard onClick={() => go("favoritos")} icon={<Ico.heart />} title="Tus horarios favoritos" subtitle={`${data.favoritos.length || 0} guardados`} />
+      <FeedCard icon={<Ico.heart />} title="Tus horarios favoritos" subtitle="Próximamente" style={{ opacity: 0.4 }} />
 
       {/* Próximas */}
       {proximas.length > 1 && <>
@@ -815,7 +814,7 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
         <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 10 }}>
           <MenuItem icon={<Ico.cal />} label="Mis turnos" sub={`${data.proximas.length} próximos`} onClick={() => go("reservas")} />
           {data.abono && <MenuItem icon={<Ico.crown />} label="Mi abono" sub="Activo" onClick={() => go("abonos")} />}
-          <MenuItem icon={<Ico.heart />} label="Favoritos" sub={`${data.favoritos.length} horarios`} onClick={() => go("favoritos")} />
+          <MenuItem icon={<Ico.heart />} label="Favoritos" sub="Próximamente" />
           <MenuItem icon={<Ico.wallet />} label="Pagos" sub={`${data.pagos.length} movimientos`} onClick={() => go("pagos")} last />
         </div>
       </div>
@@ -909,31 +908,15 @@ function Notif({ data, back, showToast }) {
   );
 }
 
-function Favoritos({ data, back, go, showToast, refresh }) {
-  const remove = async (id) => {
-    try { await clienteData.delFavorito(id); showToast("Favorito eliminado"); await refresh(); }
-    catch (e) { showToast(e.message); }
-  };
+function Favoritos({ back }) {
   return (
     <>
       <Header title="Favoritos" onBack={back} />
-      <div style={{ padding: "8px 20px 30px" }}>
-        <p style={{ fontSize: 12, color: C.t2, marginBottom: 16 }}>Tus combos día + hora habituales — reservalos con 1 toque.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-          {data.favoritos.length === 0 && <Empty t="Aún no tenés favoritos guardados" />}
-          {data.favoritos.map(f => (
-            <div key={f.id} style={{ ...card, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(224,91,40,0.12)", color: C.coral, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Ico.heart sz={20} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700 }}>{DIAS_FULL[f.dia_semana]} {f.hora}</div>
-                <div style={{ fontSize: 11, color: C.t3 }}>{f.label || "Sin etiqueta"} · {f.duracion}min</div>
-              </div>
-              <button onClick={() => go("reservar")} style={iconBtnStyle(34, C.coral)}><Ico.plus sz={16} /></button>
-              <button onClick={() => remove(f.id)} style={iconBtnStyle(34, C.t3)}><Ico.trash sz={16} /></button>
-            </div>
-          ))}
+      <div style={{ padding: "40px 20px", textAlign: "center" }}>
+        <div style={{ color: C.t3, marginBottom: 16 }}><Ico.heart sz={48} /></div>
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Próximamente</div>
+        <div style={{ fontSize: 13, color: C.t2, maxWidth: 280, margin: "0 auto" }}>
+          Pronto vas a poder guardar tus horarios habituales y reservarlos con un toque.
         </div>
       </div>
     </>
@@ -1072,9 +1055,9 @@ function ReservaRow({ t, onClick, big }) {
   );
 }
 
-function FeedCard({ icon, title, subtitle, onClick, accent }) {
+function FeedCard({ icon, title, subtitle, onClick, accent, style: extraStyle }) {
   return (
-    <div onClick={onClick} style={{ margin: "0 20px 10px", background: accent ? "rgba(224,91,40,0.12)" : C.bgCard, border: `1px solid ${accent ? `${C.coral}55` : C.border}`, borderRadius: 18, padding: "16px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+    <div onClick={onClick} style={{ margin: "0 20px 10px", background: accent ? "rgba(224,91,40,0.12)" : C.bgCard, border: `1px solid ${accent ? `${C.coral}55` : C.border}`, borderRadius: 18, padding: "16px 18px", cursor: onClick ? "pointer" : "default", display: "flex", alignItems: "center", gap: 14, ...extraStyle }}>
       <div style={{ width: 44, height: 44, borderRadius: 14, background: accent ? `linear-gradient(135deg, ${C.coral}, ${C.coralD})` : C.bgElev, color: accent ? "#fff" : C.coral, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
       <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 15 }}>{title}</div><div style={{ fontSize: 12, color: C.t2 }}>{subtitle}</div></div>
       <Ico.chev sz={18} stroke={C.t3} />
