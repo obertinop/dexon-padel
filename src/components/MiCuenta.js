@@ -999,7 +999,7 @@ function Sidebar({ active, onChange, cliente, onLogout, canBack, onBack }) {
     <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: C.bgCard, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", zIndex: 50 }}>
       {/* Logo */}
       <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${C.border}` }}>
-        <LogoText size={20} />
+        <img src={LOGO} alt="Dexon" style={{ height: 28, ...LOGO_STYLE_DARK }} />
       </div>
 
       {/* User card */}
