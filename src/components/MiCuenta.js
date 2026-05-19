@@ -782,12 +782,13 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
   return (
     <>
       <Header title="Mi cuenta" />
-      <div style={{ padding: "8px 20px 18px", textAlign: "center" }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 20px" }}>
+      <div style={{ padding: "8px 0 18px", textAlign: "center" }}>
         <Avatar nombre={cliente.nombre} size={84} />
         <div style={{ fontSize: 19, fontWeight: 800, marginTop: 10 }}>{cliente.nombre}</div>
       </div>
 
-      <div style={{ padding: "0 20px 16px" }}>
+      <div style={{ paddingBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <SectionLabel>Datos personales</SectionLabel>
           <button onClick={() => editing ? save() : setEditing(true)} style={{ background: "none", border: "none", color: C.coral, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
@@ -809,7 +810,7 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
         )}
       </div>
 
-      <div style={{ padding: "0 20px 16px" }}>
+      <div style={{ paddingBottom: 16 }}>
         <SectionLabel>Mi actividad</SectionLabel>
         <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 10 }}>
           <MenuItem icon={<Ico.cal />} label="Mis turnos" sub={`${data.proximas.length} próximos`} onClick={() => go("reservas")} />
@@ -819,7 +820,7 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
         </div>
       </div>
 
-      <div style={{ padding: "0 20px 16px" }}>
+      <div style={{ paddingBottom: 16 }}>
         <SectionLabel>Ajustes</SectionLabel>
         <div style={{ ...card, padding: 0, overflow: "hidden", marginTop: 10 }}>
           <MenuItem icon={<Ico.bell />} label="Notificaciones" sub="WhatsApp, recordatorios" onClick={() => go("notif")} />
@@ -827,8 +828,9 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
         </div>
       </div>
 
-      <div style={{ padding: "0 20px 30px" }}>
+      <div style={{ paddingBottom: 30 }}>
         <Btn v="danger" onClick={onLogout} style={{ width: "100%", padding: "14px", borderRadius: 14 }}>↩ Cerrar sesión</Btn>
+      </div>
       </div>
     </>
   );
