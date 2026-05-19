@@ -271,7 +271,7 @@ function LoginScreen({ onSent }) {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "48px 56px",
           background: `radial-gradient(ellipse 100% 80% at 10% 110%, rgba(224,91,40,0.30) 0%, ${C.bg} 60%)`,
           borderRight: `1px solid ${C.border}` }}>
-          <img src={LOGO} alt="Dexon" style={{ height: 36, ...LOGO_STYLE_DARK, alignSelf: "flex-start" }} />
+          <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK, alignSelf: "flex-start" }} />
           <div>
             <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 20 }}>
               Tu cancha,<br/><span style={{ color: C.coral }}>tu cuenta.</span>
@@ -294,7 +294,7 @@ function LoginScreen({ onSent }) {
     <div style={{ padding: "70px 24px 40px", minHeight: "100vh", display: "flex", flexDirection: "column",
       background: `radial-gradient(ellipse 80% 60% at 50% 0%, rgba(224,91,40,0.18) 0%, ${C.bg} 60%)` }}>
       <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <img src={LOGO} alt="Dexon" style={{ height: 32, ...LOGO_STYLE_DARK }} />
+        <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK }} />
       </div>
       {form}
     </div>
@@ -506,8 +506,8 @@ function Dashboard({ data, go }) {
 
   return (
     <>
-      <div style={{ padding: "20px 20px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <img src={LOGO} alt="Dexon" style={{ height: 24, ...LOGO_STYLE_DARK }} />
+      <div style={{ padding: "16px 20px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK }} />
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => go("notif")} style={iconBtnStyle(40)}><Ico.bell /></button>
           <button onClick={() => go("perfil")} style={{ ...iconBtnStyle(40), padding: 0 }}>
@@ -972,10 +972,10 @@ function Header({ title, onBack, subtitle }) {
     );
   }
   return (
-    <div style={{ position: "sticky", top: 0, background: C.bg, borderBottom: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, zIndex: 10, minHeight: 56 }}>
+    <div style={{ position: "sticky", top: 0, background: C.bg, borderBottom: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, zIndex: 10, minHeight: 64 }}>
       {onBack
         ? <button onClick={onBack} style={iconBtnStyle(36)}><Ico.back sz={18} /></button>
-        : <img src={LOGO} alt="Dexon" style={{ height: 28, ...LOGO_STYLE_DARK }} />
+        : <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK }} />
       }
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: -0.2 }}>{title}</div>
@@ -998,8 +998,8 @@ function Sidebar({ active, onChange, cliente, onLogout, canBack, onBack }) {
   return (
     <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: C.bgCard, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", zIndex: 50 }}>
       {/* Logo */}
-      <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${C.border}` }}>
-        <img src={LOGO} alt="Dexon" style={{ height: 28, ...LOGO_STYLE_DARK }} />
+      <div style={{ padding: "20px 20px", borderBottom: `1px solid ${C.border}` }}>
+        <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK }} />
       </div>
 
       {/* User card */}
