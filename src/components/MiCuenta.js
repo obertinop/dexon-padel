@@ -258,8 +258,8 @@ function LoginScreen({ onSent }) {
       <Btn v="primary" onClick={submit} disabled={loading} style={{ width: "100%", padding: "16px", borderRadius: 14, fontSize: 16, fontWeight: 700 }}>
         {loading ? "Enviando código…" : "Continuar →"}
       </Btn>
-      <div style={{ marginTop: 18, fontSize: 12, color: C.t3, textAlign: "center", lineHeight: 1.5 }}>
-        Te enviamos un código por WhatsApp.<br/>Al continuar aceptás los Términos y la Política de privacidad.
+      <div style={{ marginTop: 18, fontSize: 12, color: C.t3, textAlign: "center" }}>
+        Te enviamos un código por WhatsApp.
       </div>
     </>
   );
