@@ -66,10 +66,22 @@ const page = { minHeight: "100vh", background: C.bg, color: C.t1, fontFamily: "v
 const card = { background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 18, padding: 18 };
 const inp = { width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 14, color: C.t1, fontSize: 15, fontFamily: "inherit", outline: "none", boxSizing: "border-box", fontWeight: 500 };
 
+function useIsDesktop() {
+  const [desk, setDesk] = useState(() => window.innerWidth >= 900);
+  useEffect(() => {
+    const fn = () => setDesk(window.innerWidth >= 900);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return desk;
+}
+
 // ─────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
 // ─────────────────────────────────────────────────────────────
 export default function MiCuenta() {
+  const isDesktop = useIsDesktop();
+
   // Auth state
   const [session, setSession] = useState(() => clienteSession.get());
   const [authStep, setAuthStep] = useState("login"); // login | verify | register
@@ -184,11 +196,26 @@ export default function MiCuenta() {
   };
 
   const showNav = ["home", "reservas", "referido", "perfil"].includes(current.screen) && stack.length === 1;
+  const navChange = (id) => id === "reservar" ? go("reservar") : (setTab(id), setStack([{ screen: id }]));
+
+  if (isDesktop) {
+    return (
+      <div style={{ minHeight: "100vh", background: C.bg, color: C.t1, fontFamily: "var(--font-sans)", display: "flex" }}>
+        <Sidebar active={tab} onChange={navChange} cliente={data.cliente} onLogout={onLogout} canBack={stack.length > 1} onBack={back} />
+        <main style={{ flex: 1, marginLeft: 260, minHeight: "100vh" }}>
+          <div style={{ maxWidth: 820, margin: "0 auto", padding: "0 32px 60px" }}>
+            {renderScreen()}
+          </div>
+        </main>
+        {toast && <Toast msg={toast} />}
+      </div>
+    );
+  }
 
   return (
     <div style={page}>
       {renderScreen()}
-      {showNav && <BottomNav active={tab} onChange={(id) => id === "reservar" ? go("reservar") : (setTab(id), setStack([{ screen: id }]))} />}
+      {showNav && <BottomNav active={tab} onChange={navChange} />}
       {toast && <Toast msg={toast} />}
     </div>
   );
@@ -369,6 +396,84 @@ function RegisterScreen({ tel, onBack, onDone }) {
 function Dashboard({ data, go }) {
   const { cliente, proximas, abono } = data;
   const next = proximas[0];
+  const isDesktop = useIsDesktop();
+
+  if (isDesktop) {
+    return (
+      <div style={{ paddingTop: 32 }}>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>
+            ¿Listo para jugar, <span style={{ color: C.coral }}>{cliente.nombre}?</span>
+          </div>
+          <div style={{ fontSize: 14, color: C.t2, marginTop: 4 }}>Acá tenés todo lo de tu cuenta en un vistazo.</div>
+        </div>
+
+        {/* Grid 2 columnas */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+          {/* Próximo turno */}
+          {next ? (
+            <div onClick={() => go("reservaDetalle", next)} style={{ ...card, padding: 0, overflow: "hidden", cursor: "pointer", gridColumn: "1 / -1" }}>
+              <div style={{ background: `linear-gradient(135deg, ${C.coralD}, ${C.coral})`, padding: "12px 22px", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Tu próximo turno</span>
+                <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(0,0,0,0.18)", padding: "3px 9px", borderRadius: 100 }}>{countdown(next.inicio)}</span>
+              </div>
+              <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: 24 }}>
+                <div style={{ fontSize: 56, fontWeight: 800, lineHeight: 0.95, letterSpacing: -2 }}>{hhmm(next.inicio)}</div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>{fmtFecha(next.inicio)}</div>
+                  <div style={{ fontSize: 14, color: C.t2 }}>{next.cancha || "Cancha 1"} · {next.duracion || 60} min</div>
+                </div>
+                <div style={{ marginLeft: "auto" }}>
+                  <Ico.chev sz={22} stroke={C.t3} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div onClick={() => go("reservar")} style={{ ...card, gridColumn: "1 / -1", cursor: "pointer", display: "flex", alignItems: "center", gap: 16, background: "rgba(224,91,40,0.08)", borderColor: `${C.coral}44` }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${C.coral}, ${C.coralD})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Ico.plus sz={22} /></div>
+              <div><div style={{ fontWeight: 700, fontSize: 16 }}>Reservar tu próximo turno</div><div style={{ fontSize: 13, color: C.t2 }}>Mirá horarios libres esta semana</div></div>
+              <div style={{ marginLeft: "auto" }}><Ico.chev sz={20} stroke={C.t3} /></div>
+            </div>
+          )}
+
+          {/* Saldo */}
+          <div onClick={() => go("referido")} style={{ ...card, cursor: "pointer" }}>
+            <div style={{ color: C.coral, marginBottom: 8 }}><Ico.wallet sz={22} /></div>
+            <div style={{ fontSize: 11, color: C.t2, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Saldo a favor</div>
+            <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>{fmtGs(cliente.saldo_favor)}</div>
+            <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>Por referidos → ver detalle</div>
+          </div>
+
+          {/* Abono o favoritos */}
+          {abono ? (
+            <div onClick={() => go("abonos")} style={{ ...card, cursor: "pointer", background: "linear-gradient(135deg, #1A0A40, #120A30)", borderColor: C.purpleBd }}>
+              <div style={{ color: C.purple, marginBottom: 8 }}><Ico.crown sz={22} /></div>
+              <div style={{ fontSize: 11, color: C.t2, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Abono activo</div>
+              <div style={{ fontSize: 18, fontWeight: 800 }}>{abono.descripcion || "Semanal"}</div>
+              <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>{abono.dia} {abono.hora}</div>
+            </div>
+          ) : (
+            <div onClick={() => go("favoritos")} style={{ ...card, cursor: "pointer" }}>
+              <div style={{ color: C.coral, marginBottom: 8 }}><Ico.heart sz={22} /></div>
+              <div style={{ fontSize: 11, color: C.t2, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Favoritos</div>
+              <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>{data.favoritos.length}</div>
+              <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>Horarios guardados</div>
+            </div>
+          )}
+        </div>
+
+        {/* Próximos (resto) */}
+        {proximas.length > 1 && (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.t2, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>Próximos turnos</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {proximas.slice(1, 5).map(t => <ReservaRow key={t.id} t={t} onClick={() => go("reservaDetalle", t)} big />)}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -829,6 +934,20 @@ function Favoritos({ data, back, go, showToast, refresh }) {
 // COMPONENTES AUXILIARES
 // ─────────────────────────────────────────────────────────────
 function Header({ title, onBack, subtitle }) {
+  const isDesktop = useIsDesktop();
+  if (isDesktop) {
+    return (
+      <div style={{ padding: "32px 0 20px", display: "flex", alignItems: "center", gap: 12 }}>
+        {onBack && (
+          <button onClick={onBack} style={{ ...iconBtnStyle(36), marginRight: 4 }}><Ico.back sz={18} /></button>
+        )}
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>{title}</div>
+          {subtitle && <div style={{ fontSize: 13, color: C.t2, marginTop: 2 }}>{subtitle}</div>}
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ position: "sticky", top: 0, background: C.bg, borderBottom: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, zIndex: 10, minHeight: 56 }}>
       {onBack && <button onClick={onBack} style={iconBtnStyle(36)}><Ico.back sz={18} /></button>}
@@ -837,6 +956,66 @@ function Header({ title, onBack, subtitle }) {
         {subtitle && <div style={{ fontSize: 12, color: C.t2 }}>{subtitle}</div>}
       </div>
     </div>
+  );
+}
+
+function Sidebar({ active, onChange, cliente, onLogout, canBack, onBack }) {
+  const navItems = [
+    { id: "home",     label: "Inicio",   icon: <Ico.home sz={18} /> },
+    { id: "reservas", label: "Mis turnos", icon: <Ico.cal sz={18} /> },
+    { id: "referido", label: "Referidos", icon: <Ico.gift sz={18} /> },
+    { id: "perfil",   label: "Mi cuenta", icon: <Ico.user sz={18} /> },
+  ];
+  const initials = `${cliente.nombre?.[0] || ""}${cliente.apellido?.[0] || ""}`.toUpperCase();
+
+  return (
+    <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: C.bgCard, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", zIndex: 50 }}>
+      {/* Logo */}
+      <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${C.border}` }}>
+        <LogoText size={20} />
+      </div>
+
+      {/* User card */}
+      <div style={{ padding: "16px 16px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: C.bgElev, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg, ${C.coral}, ${C.coralD})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{initials}</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cliente.nombre} {cliente.apellido}</div>
+            <div style={{ fontSize: 11, color: C.t2 }}>{fmtGs(cliente.saldo_favor)} a favor</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "4px 12px", overflowY: "auto" }}>
+        {/* Botón reservar */}
+        <button onClick={() => onChange("reservar")} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", marginBottom: 6, border: "none", borderRadius: 12, background: `linear-gradient(135deg, ${C.coral}, ${C.coralD})`, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 18px rgba(224,91,40,0.3)" }}>
+          <Ico.plus sz={18} /> Reservar turno
+        </button>
+
+        {navItems.map(item => {
+          const isActive = active === item.id;
+          return (
+            <button key={item.id} onClick={() => onChange(item.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", marginBottom: 2, border: "none", borderRadius: 12, background: isActive ? `rgba(224,91,40,0.12)` : "transparent", color: isActive ? C.coral : C.t2, fontWeight: isActive ? 700 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.15s" }}>
+              {item.icon} {item.label}
+            </button>
+          );
+        })}
+
+        {canBack && (
+          <button onClick={onBack} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", marginTop: 8, border: `1px solid ${C.border}`, borderRadius: 12, background: "transparent", color: C.t2, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+            <Ico.back sz={16} /> Volver
+          </button>
+        )}
+      </nav>
+
+      {/* Logout */}
+      <div style={{ padding: "12px 12px 20px", borderTop: `1px solid ${C.border}` }}>
+        <button onClick={onLogout} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", border: "none", borderRadius: 12, background: "transparent", color: C.t3, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+          <Ico.logout sz={16} /> Cerrar sesión
+        </button>
+      </div>
+    </aside>
   );
 }
 
