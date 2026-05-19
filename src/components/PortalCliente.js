@@ -16,7 +16,10 @@ const PortalCliente = () => {
   const [fecha,setFecha] = useState(hoy());
   const [slotsSel,setSlotsSel] = useState([]);
   const [paso,setPaso] = useState("lista");
-  const [form,setForm] = useState({nombre:"",telefono:"",documento:""});
+  const [form,setForm] = useState(()=>{
+    const p = new URLSearchParams(window.location.search);
+    return { nombre: p.get("nombre")||"", telefono: p.get("telefono")||"", documento: "" };
+  });
   const [saving,setSaving] = useState(false);
   const [msg,setMsg] = useState("");
   const [clima,setClima] = useState({});

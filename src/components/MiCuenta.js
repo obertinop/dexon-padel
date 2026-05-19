@@ -681,13 +681,20 @@ function Reagendar({ turno, back, showToast, refresh }) {
 }
 
 function Reservar({ back, showToast, refresh }) {
-  // Por simplicidad delegamos al flujo existente del Portal Cliente.
-  // Si querés un flujo de reserva propio dentro de "Mi cuenta", duplicá la lógica
-  // de PortalCliente.js. La forma rápida:
   useEffect(() => {
-    window.location.href = "/reservar"; // o navegá via router de App.js
+    const sess = clienteSession.get();
+    if (sess?.cliente) {
+      const { nombre, apellido, telefono } = sess.cliente;
+      const params = new URLSearchParams({
+        nombre: `${nombre} ${apellido}`.trim(),
+        telefono: telefono || "",
+      });
+      window.location.href = `/reservar?${params}`;
+    } else {
+      window.location.href = "/reservar";
+    }
   }, []);
-  return <div style={{ padding: 40, textAlign: "center", color: C.t2 }}>Redirigiendo a /reservar…</div>;
+  return <div style={{ padding: 40, textAlign: "center", color: C.t2 }}>Cargando reserva…</div>;
 }
 
 // ─────────────────────────────────────────────────────────────
