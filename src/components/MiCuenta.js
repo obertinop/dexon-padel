@@ -273,6 +273,18 @@ function LoginScreen({ onSent }) {
           borderRight: `1px solid ${C.border}` }}>
           <img src={LOGO} alt="Dexon" style={{ height: 64, ...LOGO_STYLE_DARK, alignSelf: "flex-start" }} />
           <div>
+            <svg viewBox="0 0 400 300" style={{ width: "100%", maxWidth: 340, display: "block", marginBottom: 32, opacity: 0.18 }}>
+              <defs>
+                <linearGradient id="court-hero" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#E05B28" />
+                  <stop offset="100%" stopColor="#B84520" />
+                </linearGradient>
+              </defs>
+              <rect x="90" y="30" width="220" height="240" rx="8" fill="url(#court-hero)" stroke="#fff" strokeOpacity="0.4" strokeWidth="2" />
+              <line x1="200" y1="30" x2="200" y2="270" stroke="#fff" strokeOpacity="1" strokeWidth="5" />
+              <line x1="310" y1="150" x2="90" y2="150" stroke="#fff" strokeOpacity="1" strokeWidth="5" />
+              <rect x="90" y="60" width="220" height="180" fill="none" stroke="#fff" strokeOpacity="0.6" strokeWidth="1" />
+            </svg>
             <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: -2, lineHeight: 1.05, marginBottom: 20 }}>
               Tu cancha,<br/><span style={{ color: C.coral }}>tu cuenta.</span>
             </div>
