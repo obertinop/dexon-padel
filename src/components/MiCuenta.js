@@ -507,7 +507,7 @@ function Dashboard({ data, go }) {
   return (
     <>
       <div style={{ padding: "20px 20px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <LogoText size={16} />
+        <img src={LOGO} alt="Dexon" style={{ height: 24, ...LOGO_STYLE_DARK }} />
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => go("notif")} style={iconBtnStyle(40)}><Ico.bell /></button>
           <button onClick={() => go("perfil")} style={{ ...iconBtnStyle(40), padding: 0 }}>
