@@ -755,11 +755,11 @@ function Referido({ data, back, showToast }) {
             <Ico.gift sz={20} /><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>Programa de referidos</span>
           </div>
           <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.15, marginBottom: 8 }}>
-            Obtené <span style={{ background: "rgba(255,255,255,0.18)", padding: "2px 10px", borderRadius: 8 }}>{REF_PCT}% de saldo</span><br/>por cada amigo que reserve.
+            Invitá a tus amigos a jugar y convertí cada reserva en saldo.
           </div>
-          <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5 }}>
-            Se acredita en tu cuenta y lo usás en tu próxima reserva.<br/>
-            <span style={{ opacity: 0.8 }}>Es acumulable — cuantos más amigos, más saldo.</span>
+          <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.6 }}>
+            Cada vez que usen tu código, ganás un <span style={{ background: "rgba(255,255,255,0.18)", padding: "1px 8px", borderRadius: 6, fontWeight: 700 }}>{REF_PCT}%</span> para tu próxima reserva.<br/>
+            <span style={{ opacity: 0.85 }}>Acumulá tu saldo y usalo cuando quieras.</span>
           </div>
         </div>
 
