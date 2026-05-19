@@ -45,7 +45,7 @@ const PortalCliente = () => {
         setClientes(cl||[]);
         setCodigosRef(cr||[]);
         const hoyStr = hoy();
-        setAbonoTurnos((at||[]).filter(r=>r.abonos?.estado==="activo"&&r.abonos?.fecha_vencimiento>=hoyStr).map(r=>({dia:r.dia,hora:r.hora})));
+        setAbonoTurnos((at||[]).filter(r=>r.abonos?.estado==="activo"&&r.abonos?.fecha_vencimiento>=hoyStr).map(r=>({dia:r.dia,hora:r.hora,hasta:r.abonos.fecha_vencimiento})));
         setDiasBloqueados(db2||[]);
       } catch(e){console.error(e);}
       setLoading(false);
@@ -104,7 +104,7 @@ const PortalCliente = () => {
   const reservasConfirmadas = clienteEncontrado ? turnos.filter(t=>t.cliente_id===clienteEncontrado.id&&(t.estado==="confirmado"||t.estado==="completado")).length : 0;
   const puedeEfectivo = reservasConfirmadas >= 2;
   const diaFecha = fecha ? new Date(fecha+"T00:00:00").getDay() : -1;
-  const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado"&&t.tipo!=="abono") || abonoTurnos.find(at=>at.dia===diaFecha&&at.hora===h);
+  const ocupado = h => turnos.find(t=>t.fecha===fecha&&t.hora===h&&t.estado!=="cancelado"&&t.tipo!=="abono") || abonoTurnos.find(at=>at.dia===diaFecha&&at.hora===h&&at.hasta>=fecha);
   const pasado = h => fecha===hoy()&&h<=new Date().getHours();
   const climaFecha = clima[fecha];
   const climaIcon = code => {if(!code&&code!==0)return"🌤";if(code===0)return"☀️";if(code<=2)return"⛅";if(code<=48)return"☁️";if(code<=67)return"🌧️";return"⛈️";};

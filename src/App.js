@@ -200,6 +200,7 @@ export default function App() {
         slots.forEach(s=>{
           if(s.dia===d.getDay()){
             const fs=fmtD(d);
+            if(fs>ab.fecha_vencimiento) return;
             if(!turnos.find(t=>t.fecha===fs&&t.hora===s.hora&&t.estado!=="cancelado"))
               gen.push({fecha:fs,hora:s.hora,tipo:"abono",estado:"reservado",cliente_id:ab.cliente_id,abono_id:ab.id,_gen:true});
           }
