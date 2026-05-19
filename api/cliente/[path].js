@@ -111,7 +111,10 @@ async function handleAuthSend(req, res) {
       template: {
         name: "dexon_codigo",
         language: { code: "es" },
-        components: [{ type: "body", parameters: [{ type: "text", text: codigo }] }],
+        components: [
+          { type: "body", parameters: [{ type: "text", text: codigo }] },
+          { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: codigo }] },
+        ],
       },
     }),
   });
