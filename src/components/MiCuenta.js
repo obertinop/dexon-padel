@@ -776,7 +776,7 @@ function Referido({ data, back, showToast }) {
         </Btn>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-          <div style={card}><Lbl>Amigos</Lbl><Big>{referidos.total}</Big></div>
+          <div style={card}><Lbl>Referidos</Lbl><Big>{referidos.total}</Big></div>
           <div style={card}><Lbl>Saldo acumulado</Lbl><Big color={C.coral}>{fmtGs(cliente.saldo_favor)}</Big></div>
         </div>
 
