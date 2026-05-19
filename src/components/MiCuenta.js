@@ -14,7 +14,7 @@
 //   6. Agregar la ruta en App.js (ver implementation/00-README.md)
 // ─────────────────────────────────────────────────────────────
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { C, DIAS_FULL, MESES } from "../lib/constants.js";
+import { C, DIAS_FULL, MESES, LOGO, LOGO_STYLE_DARK } from "../lib/constants.js";
 import { Btn, Badge, Modal, Avatar } from "./UI.js";
 import { clienteAuth, clienteData, clienteSession } from "../lib/cliente-api.js";
 
@@ -782,7 +782,7 @@ function Perfil({ data, go, onLogout, showToast, refresh }) {
     <>
       <Header title="Mi cuenta" />
       <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 20px" }}>
-      <div style={{ padding: "8px 0 18px", textAlign: "center" }}>
+      <div style={{ padding: "8px 0 18px", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <Avatar nombre={cliente.nombre} size={84} />
         <div style={{ fontSize: 19, fontWeight: 800, marginTop: 10 }}>{cliente.nombre}</div>
       </div>
@@ -943,7 +943,10 @@ function Header({ title, onBack, subtitle }) {
   }
   return (
     <div style={{ position: "sticky", top: 0, background: C.bg, borderBottom: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, zIndex: 10, minHeight: 56 }}>
-      {onBack && <button onClick={onBack} style={iconBtnStyle(36)}><Ico.back sz={18} /></button>}
+      {onBack
+        ? <button onClick={onBack} style={iconBtnStyle(36)}><Ico.back sz={18} /></button>
+        : <img src={LOGO} alt="Dexon" style={{ height: 28, ...LOGO_STYLE_DARK }} />
+      }
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: -0.2 }}>{title}</div>
         {subtitle && <div style={{ fontSize: 12, color: C.t2 }}>{subtitle}</div>}
@@ -1067,10 +1070,10 @@ function FeedCard({ icon, title, subtitle, onClick, accent, style: extraStyle })
 
 function MenuItem({ icon, label, sub, onClick, last }) {
   return (
-    <button onClick={onClick} style={{ width: "100%", background: "none", border: "none", borderBottom: last ? "none" : `1px solid ${C.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, color: C.t1, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-      <div style={{ width: 38, height: 38, borderRadius: 11, background: C.bgElev, color: C.coral, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
+    <button onClick={onClick} disabled={!onClick} style={{ width: "100%", background: "none", border: "none", borderBottom: last ? "none" : `1px solid ${C.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, color: onClick ? C.t1 : C.t3, cursor: onClick ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", opacity: onClick ? 1 : 0.5 }}>
+      <div style={{ width: 38, height: 38, borderRadius: 11, background: C.bgElev, color: onClick ? C.coral : C.t3, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
       <div style={{ flex: 1 }}><div style={{ fontWeight: 600 }}>{label}</div><div style={{ fontSize: 11, color: C.t3 }}>{sub}</div></div>
-      <Ico.chev sz={18} />
+      {onClick && <Ico.chev sz={18} />}
     </button>
   );
 }
