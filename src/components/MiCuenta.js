@@ -441,7 +441,7 @@ function Dashboard({ data, go }) {
             <div style={{ color: C.coral, marginBottom: 8 }}><Ico.wallet sz={22} /></div>
             <div style={{ fontSize: 11, color: C.t2, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Saldo a favor</div>
             <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>{fmtGs(cliente.saldo_favor)}</div>
-            <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>Por referidos → ver detalle</div>
+            <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>Acumulable · usalo en tu próxima reserva</div>
           </div>
 
           {/* Abono o favoritos */}
@@ -520,7 +520,7 @@ function Dashboard({ data, go }) {
         </div>
       )}
 
-      <FeedCard onClick={() => go("referido")} icon={<Ico.wallet />} title={fmtGs(cliente.saldo_favor)} subtitle="Saldo a favor por referidos" />
+      <FeedCard onClick={() => go("referido")} icon={<Ico.wallet />} title={fmtGs(cliente.saldo_favor)} subtitle="Saldo a favor · usalo en tu próxima reserva" />
       {abono && <FeedCard onClick={() => go("abonos")} icon={<Ico.crown />} title="Abono activo" subtitle={`Activo · renueva ${fmtFecha(abono.fecha_renovacion || abono.creado_en)}`} />}
       <FeedCard onClick={() => go("favoritos")} icon={<Ico.heart />} title="Tus horarios favoritos" subtitle={`${data.favoritos.length || 0} guardados`} />
 
@@ -702,7 +702,8 @@ function Reservar({ back, showToast, refresh }) {
 // ─────────────────────────────────────────────────────────────
 function Referido({ data, back, showToast }) {
   const { cliente, referidos } = data;
-  const shareText = `Vení a jugar al pádel a Dexon. Reservá con mi código ${cliente.referrer_code} y me dan ₲ 20.000 (y vos también). https://dexon.com.py`;
+  const REF_PCT = 10;
+  const shareText = `Vení a jugar al pádel a Dexon. Reservá con mi código ${cliente.referrer_code} y obtenés ${REF_PCT}% de saldo a favor en tu primera reserva. https://dexon.com.py`;
 
   const share = async () => {
     if (navigator.share) {
@@ -724,9 +725,12 @@ function Referido({ data, back, showToast }) {
             <Ico.gift sz={20} /><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>Programa de referidos</span>
           </div>
           <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.15, marginBottom: 8 }}>
-            Ganá <span style={{ background: "rgba(255,255,255,0.18)", padding: "0 8px", borderRadius: 8 }}>₲ 20.000</span> por cada amigo<br/>que reserve.
+            Obtené <span style={{ background: "rgba(255,255,255,0.18)", padding: "2px 10px", borderRadius: 8 }}>{REF_PCT}% de saldo</span><br/>por cada amigo que reserve.
           </div>
-          <div style={{ fontSize: 13, opacity: 0.95 }}>Y ellos también, en su primer turno.</div>
+          <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5 }}>
+            Se acredita en tu cuenta y lo usás en tu próxima reserva.<br/>
+            <span style={{ opacity: 0.8 }}>Es acumulable — cuantos más amigos, más saldo.</span>
+          </div>
         </div>
 
         <div style={{ background: C.bgCard, border: `1.5px dashed ${C.coral}`, borderRadius: 18, padding: 16, marginBottom: 14 }}>
