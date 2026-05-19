@@ -39,13 +39,13 @@ const PortalCliente = () => {
   useEffect(()=>{
     const load = async () => {
       try {
-        const [cf,tu,cl,cr,at,db2] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true"),db.get("abono_turnos","select=dia,hora,abonados!inner(estado,fecha_vencimiento)"),db.get("dias_bloqueados","order=fecha.asc")]);
+        const [cf,tu,cl,cr,at,db2] = await Promise.all([db.get("config","limit=1"),db.get("turnos","order=fecha.asc,hora.asc"),db.get("clientes","order=nombre.asc"),db.get("codigos_referido","activo=eq.true"),db.get("abono_turnos","select=dia,hora,abonos!inner(estado,fecha_vencimiento)"),db.get("dias_bloqueados","order=fecha.asc")]);
         if(cf?.[0]) setCfg(cf[0]);
         setTurnos(tu||[]);
         setClientes(cl||[]);
         setCodigosRef(cr||[]);
         const hoyStr = hoy();
-        setAbonoTurnos((at||[]).filter(r=>r.abonados?.estado==="activo"&&r.abonados?.fecha_vencimiento>=hoyStr).map(r=>({dia:r.dia,hora:r.hora})));
+        setAbonoTurnos((at||[]).filter(r=>r.abonos?.estado==="activo"&&r.abonos?.fecha_vencimiento>=hoyStr).map(r=>({dia:r.dia,hora:r.hora})));
         setDiasBloqueados(db2||[]);
       } catch(e){console.error(e);}
       setLoading(false);
