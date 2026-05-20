@@ -275,8 +275,11 @@ function LandingPage({ onAdmin }) {
               </div>
             </div>
             <div style={st.contactCard}>
-              <div style={{fontSize:28,marginBottom:16}}>🕐</div>
-              <div style={{fontSize:17,fontWeight:700,marginBottom:16,color:C.t1}}>Horarios de atención</div>
+              {/* Horarios */}
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,0.06)",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🕐</div>
+                <div style={{fontSize:16,fontWeight:700,color:C.t1}}>Horarios</div>
+              </div>
               {[
                 {dia:"Lunes a Viernes",hrs:"18:00 – 24:00"},
                 {dia:"Sábados",hrs:"10:00 – 24:00"},
@@ -287,10 +290,34 @@ function LandingPage({ onAdmin }) {
                   <span style={{color:C.t1,fontWeight:600}}>{h.hrs}</span>
                 </div>
               ))}
-              <button style={{width:"100%",marginTop:20,padding:"14px 20px",border:"none",borderRadius:12,background:coral,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",boxSizing:"border-box",display:"block",fontFamily:"var(--font-sans)"}}
-                onClick={()=>window.location.href="/reservar"}>
-                Reservar cancha →
-              </button>
+
+              {/* Divider */}
+              <div style={{height:1,background:C.border,margin:"22px 0"}}/>
+
+              {/* Tarifas */}
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,0.06)",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>💰</div>
+                <div style={{fontSize:16,fontWeight:700,color:C.t1}}>Tarifas</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                <div style={{background:C.bg,borderRadius:14,padding:"16px 12px",border:`1px solid ${C.border}`,textAlign:"center"}}>
+                  <div style={{fontSize:10,color:C.t3,textTransform:"uppercase",letterSpacing:1.2,fontWeight:600,marginBottom:8}}>Tarifa normal</div>
+                  <div style={{fontSize:22,fontWeight:900,color:C.t1,letterSpacing:-0.5}}>80K</div>
+                  <div style={{fontSize:11,color:C.t3,marginTop:3}}>Gs. por hora</div>
+                </div>
+                <div style={{background:"rgba(224,91,40,0.07)",borderRadius:14,padding:"16px 12px",border:`1px solid rgba(224,91,40,0.22)`,textAlign:"center",position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${coral},${coralD})`}}/>
+                  <div style={{fontSize:10,color:coral,textTransform:"uppercase",letterSpacing:1.2,fontWeight:700,marginBottom:8}}>Hora pico</div>
+                  <div style={{fontSize:22,fontWeight:900,color:coral,letterSpacing:-0.5}}>100K</div>
+                  <div style={{fontSize:11,color:C.t3,marginTop:3}}>19:00 – 22:00 hs</div>
+                </div>
+              </div>
+              <div style={{padding:"11px 14px",borderRadius:11,background:"rgba(245,192,96,0.06)",border:`1px solid rgba(245,192,96,0.18)`,display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:16,flexShrink:0}}>🎉</span>
+                <span style={{fontSize:12,color:C.t2,lineHeight:1.5}}>
+                  <strong style={{color:"#E8C060"}}>20% de descuento</strong> los martes y jueves en todas las franjas
+                </span>
+              </div>
             </div>
           </div>
         </div>
