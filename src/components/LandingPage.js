@@ -1,10 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { C, LOGO, LOGO_STYLE_DARK, ADMIN_TEL } from "../lib/constants.js";
 import { useIsMobile } from "../lib/hooks.js";
 
 function LandingPage({ onAdmin }) {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [heroBtnVisible, setHeroBtnVisible] = useState(true);
+  const heroBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = heroBtnRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => setHeroBtnVisible(e.isIntersecting),
+      { threshold: 0.4 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [isMobile]);
 
   const scrollTo = (id) => {
     setMenuOpen(false);
@@ -59,11 +73,20 @@ function LandingPage({ onAdmin }) {
   return (
     <div style={st.page}>
       <style>{`
+        @keyframes fabFall {
+          0%   { transform: translateY(-52vh) scale(0.85); opacity: 0; }
+          65%  { transform: translateY(8px)   scale(1.02); opacity: 1; }
+          82%  { transform: translateY(-4px)  scale(0.99); }
+          100% { transform: translateY(0)     scale(1);    opacity: 1; }
+        }
         @keyframes fabGlow {
           0%,100% { box-shadow: 0 8px 36px rgba(224,91,40,0.5), 0 0 0 0 rgba(224,91,40,0.2); }
-          60%      { box-shadow: 0 8px 36px rgba(224,91,40,0.5), 0 0 0 16px rgba(224,91,40,0); }
+          60%     { box-shadow: 0 8px 36px rgba(224,91,40,0.5), 0 0 0 16px rgba(224,91,40,0); }
         }
-        .dexon-fab { animation: fabGlow 3s ease-in-out infinite; }
+        .dexon-fab {
+          animation: fabFall 0.55s cubic-bezier(0.34,1.4,0.64,1) forwards,
+                     fabGlow 3s 0.6s ease-in-out infinite;
+        }
         .dexon-fab:active { transform: scale(0.97) !important; }
       `}</style>
       <nav style={st.nav}>
@@ -115,12 +138,25 @@ function LandingPage({ onAdmin }) {
             Reservá tu turno fácil y rápido. Disfrutá del mejor pádel de la zona con instalaciones de primer nivel.
           </p>
           <div style={st.heroButtons}>
+            {/* Desktop: botón estático en el hero */}
             {!isMobile&&<button style={st.btnHeroMain} onClick={()=>window.location.href="/reservar"}
               onMouseEnter={e=>e.target.style.transform="scale(1.03)"}
               onMouseLeave={e=>e.target.style.transform="scale(1)"}>
               Reservar cancha →
             </button>}
-            <button style={isMobile?st.btnHeroSec:{...st.btnHeroSec}} onClick={()=>scrollTo("nosotros")}>
+            {/* Mobile: botón en el hero que actúa de ancla para el FAB */}
+            {isMobile&&<button ref={heroBtnRef}
+              onClick={()=>window.location.href="/reservar"}
+              style={{...st.btnHeroMain,display:"flex",alignItems:"center",gap:12,padding:"5px 5px 5px 22px",borderRadius:18,minWidth:260}}>
+              <span style={{flex:1,textAlign:"left"}}>
+                <span style={{display:"block",fontSize:15,fontWeight:800,letterSpacing:-0.3}}>Reservar cancha</span>
+                <span style={{display:"block",fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:1}}>Elegí horario y pagá online</span>
+              </span>
+              <span style={{width:50,height:50,borderRadius:14,background:"rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </span>
+            </button>}
+            <button style={st.btnHeroSec} onClick={()=>scrollTo("nosotros")}>
               Conocer más
             </button>
           </div>
@@ -260,7 +296,7 @@ function LandingPage({ onAdmin }) {
         </div>
       </section>
 
-      {isMobile&&(
+      {isMobile&&!heroBtnVisible&&(
         <button
           className="dexon-fab"
           onClick={()=>window.location.href="/reservar"}
