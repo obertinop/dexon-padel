@@ -60,12 +60,11 @@ function LandingPage({ onAdmin }) {
     <div style={st.page}>
       <style>{`
         @keyframes fabGlow {
-          0%,100% { box-shadow: 0 6px 28px rgba(224,91,40,0.55), 0 0 0 0 rgba(224,91,40,0.25); }
-          60%      { box-shadow: 0 6px 28px rgba(224,91,40,0.55), 0 0 0 14px rgba(224,91,40,0); }
+          0%,100% { box-shadow: 0 8px 36px rgba(224,91,40,0.5), 0 0 0 0 rgba(224,91,40,0.2); }
+          60%      { box-shadow: 0 8px 36px rgba(224,91,40,0.5), 0 0 0 16px rgba(224,91,40,0); }
         }
-        .dexon-fab { animation: fabGlow 2.8s ease-in-out infinite; transition: transform 0.15s, filter 0.15s !important; }
-        .dexon-fab:hover  { transform: translateX(-50%) scale(1.05) !important; filter: brightness(1.1); }
-        .dexon-fab:active { transform: translateX(-50%) scale(0.97) !important; }
+        .dexon-fab { animation: fabGlow 3s ease-in-out infinite; }
+        .dexon-fab:active { transform: scale(0.97) !important; }
       `}</style>
       <nav style={st.nav}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -83,7 +82,12 @@ function LandingPage({ onAdmin }) {
           {!isMobile&&<button style={st.btnOutline} onClick={onAdmin}>Admin</button>}
           {!isMobile&&<button style={st.btnOutline} onClick={()=>window.location.href="/cuenta"}>Mi cuenta</button>}
           {!isMobile&&<button style={st.btnSolid} onClick={()=>window.location.href="/reservar"}>Reservar →</button>}
-          {isMobile&&<button style={{...st.btnOutline,fontSize:13,padding:"7px 16px"}} onClick={()=>window.location.href="/cuenta"}>Mi cuenta</button>}
+          {isMobile&&<button onClick={()=>window.location.href="/cuenta"} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 14px 7px 9px",borderRadius:100,border:"1px solid rgba(255,255,255,0.13)",background:"rgba(255,255,255,0.07)",color:C.t1,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-sans)",WebkitBackdropFilter:"blur(12px)",backdropFilter:"blur(12px)"}}>
+            <div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,rgba(224,91,40,0.5),rgba(180,50,10,0.7))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            Mi cuenta
+          </button>}
           {isMobile&&<button onClick={()=>setMenuOpen(!menuOpen)} style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:"0 4px",fontFamily:"var(--font-sans)"}}>{menuOpen?"✕":"☰"}</button>}
         </div>
       </nav>
@@ -261,23 +265,23 @@ function LandingPage({ onAdmin }) {
           className="dexon-fab"
           onClick={()=>window.location.href="/reservar"}
           style={{
-            position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
-            zIndex:200, display:"flex", alignItems:"center", gap:10,
-            padding:"15px 34px",
-            border:"none", borderRadius:100,
-            background:`linear-gradient(135deg, #f06030 0%, ${C.coral} 45%, #c94818 100%)`,
-            color:"#fff", fontSize:16, fontWeight:800,
+            position:"fixed", bottom:24, left:20, right:20,
+            zIndex:200, border:"none", borderRadius:20,
+            background:"linear-gradient(135deg,#F07040 0%,#E05828 50%,#C84618 100%)",
             cursor:"pointer", fontFamily:"var(--font-sans)",
-            letterSpacing:0.2, whiteSpace:"nowrap",
-            backdropFilter:"blur(4px)",
+            display:"flex", alignItems:"center",
+            padding:"5px 5px 5px 22px", gap:0,
           }}
         >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          Reservar cancha
+          <div style={{flex:1,textAlign:"left"}}>
+            <div style={{fontSize:16,fontWeight:800,color:"#fff",letterSpacing:-0.3}}>Reservar cancha</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:2}}>Elegí horario y pagá online</div>
+          </div>
+          <div style={{width:54,height:54,borderRadius:16,background:"rgba(0,0,0,0.22)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </div>
         </button>
       )}
 

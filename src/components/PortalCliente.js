@@ -183,7 +183,13 @@ const PortalCliente = () => {
 
   return (
     <div style={{minHeight:"100vh",fontFamily:"var(--font-sans)",background:C.bg}}>
-      <style>{`@keyframes pSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`
+    @keyframes pSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fabUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fabGlow{0%,100%{box-shadow:0 8px 36px rgba(224,91,40,0.5),0 0 0 0 rgba(224,91,40,0.2)}60%{box-shadow:0 8px 36px rgba(224,91,40,0.5),0 0 0 16px rgba(224,91,40,0)}}
+    .reservar-fab{animation:fabUp 0.25s ease-out,fabGlow 3s 0.3s ease-in-out infinite;}
+    .reservar-fab:active{transform:scale(0.98)!important;}
+  `}</style>
       {/* HEADER */}
       <div style={{background:`linear-gradient(180deg, #0A1830 0%, ${C.bg} 100%)`,borderBottom:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:-60,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle, rgba(224,91,40,0.18) 0%, transparent 60%)",pointerEvents:"none",zIndex:0}}/>
@@ -339,27 +345,29 @@ const PortalCliente = () => {
           {/* Botón flotante mobile */}
           {isMobile&&paso==="lista"&&slotsSel.length>0&&!btnReservarVisible&&(
             <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:200,pointerEvents:"none",
-              padding:"20px 16px",paddingBottom:`calc(env(safe-area-inset-bottom) + 16px)`,
-              background:"linear-gradient(to top, rgba(8,14,26,0.98) 55%, transparent)"}}>
-              <button onClick={()=>setPaso("datos")} style={{
-                width:"100%",border:"none",borderRadius:18,cursor:"pointer",fontFamily:"var(--font-sans)",
+              padding:"40px 16px 0",paddingBottom:`calc(env(safe-area-inset-bottom) + 20px)`,
+              background:"linear-gradient(to top,rgba(6,10,20,1) 45%,transparent)"}}>
+              <button className="reservar-fab" onClick={()=>setPaso("datos")} style={{
+                width:"100%",border:"none",borderRadius:20,cursor:"pointer",fontFamily:"var(--font-sans)",
                 pointerEvents:"all",overflow:"hidden",
-                background:`linear-gradient(135deg,${C.coral},#C94E1E)`,
-                boxShadow:"0 8px 40px rgba(224,91,40,0.55), 0 2px 8px rgba(0,0,0,0.4)",
-                display:"flex",alignItems:"center",padding:"4px 4px 4px 20px",gap:12,
+                background:"linear-gradient(135deg,#F07040 0%,#E05828 50%,#C84618 100%)",
+                display:"flex",alignItems:"center",padding:"5px 5px 5px 20px",gap:0,
               }}>
                 <div style={{flex:1,textAlign:"left"}}>
-                  <div style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:-0.2}}>
+                  <div style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:-0.3}}>
                     Reservar {slotsSel.length} hora{slotsSel.length>1?"s":""}
                   </div>
-                  <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:1}}>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:2}}>
                     {slotsSel.map(h=>`${h}:00`).join(" · ")} hs
                   </div>
                 </div>
-                <div style={{background:"rgba(0,0,0,0.25)",borderRadius:14,padding:"14px 18px",
-                  display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minWidth:84}}>
-                  <div style={{fontSize:13,fontWeight:900,color:"#fff",lineHeight:1.1}}>{gs(totalSel)}</div>
-                  <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",marginTop:2}}>total</div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                  minWidth:90,height:58,background:"rgba(0,0,0,0.22)",borderRadius:16,flexShrink:0}}>
+                  <div style={{fontSize:14,fontWeight:900,color:"#fff",lineHeight:1.1,letterSpacing:-0.5}}>{gs(totalSel)}</div>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:3,display:"flex",alignItems:"center",gap:3,textTransform:"uppercase",letterSpacing:0.8}}>
+                    total
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </div>
                 </div>
               </button>
             </div>
