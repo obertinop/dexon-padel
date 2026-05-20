@@ -58,6 +58,15 @@ function LandingPage({ onAdmin }) {
 
   return (
     <div style={st.page}>
+      <style>{`
+        @keyframes fabGlow {
+          0%,100% { box-shadow: 0 6px 28px rgba(224,91,40,0.55), 0 0 0 0 rgba(224,91,40,0.25); }
+          60%      { box-shadow: 0 6px 28px rgba(224,91,40,0.55), 0 0 0 14px rgba(224,91,40,0); }
+        }
+        .dexon-fab { animation: fabGlow 2.8s ease-in-out infinite; transition: transform 0.15s, filter 0.15s !important; }
+        .dexon-fab:hover  { transform: translateX(-50%) scale(1.05) !important; filter: brightness(1.1); }
+        .dexon-fab:active { transform: translateX(-50%) scale(0.97) !important; }
+      `}</style>
       <nav style={st.nav}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <img src={LOGO} alt="DEXON" style={{height:68,...LOGO_STYLE_DARK}} onError={e=>{e.target.style.display="none";}}/>
@@ -73,7 +82,8 @@ function LandingPage({ onAdmin }) {
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
           {!isMobile&&<button style={st.btnOutline} onClick={onAdmin}>Admin</button>}
           {!isMobile&&<button style={st.btnOutline} onClick={()=>window.location.href="/cuenta"}>Mi cuenta</button>}
-          <button style={st.btnSolid} onClick={()=>window.location.href="/reservar"}>Reservar →</button>
+          {!isMobile&&<button style={st.btnSolid} onClick={()=>window.location.href="/reservar"}>Reservar →</button>}
+          {isMobile&&<button style={{...st.btnOutline,fontSize:13,padding:"7px 16px"}} onClick={()=>window.location.href="/cuenta"}>Mi cuenta</button>}
           {isMobile&&<button onClick={()=>setMenuOpen(!menuOpen)} style={{background:"none",border:"none",color:C.t2,fontSize:22,cursor:"pointer",padding:"0 4px",fontFamily:"var(--font-sans)"}}>{menuOpen?"✕":"☰"}</button>}
         </div>
       </nav>
@@ -101,12 +111,12 @@ function LandingPage({ onAdmin }) {
             Reservá tu turno fácil y rápido. Disfrutá del mejor pádel de la zona con instalaciones de primer nivel.
           </p>
           <div style={st.heroButtons}>
-            <button style={st.btnHeroMain} onClick={()=>window.location.href="/reservar"}
+            {!isMobile&&<button style={st.btnHeroMain} onClick={()=>window.location.href="/reservar"}
               onMouseEnter={e=>e.target.style.transform="scale(1.03)"}
               onMouseLeave={e=>e.target.style.transform="scale(1)"}>
               Reservar cancha →
-            </button>
-            <button style={st.btnHeroSec} onClick={()=>scrollTo("nosotros")}>
+            </button>}
+            <button style={isMobile?st.btnHeroSec:{...st.btnHeroSec}} onClick={()=>scrollTo("nosotros")}>
               Conocer más
             </button>
           </div>
@@ -246,7 +256,32 @@ function LandingPage({ onAdmin }) {
         </div>
       </section>
 
-      <footer style={st.footer}>
+      {isMobile&&(
+        <button
+          className="dexon-fab"
+          onClick={()=>window.location.href="/reservar"}
+          style={{
+            position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
+            zIndex:200, display:"flex", alignItems:"center", gap:10,
+            padding:"15px 34px",
+            border:"none", borderRadius:100,
+            background:`linear-gradient(135deg, #f06030 0%, ${C.coral} 45%, #c94818 100%)`,
+            color:"#fff", fontSize:16, fontWeight:800,
+            cursor:"pointer", fontFamily:"var(--font-sans)",
+            letterSpacing:0.2, whiteSpace:"nowrap",
+            backdropFilter:"blur(4px)",
+          }}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Reservar cancha
+        </button>
+      )}
+
+      <footer style={{...st.footer, paddingBottom: isMobile ? 96 : st.footer.paddingBottom}}>
         <div style={{fontSize:20,fontWeight:900,color:C.t1,letterSpacing:1,marginBottom:8}}>DEXON PADEL</div>
         <div style={{fontSize:13,color:C.t3,marginBottom:20}}>Tavapy · Alto Paraná · Paraguay</div>
         <div style={{display:"flex",gap:24,justifyContent:"center",flexWrap:"wrap",marginBottom:24}}>
