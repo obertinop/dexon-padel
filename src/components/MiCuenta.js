@@ -119,6 +119,12 @@ export default function MiCuenta() {
   const refresh = () => clienteData.me().then(setData).catch(() => {});
 
   const go = (screen, payload) => {
+    if (screen === "reservar") {
+      const sess = clienteSession.get();
+      const { nombre = "", telefono = "" } = sess?.cliente || {};
+      window.location.href = `/reservar?${new URLSearchParams({ nombre, telefono })}`;
+      return;
+    }
     if (["home", "reservas", "referido", "perfil"].includes(screen)) {
       setTab(screen);
       setStack([{ screen, payload }]);
@@ -182,7 +188,10 @@ export default function MiCuenta() {
     switch (screen) {
       case "home":      return <Dashboard data={data} go={go} />;
       case "reservas":  return <Reservas data={data} go={go} />;
-      case "reservaDetalle": return <ReservaDetalle turno={payload} go={go} back={back} showToast={showToast} refresh={refresh} />;
+      case "reservaDetalle": {
+        const turnoActualizado = [...(data?.proximas || []), ...(data?.pasadas || [])].find(t => t.id === payload?.id) || payload;
+        return <ReservaDetalle turno={turnoActualizado} go={go} back={back} showToast={showToast} refresh={refresh} />;
+      }
       case "reagendar": return <Reagendar turno={payload} back={back} showToast={showToast} refresh={refresh} />;
       case "reservar":  return <Reservar back={back} showToast={showToast} refresh={refresh} />;
       case "referido":  return <Referido data={data} back={() => go("home")} showToast={showToast} />;
@@ -710,22 +719,6 @@ function Reagendar({ turno, back, showToast, refresh }) {
   );
 }
 
-function Reservar({ back, showToast, refresh }) {
-  useEffect(() => {
-    const sess = clienteSession.get();
-    if (sess?.cliente) {
-      const { nombre, telefono } = sess.cliente;
-      const params = new URLSearchParams({
-        nombre: nombre || "",
-        telefono: telefono || "",
-      });
-      window.location.href = `/reservar?${params}`;
-    } else {
-      window.location.href = "/reservar";
-    }
-  }, []);
-  return <div style={{ padding: 40, textAlign: "center", color: C.t2 }}>Cargando reserva…</div>;
-}
 
 // ─────────────────────────────────────────────────────────────
 // REFERIDO + PERFIL + PAGOS + ABONOS + NOTIF + FAVORITOS
