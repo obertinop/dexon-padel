@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { C, LOGO, LOGO_STYLE_DARK, ADMIN_TEL } from "../lib/constants.js";
 import { useIsMobile } from "../lib/hooks.js";
+import { db } from "../lib/api.js";
 
 function LandingPage({ onAdmin }) {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroBtnVisible, setHeroBtnVisible] = useState(true);
   const heroBtnRef = useRef(null);
+  const [dispHoy, setDispHoy] = useState(null); // null = cargando
 
   useEffect(() => {
     if (!isMobile) return;
@@ -19,6 +21,20 @@ function LandingPage({ onAdmin }) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [isMobile]);
+
+  useEffect(() => {
+    const fecha = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD sin timezone
+    Promise.all([
+      db.get("config", "limit=1&select=hora_inicio,hora_fin"),
+      db.get("turnos", `fecha=eq.${fecha}&estado=neq.cancelado&select=hora`),
+    ]).then(([cfgArr, turnos]) => {
+      const cfg = cfgArr?.[0];
+      if (!cfg) return;
+      const total = cfg.hora_fin - cfg.hora_inicio;
+      const ocupados = (turnos || []).length;
+      setDispHoy(Math.max(0, total - ocupados));
+    }).catch(() => setDispHoy(null));
+  }, []);
 
   const scrollTo = (id) => {
     setMenuOpen(false);
@@ -294,30 +310,31 @@ function LandingPage({ onAdmin }) {
               {/* Divider */}
               <div style={{height:1,background:C.border,margin:"22px 0"}}/>
 
-              {/* Tarifas */}
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-                <div style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,0.06)",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>💰</div>
-                <div style={{fontSize:16,fontWeight:700,color:C.t1}}>Tarifas</div>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-                <div style={{background:C.bg,borderRadius:14,padding:"16px 12px",border:`1px solid ${C.border}`,textAlign:"center"}}>
-                  <div style={{fontSize:10,color:C.t3,textTransform:"uppercase",letterSpacing:1.2,fontWeight:600,marginBottom:8}}>Tarifa normal</div>
-                  <div style={{fontSize:22,fontWeight:900,color:C.t1,letterSpacing:-0.5}}>80K</div>
-                  <div style={{fontSize:11,color:C.t3,marginTop:3}}>Gs. por hora</div>
-                </div>
-                <div style={{background:"rgba(224,91,40,0.07)",borderRadius:14,padding:"16px 12px",border:`1px solid rgba(224,91,40,0.22)`,textAlign:"center",position:"relative",overflow:"hidden"}}>
-                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${coral},${coralD})`}}/>
-                  <div style={{fontSize:10,color:coral,textTransform:"uppercase",letterSpacing:1.2,fontWeight:700,marginBottom:8}}>Hora pico</div>
-                  <div style={{fontSize:22,fontWeight:900,color:coral,letterSpacing:-0.5}}>100K</div>
-                  <div style={{fontSize:11,color:C.t3,marginTop:3}}>19:00 – 22:00 hs</div>
-                </div>
-              </div>
-              <div style={{padding:"11px 14px",borderRadius:11,background:"rgba(245,192,96,0.06)",border:`1px solid rgba(245,192,96,0.18)`,display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:16,flexShrink:0}}>🎉</span>
-                <span style={{fontSize:12,color:C.t2,lineHeight:1.5}}>
-                  <strong style={{color:"#E8C060"}}>20% de descuento</strong> los martes y jueves en todas las franjas
-                </span>
-              </div>
+              {/* Disponibilidad hoy */}
+              {(() => {
+                const loading = dispHoy === null;
+                const sinTurnos = dispHoy === 0;
+                const pocos = dispHoy > 0 && dispHoy <= 3;
+                const color = sinTurnos ? C.red : pocos ? C.yellow : C.green;
+                const dotBg = sinTurnos ? "rgba(240,80,80,0.15)" : pocos ? "rgba(245,192,96,0.15)" : "rgba(52,212,144,0.15)";
+                const label = sinTurnos ? "Sin turnos disponibles hoy" : pocos ? `Solo ${dispHoy} turno${dispHoy > 1 ? "s" : ""} disponible${dispHoy > 1 ? "s" : ""} hoy` : `${dispHoy} turnos disponibles hoy`;
+                return (
+                  <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:14,background:dotBg,border:`1px solid ${color}22`}}>
+                    {loading
+                      ? <div style={{width:36,height:36,borderRadius:"50%",border:`2px solid ${C.border}`,borderTopColor:C.coral,animation:"spin 0.8s linear infinite",flexShrink:0}}/>
+                      : <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:44,flexShrink:0}}>
+                          <div style={{fontSize:26,fontWeight:900,color,lineHeight:1,letterSpacing:-1}}>{sinTurnos ? "0" : dispHoy}</div>
+                          <div style={{width:20,height:3,borderRadius:2,background:color,marginTop:3,opacity:0.6}}/>
+                        </div>
+                    }
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:loading ? C.t2 : color}}>{loading ? "Consultando disponibilidad…" : label}</div>
+                      <div style={{fontSize:11,color:C.t3,marginTop:2}}>{new Date().toLocaleDateString("es-PY",{weekday:"long",day:"numeric",month:"long"})}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
             </div>
           </div>
         </div>
