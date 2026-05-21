@@ -525,7 +525,7 @@ const PortalCliente = () => {
         {/* PASO DATOS */}
         {paso==="datos"&&<>
           <StepBar/>
-          <button onClick={()=>{setPaso("lista");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
+          <button onClick={()=>{setPaso("lista");setMsg("");setSaving(false);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
             ← Volver
           </button>
           <div style={{...card,padding:"24px"}}>
@@ -597,7 +597,7 @@ const PortalCliente = () => {
         {/* PASO PAGO */}
         {paso==="pago"&&<>
           <StepBar/>
-          <button onClick={()=>{setPaso("datos");setMsg("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
+          <button onClick={()=>{setPaso("datos");setMsg("");setSaving(false);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.t2,marginBottom:20,fontFamily:"var(--font-sans)",padding:0}}>
             ← Volver
           </button>
           <div style={{...card,padding:"24px"}}>
