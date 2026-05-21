@@ -23,16 +23,45 @@ function LandingPage({ onAdmin }) {
   }, [isMobile]);
 
   useEffect(() => {
-    const fecha = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD sin timezone
+    const now = new Date();
+    const fecha = now.toLocaleDateString("en-CA");
+    const horaActual = now.getHours();
+    const diaSemana = now.getDay();
+
     Promise.all([
-      db.get("config", "limit=1&select=hora_inicio,hora_fin"),
+      db.get("config", "limit=1&select=hora_inicio,hora_fin,horarios_por_dia"),
       db.get("turnos", `fecha=eq.${fecha}&estado=neq.cancelado&select=hora`),
-    ]).then(([cfgArr, turnos]) => {
+      db.get("abono_turnos", `dia=eq.${diaSemana}&select=hora,abonos!inner(estado,fecha_vencimiento)`),
+    ]).then(([cfgArr, turnos, abonoTurnos]) => {
       const cfg = cfgArr?.[0];
       if (!cfg) return;
-      const total = cfg.hora_fin - cfg.hora_inicio;
-      const ocupados = (turnos || []).length;
-      setDispHoy(Math.max(0, total - ocupados));
+
+      // Horario real del día (puede variar por día de semana)
+      let horaInicio = cfg.hora_inicio;
+      let horaFin = cfg.hora_fin;
+      if (cfg.horarios_por_dia) {
+        try {
+          const parsed = JSON.parse(cfg.horarios_por_dia);
+          const d = parsed[diaSemana];
+          if (d) { horaInicio = d.inicio; horaFin = d.fin; }
+        } catch (_) {}
+      }
+
+      const ocupadasTurno = new Set((turnos || []).map(t => t.hora));
+      const ocupadasAbono = new Set(
+        (abonoTurnos || [])
+          .filter(at => at.abonos?.estado === "activo" && at.abonos?.fecha_vencimiento >= fecha)
+          .map(at => at.hora)
+      );
+
+      let disponibles = 0;
+      for (let h = horaInicio; h < horaFin; h++) {
+        if (h <= horaActual) continue;           // ya pasó
+        if (ocupadasTurno.has(h)) continue;      // reservado
+        if (ocupadasAbono.has(h)) continue;      // abono semanal
+        disponibles++;
+      }
+      setDispHoy(disponibles);
     }).catch(() => setDispHoy(null));
   }, []);
 
