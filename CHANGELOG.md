@@ -343,6 +343,8 @@ Endpoint `POST /api/reservar`:
 - `mensajes.js`: lista mensajes con filtro de no leídos
 - `media.js`: proxy para servir archivos multimedia recibidos
 
+> **RESTRICCIÓN DE IMPLEMENTACIÓN:** Cualquier nueva funcionalidad de mensajería (campañas, invitaciones, broadcasts, recordatorios nuevos, etc.) debe implementarse exclusivamente a través de la **WhatsApp Business API de Meta** que ya está integrada en el proyecto. No usar Twilio, 360dialog, ni ningún otro proveedor externo. Los mensajes de marketing/outbound requieren plantillas aprobadas por Meta previamente.
+
 ---
 
 ### API: Cron recordatorios
