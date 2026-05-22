@@ -16,10 +16,10 @@ export const fmtD = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"
 export const initials = n => n?.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
 export const avatarBg = n => { const c=["#0D2248","#072A1A","#2A1008","#180A38","#062030","#0E2008"]; return c[(n||"").charCodeAt(0)%c.length]; };
 export const avatarFg = n => { const c=["#6EA8FF","#5ADDA8","#F5A878","#B090F8","#6ACCE0","#90D470"]; return c[(n||"").charCodeAt(0)%c.length]; };
-export const limpiarTexto = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
-export const shuffleArr = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
-export const tieneSecOrig = (res, orig) => { for(let i=0;i<=res.length-3;i++){if(orig.includes(res.slice(i,i+3)))return true;} return false; };
-export const mezclarSinP = (chars, orig) => { for(let i=0;i<20;i++){const m=shuffleArr(chars);if(!tieneSecOrig(m.join(""),orig))return m;} return shuffleArr(chars); };
+const limpiarTexto = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
+const shuffleArr = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const tieneSecOrig = (res, orig) => { for(let i=0;i<=res.length-3;i++){if(orig.includes(res.slice(i,i+3)))return true;} return false; };
+const mezclarSinP = (chars, orig) => { for(let i=0;i<20;i++){const m=shuffleArr(chars);if(!tieneSecOrig(m.join(""),orig))return m;} return shuffleArr(chars); };
 export const genRefCode = (nombre="", telefono="") => {
   const letras=[...limpiarTexto(nombre||"X")];
   const digitos=[...( telefono.replace(/\D/g,"")||"0000")];

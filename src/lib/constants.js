@@ -23,15 +23,6 @@ export const C = {
   purple:"#A080FF", purpleBg:"#120A30", purpleBd:"#2A1A60",
   info:"#5AA0F0", infoBg:"#081830",
 };
-export const TX = { p:C.t1, s:C.t2, t:C.t3 };
-export const BR = {
-  coral:C.coral, coralL:"#FAECE7", coralD:C.coralD,
-  blue:C.blue, blueM:C.blueM, blueL:"#E6EEFF", dark:C.bg,
-  ok:C.green, okL:C.greenBg, warn:"#854F0B", warnL:"#FAEEDA",
-  danger:"#A32D2D", dangerL:"#FCEBEB", info:C.info, infoL:C.infoBg,
-  purple:C.purple, purpleL:C.purpleBg,
-};
-
 // ── ESTILOS BASE ──
 export const inp = { padding:"8px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, width:"100%", background:C.blue, color:C.t1, fontFamily:"var(--font-sans)", outline:"none", boxSizing:"border-box" };
 export const card = { background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:14, padding:"16px 18px" };

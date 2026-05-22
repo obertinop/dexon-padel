@@ -50,7 +50,7 @@ export default function App() {
     const u=localStorage.getItem("dx_user");
     return tk?{token:tk,user:u?JSON.parse(u):null}:null;
   });
-  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],espera:[],abono_turnos:[],codigos_ref:[],turno_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
+  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],abono_turnos:[],codigos_ref:[],turno_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [semOff,setSemOff] = useState(0);
@@ -99,7 +99,7 @@ export default function App() {
     if(!tk) return;
     setIsRefreshing(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,es,cf,at,cr,ti,db2] = await Promise.all([
+      const [tu,cl,ab,pl,ins,ca,st,cf,at,cr,ti,db2] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc",tk),
         db.get("clientes","order=nombre.asc",tk),
         db.get("abonos","order=fecha_vencimiento.asc",tk),
@@ -107,14 +107,13 @@ export default function App() {
         db.get("instructores","order=nombre.asc",tk),
         db.get("caja","order=fecha.desc,id.desc",tk),
         db.get("stock","order=nombre.asc",tk),
-        db.get("espera","order=fecha.asc,hora.asc",tk),
         db.get("config","limit=1",tk),
         db.get("abono_turnos","order=abono_id.asc",tk),
         db.get("codigos_referido","order=created_at.desc",tk),
         db.get("turno_items","order=created_at.asc",tk),
         db.get("dias_bloqueados","order=fecha.asc",tk),
       ]);
-      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],espera:es||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],cfg:cf?.[0]||prev.cfg}));
+      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],cfg:cf?.[0]||prev.cfg}));
       setDiasBloqueados(db2||[]);
     } catch(e){console.error(e);}
     setIsRefreshing(false);
