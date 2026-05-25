@@ -75,6 +75,7 @@ export default function App() {
   const [pendFiltro,setPendFiltro] = useState("todos");
   const [cmdOpen,setCmdOpen] = useState(false);
   const [cmdQ,setCmdQ] = useState("");
+  const [cmdIdx,setCmdIdx] = useState(0);
   const {getFeriado,feriados} = useFeriados();
   const [diasBloqueados,setDiasBloqueados] = useState([]);
   const [dayConfigFecha,setDayConfigFecha] = useState(null);
@@ -146,6 +147,8 @@ export default function App() {
     return()=>clearInterval(interval);
   },[tk,load]);
 
+  useEffect(()=>{setCmdIdx(0);},[cmdOpen]);
+  useEffect(()=>{setCmdIdx(0);},[cmdQ]);
   useEffect(()=>{
     const h=(e)=>{
       if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(o=>{if(!o)setCmdQ("");return !o;});}
@@ -1003,11 +1006,17 @@ export default function App() {
       ].filter(a=>!q||a.k.includes(q)||a.l.toLowerCase().includes(q));
       const tabsFilt=TABS.filter(t=>!q||t.l.toLowerCase().includes(q)||t.id.includes(q));
       const clientesFilt=clientes.filter(c=>c.nombre.toLowerCase().includes(q)||(c.telefono||"").includes(q)).slice(0,5);
-      const ItemRow=({ic,l,sub,onClick,badge})=>(
-        <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 18px",background:"transparent",border:"none",color:C.t1,cursor:"pointer",textAlign:"left",transition:"background 0.1s",borderBottom:`1px solid rgba(255,255,255,0.04)`,fontFamily:"var(--font-sans)"}}
-          onMouseEnter={e=>e.currentTarget.style.background=C.bgHover}
-          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-          <span style={{width:28,height:28,borderRadius:8,background:C.bgElev,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{ic}</span>
+      const allItems=[
+        ...acciones,
+        ...tabsFilt.map(t=>({l:t.l,a:()=>{setTab(t.id);setCmdOpen(false);}})),
+        ...(q.length>0?clientesFilt.map(c=>({l:c.nombre,a:()=>{setCmdOpen(false);openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional",cliente_id:c.id});}})):[]),
+      ];
+      const safeIdx=Math.max(0,Math.min(cmdIdx,allItems.length-1));
+      const ItemRow=({ic,l,sub,onClick,badge,selected,flatIdx})=>(
+        <button ref={selected?el=>{if(el)el.scrollIntoView({block:"nearest",inline:"nearest"});}:null}
+          onClick={onClick} onMouseEnter={()=>setCmdIdx(flatIdx)}
+          style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 18px",background:selected?C.bgHover:"transparent",border:"none",color:C.t1,cursor:"pointer",textAlign:"left",borderBottom:`1px solid rgba(255,255,255,0.04)`,fontFamily:"var(--font-sans)"}}>
+          <span style={{width:28,height:28,borderRadius:8,background:C.bgElev,border:`1px solid ${selected?C.coral:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{ic}</span>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:500,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l}</div>
             {sub&&<div style={{fontSize:11,color:C.t3}}>{sub}</div>}
@@ -1022,27 +1031,33 @@ export default function App() {
         <div style={{width:"100%",maxWidth:580,background:C.bgCard,borderRadius:16,border:`1px solid ${C.borderL}`,boxShadow:"0 24px 80px rgba(0,0,0,0.65)",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 18px",borderBottom:`1px solid ${C.border}`}}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}><circle cx="11" cy="11" r="8" stroke={C.t3} strokeWidth="2"/><path d="M21 21l-4.35-4.35" stroke={C.t3} strokeWidth="2" strokeLinecap="round"/></svg>
-            <input autoFocus value={cmdQ} onChange={e=>setCmdQ(e.target.value)} onKeyDown={e=>{if(e.key==="Escape")setCmdOpen(false);}} placeholder="Buscar clientes, acciones, secciones..." style={{flex:1,background:"transparent",border:"none",color:C.t1,fontSize:15,outline:"none",fontFamily:"var(--font-sans)"}}/>
+            <input autoFocus value={cmdQ} onChange={e=>setCmdQ(e.target.value)}
+              onKeyDown={e=>{
+                if(e.key==="Escape"){setCmdOpen(false);}
+                else if(e.key==="ArrowDown"){e.preventDefault();setCmdIdx(i=>Math.min(i+1,Math.max(0,allItems.length-1)));}
+                else if(e.key==="ArrowUp"){e.preventDefault();setCmdIdx(i=>Math.max(i-1,0));}
+                else if(e.key==="Enter"&&allItems.length>0){allItems[safeIdx]?.a();}
+              }}
+              placeholder="Buscar clientes, acciones, secciones..." style={{flex:1,background:"transparent",border:"none",color:C.t1,fontSize:15,outline:"none",fontFamily:"var(--font-sans)"}}/>
             <span onClick={()=>setCmdOpen(false)} style={{fontSize:11,color:C.t3,background:C.bgElev,padding:"3px 8px",borderRadius:5,border:`1px solid ${C.border}`,flexShrink:0,cursor:"pointer"}}>ESC</span>
           </div>
           <div style={{maxHeight:420,overflowY:"auto"}}>
             {acciones.length>0&&<><SectionHead l="Acciones rápidas"/>
-              {acciones.map((a,i)=><ItemRow key={i} ic={a.ic} l={a.l} onClick={a.a}/>)}
+              {acciones.map((a,i)=><ItemRow key={i} ic={a.ic} l={a.l} onClick={a.a} selected={i===safeIdx} flatIdx={i}/>)}
             </>}
             {tabsFilt.length>0&&<><SectionHead l="Secciones"/>
-              {tabsFilt.map(t=><ItemRow key={t.id} ic={t.ic==="wa"?<WhatsAppIcon size={14}/>:<span>{t.ic}</span>} l={t.l} onClick={()=>{setTab(t.id);setCmdOpen(false);}} badge={tab===t.id?"Activa":null}/>)}
+              {tabsFilt.map((t,i)=>{const fi=acciones.length+i;return <ItemRow key={t.id} ic={t.ic==="wa"?<WhatsAppIcon size={14}/>:<span>{t.ic}</span>} l={t.l} onClick={()=>{setTab(t.id);setCmdOpen(false);}} badge={tab===t.id?"Activa":null} selected={fi===safeIdx} flatIdx={fi}/>;})}
             </>}
             {clientesFilt.length>0&&q.length>0&&<><SectionHead l="Clientes"/>
-              {clientesFilt.map(c=><ItemRow key={c.id} ic={<Avatar nombre={c.nombre} size={22}/>} l={c.nombre} sub={c.telefono} onClick={()=>{setCmdOpen(false);openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional",cliente_id:c.id});}}/>)}
+              {clientesFilt.map((c,i)=>{const fi=acciones.length+tabsFilt.length+i;return <ItemRow key={c.id} ic={<Avatar nombre={c.nombre} size={22}/>} l={c.nombre} sub={c.telefono} onClick={()=>{setCmdOpen(false);openM("turno",{fecha:hoy(),hora:cfg.hora_inicio,tipo:"ocasional",cliente_id:c.id});}} selected={fi===safeIdx} flatIdx={fi}/>;})}
             </>}
             {acciones.length===0&&tabsFilt.length===0&&(clientesFilt.length===0||q.length===0)&&q.length>0&&(
               <div style={{padding:"32px",textAlign:"center",color:C.t3,fontSize:13}}>Sin resultados para "{cmdQ}"</div>
             )}
           </div>
           {!isMobile&&<div style={{padding:"8px 18px",borderTop:`1px solid ${C.border}`,display:"flex",gap:16,fontSize:11,color:C.t3}}>
-            <span>↵ seleccionar</span>
-            <span>ESC cerrar</span>
-            <span style={{marginLeft:"auto"}}>⌘K para abrir / cerrar</span>
+            <span>↑↓ navegar</span><span>↵ seleccionar</span><span>ESC cerrar</span>
+            <span style={{marginLeft:"auto"}}>⌘K abrir / cerrar</span>
           </div>}
         </div>
       </div>;
