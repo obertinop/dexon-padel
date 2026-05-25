@@ -316,6 +316,34 @@ export default function App() {
     if(turnosACrear.length>0) await db.post("turnos",turnosACrear,tk);
   };
   const cancelarAbono = async id=>{setSaving(true);try{await db.patch("abonos",id,{estado:"cancelado"},tk);await api(`turnos?abono_id=eq.${id}&fecha=gte.${hoy()}&estado=neq.cancelado`,{method:"PATCH",body:JSON.stringify({estado:"cancelado"}),prefer:"return=minimal"},tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
+  const editarAbono = async()=>{
+    if(!form.id||!form.slots||form.slots.length===0){notify("Agregá al menos un turno fijo","error");return;}
+    setSaving(true);
+    try{
+      await api(`abono_turnos?abono_id=eq.${form.id}`,{method:"DELETE"},tk);
+      for(const s of form.slots) await db.post("abono_turnos",{abono_id:form.id,dia:Number(s.dia),hora:Number(s.hora)},tk);
+      await api(`turnos?abono_id=eq.${form.id}&fecha=gte.${hoy()}&estado=neq.cancelado`,{method:"PATCH",body:JSON.stringify({estado:"cancelado"}),prefer:"return=minimal"},tk);
+      const ab=abonos.find(a=>a.id===form.id);
+      if(ab){
+        const turnosActuales=await db.get("turnos",`fecha=gte.${hoy()}&estado=neq.cancelado`,tk)||[];
+        const hoy_=new Date();const turnosACrear=[];
+        for(let sem=0;sem<5;sem++){
+          for(const s of form.slots){
+            const d=new Date(hoy_);
+            const diasHasta=(Number(s.dia)-d.getDay()+7)%7+(sem*7);
+            d.setDate(d.getDate()+diasHasta);
+            const fs=fmtD(d);
+            if(fs>ab.fecha_vencimiento) continue;
+            if(!turnosActuales.find(t=>t.fecha===fs&&t.hora===Number(s.hora)))
+              turnosACrear.push({fecha:fs,hora:Number(s.hora),tipo:"abono",estado:"confirmado",cliente_id:ab.cliente_id,abono_id:form.id,precio:0,sena:0,saldo:0,notas:"Turno fijo de abono"});
+          }
+        }
+        if(turnosACrear.length>0) await db.post("turnos",turnosACrear,tk);
+      }
+      await load();closeM();notify("Horario actualizado","ok");
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
   const guardarPlan = async()=>{if(!form.nombre||!form.horas_semana||!form.precio)return;setSaving(true);try{if(form.id)await db.patch("planes",form.id,{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);else await db.post("planes",{nombre:form.nombre,horas_semana:Number(form.horas_semana),precio:Number(form.precio)},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarInstructor = async()=>{if(!form.nombre?.trim())return;setSaving(true);try{await db.post("instructores",{nombre:form.nombre.trim(),telefono:form.telefono||"",tarifa_clase:Number(form.tarifa_clase||0)},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarMovCaja = async()=>{if(!form.descripcion||!form.monto)return;setSaving(true);try{await db.post("caja",{descripcion:form.descripcion,tipo:form.tipo||"egreso",categoria:form.categoria||"gasto",monto:Number(form.monto),fecha:form.fecha||hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
@@ -528,7 +556,7 @@ export default function App() {
     guardarTurno, confirmarTurno, cancelarTurno, noShow,
     confirmarBulk, cancelarBulk,
     guardarCliente, eliminarCliente,
-    guardarAbono, cancelarAbono, materilarizarTurnosAbono,
+    guardarAbono, cancelarAbono, editarAbono, materilarizarTurnosAbono,
     guardarPlan, guardarInstructor,
     guardarMovCaja, eliminarMovCaja,
     guardarStock, moverStock,
@@ -806,6 +834,18 @@ export default function App() {
         <button type="button" onClick={()=>setForm(f=>({...f,slots:[...(f.slots||[]),{dia:1,hora:cfg.hora_inicio}]}))} style={{border:`1px dashed ${C.coral}`,background:"transparent",color:C.coral,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontFamily:"var(--font-sans)",fontSize:13,width:"100%",marginTop:4}}>+ Agregar turno</button>
       </div>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarAbono} disabled={saving}>{saving?"Guardando...":"Registrar abono"}</Btn></div>
+    </Modal>
+
+    <Modal show={modal==="editarAbono"} onClose={closeM} title={`Editar horario${form.nombre_cliente?" — "+form.nombre_cliente:""}`}>
+      <div style={{marginBottom:14}}><label style={lbl}>Turnos fijos semanales</label>
+        {(form.slots||[]).map((slot,i)=><div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+          <select style={{...inp,flex:1}} value={slot.dia} onChange={e=>setForm(f=>({...f,slots:f.slots.map((s,j)=>j===i?{...s,dia:e.target.value}:s)}))}>{DIAS_FULL.map((d,j)=><option key={j} value={j}>{d}</option>)}</select>
+          <select style={{...inp,flex:1}} value={slot.hora} onChange={e=>setForm(f=>({...f,slots:f.slots.map((s,j)=>j===i?{...s,hora:e.target.value}:s)}))}>{horas.map(h=><option key={h} value={h}>{h}:00</option>)}</select>
+          <button type="button" onClick={()=>setForm(f=>({...f,slots:f.slots.filter((_,j)=>j!==i)}))} style={{border:"none",background:C.redBg,color:C.red,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>×</button>
+        </div>)}
+        <button type="button" onClick={()=>setForm(f=>({...f,slots:[...(f.slots||[]),{dia:1,hora:cfg.hora_inicio}]}))} style={{border:`1px dashed ${C.coral}`,background:"transparent",color:C.coral,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontFamily:"var(--font-sans)",fontSize:13,width:"100%",marginTop:4}}>+ Agregar turno</button>
+      </div>
+      <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={editarAbono} disabled={saving}>{saving?"Guardando...":"Guardar cambios"}</Btn></div>
     </Modal>
 
     <Modal show={modal==="plan"} onClose={closeM} title={form.id?"Editar plan":"Nuevo plan"}>
