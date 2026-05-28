@@ -6,7 +6,7 @@ export async function runRecordatorios(env) {
   if (!cfg?.wa_recordatorio_activo || !cfg?.wa_recordatorio_template) return { ok: true, msg: 'Recordatorios desactivados' };
 
   const TOKEN = env.WHATSAPP_TOKEN;
-  const PH_ID = env.WHATSAPP_PHONE_NUMBER_ID;
+  const PH_ID = env.WHATSAPP_PHONE_ID;
   if (!TOKEN || !PH_ID) return { ok: false, msg: 'Variables WA no configuradas' };
 
   const fechaHoy = new Date().toISOString().slice(0, 10);

@@ -255,13 +255,13 @@ app.post('/webhook', async (c) => {
     // WhatsApp al cliente (fire & forget)
     const primerTurno = turnos[0];
     const cliente = await d1First(db, `SELECT nombre, telefono FROM clientes WHERE id = ? LIMIT 1`, [primerTurno.cliente_id]);
-    if (cliente && c.env.WHATSAPP_PHONE_NUMBER_ID && c.env.WHATSAPP_TOKEN) {
+    if (cliente && c.env.WHATSAPP_PHONE_ID && c.env.WHATSAPP_TOKEN) {
       const horasStr = turnos.map(t => `${t.hora}:00`).join(' · ');
       const montoTotal = turnos.reduce((a, t) => a + t.precio, 0);
       let tel = cliente.telefono.replace(/\D/g, '');
       if (tel.startsWith('0')) tel = '595' + tel.slice(1);
       if (!tel.startsWith('595')) tel = '595' + tel;
-      fetch(`https://graph.facebook.com/v19.0/${c.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+      fetch(`https://graph.facebook.com/v19.0/${c.env.WHATSAPP_PHONE_ID}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${c.env.WHATSAPP_TOKEN}` },
         body: JSON.stringify({

@@ -1,5 +1,5 @@
 // ── CONSTANTES GLOBALES ──
-export const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
+export const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://dexon-padel.obertinop.workers.dev';
 export const ADMIN_TEL = import.meta.env.VITE_ADMIN_TEL;
 export const LOGO = "/logo.svg";
 export const LOGO_STYLE_DARK = { objectFit: "contain", filter: "brightness(0) invert(1)" };

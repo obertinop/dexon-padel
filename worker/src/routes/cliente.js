@@ -57,7 +57,7 @@ app.post('/auth-send', async (c) => {
   await d1Run(db, `INSERT INTO otp_codes (telefono, codigo, expira_en, ip) VALUES (?,?,?,?)`,
     [tel, codigo, expira, c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || null]);
 
-  const PHONE_ID = c.env.WHATSAPP_PHONE_NUMBER_ID;
+  const PHONE_ID = c.env.WHATSAPP_PHONE_ID;
   const TOKEN = c.env.WHATSAPP_TOKEN;
   if (!PHONE_ID || !TOKEN) return c.json({ error: 'WhatsApp no configurado' }, 500);
 

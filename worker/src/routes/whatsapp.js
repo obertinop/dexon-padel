@@ -67,7 +67,7 @@ app.post('/webhook', async (c) => {
 
   const cfg = await d1First(db, `SELECT wa_bienvenida_activo, wa_bienvenida_texto, wa_admin_tel FROM config LIMIT 1`);
   const TOKEN = c.env.WHATSAPP_TOKEN;
-  const PH_ID = c.env.WHATSAPP_PHONE_NUMBER_ID;
+  const PH_ID = c.env.WHATSAPP_PHONE_ID;
 
   if (TOKEN && PH_ID) {
     const tareas = [];
@@ -105,7 +105,7 @@ app.post('/enviar', async (c) => {
   const { tipo, nombre, telefono, fecha, horarios, monto, forma_pago } = body || {};
   if (!tipo || !nombre || !telefono) return c.json({ error: 'Faltan datos: tipo, nombre, telefono' }, 400);
 
-  const PHONE_ID = c.env.WHATSAPP_PHONE_NUMBER_ID;
+  const PHONE_ID = c.env.WHATSAPP_PHONE_ID;
   const TOKEN = c.env.WHATSAPP_TOKEN;
   if (!PHONE_ID || !TOKEN) return c.json({ error: 'WhatsApp no configurado' }, 500);
 
@@ -186,7 +186,7 @@ app.post('/responder', async (c) => {
   if (!telefono) return c.json({ error: 'telefono requerido' }, 400);
   if (tipo === 'texto' && !mensaje) return c.json({ error: 'mensaje requerido' }, 400);
 
-  const PHONE_ID = c.env.WHATSAPP_PHONE_NUMBER_ID;
+  const PHONE_ID = c.env.WHATSAPP_PHONE_ID;
   const TOKEN = c.env.WHATSAPP_TOKEN;
   if (!PHONE_ID || !TOKEN) return c.json({ error: 'WhatsApp no configurado' }, 500);
 
