@@ -17,6 +17,10 @@ app.post('/login', async (c) => {
   return c.json({ token, email, expires_in: 86400 });
 });
 
+app.get('/me', adminAuth, async (c) => {
+  return c.json({ ok: true, email: c.get('admin')?.sub });
+});
+
 app.post('/logout', adminAuth, async (c) => {
   return c.json({ ok: true });
 });

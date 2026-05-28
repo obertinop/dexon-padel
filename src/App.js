@@ -50,6 +50,13 @@ export default function App() {
     const u=localStorage.getItem("dx_user");
     return tk?{token:tk,user:u?JSON.parse(u):null}:null;
   });
+  useEffect(()=>{
+    const tk=localStorage.getItem("dx_token");
+    if(!tk) return;
+    fetch(WORKER_URL+"/api/auth/me",{headers:{Authorization:`Bearer ${tk}`}})
+      .then(r=>{if(!r.ok){localStorage.removeItem("dx_token");localStorage.removeItem("dx_user");setSession(null);}})
+      .catch(()=>{});
+  },[]);
   const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],abono_turnos:[],codigos_ref:[],turno_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
