@@ -197,6 +197,17 @@ CREATE TABLE IF NOT EXISTS cliente_favoritos (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS turno_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  turno_id INTEGER REFERENCES turnos(id),
+  stock_id INTEGER REFERENCES stock(id),
+  nombre TEXT,
+  cantidad INTEGER DEFAULT 1,
+  precio_unitario REAL DEFAULT 0,
+  cobrado INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Índices
 CREATE INDEX IF NOT EXISTS clientes_telefono_idx ON clientes(telefono);
 CREATE INDEX IF NOT EXISTS clientes_referrer_code_idx ON clientes(referrer_code);
