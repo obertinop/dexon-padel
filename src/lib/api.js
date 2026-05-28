@@ -1,4 +1,6 @@
 import { WORKER_URL } from './constants.js';
+export { WORKER_URL };
+export const apiHeaders = () => ({ 'Content-Type': 'application/json' });
 
 // ── AUTH ──
 export const auth = {

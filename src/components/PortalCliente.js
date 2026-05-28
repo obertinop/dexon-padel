@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { C, DIAS, ADMIN_TEL, LOGO, LOGO_STYLE_DARK, card } from "../lib/constants.js";
 import { useIsMobile, useFeriados } from "../lib/hooks.js";
-import { db, apiHeaders } from "../lib/api.js";
+import { db, apiHeaders, WORKER_URL } from "../lib/api.js";
 import { hoy, fmtFechaLegible, gs, avatarBg, avatarFg, initials } from "../lib/utils.js";
 import { Badge } from "./UI.js";
 import CalendarioMini from "./CalendarioMini.js";
@@ -669,12 +669,12 @@ const PortalCliente = () => {
               <button onClick={async()=>{
                 setSaving(true);setMsg("");
                 try {
-                  const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
+                  const r = await fetch(WORKER_URL+"/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0})});
                   const d = await r.json();
                   if(!r.ok){setMsg(d.error||"Error al guardar. Intentalo de nuevo.");setSaving(false);return;}
                   setMiCodigo(d.referrer_code||"");
                   const horasStr=slotsSel.map(h=>`${h}:00`).join(", ");
-                  fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
+                  fetch(WORKER_URL+"/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"transferencia_pendiente",nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha:fmtFechaLegible(fecha),horarios:horasStr+"hs",monto:gs(d.total||totalSel)})}).catch(()=>{});
                   setPaso("confirmado");
                 } catch(e){console.error(e);setMsg("Error de conexión. Intentá de nuevo.");}
                 setSaving(false);
@@ -686,7 +686,7 @@ const PortalCliente = () => {
               <button onClick={async()=>{
                 setSaving(true);setMsg("");
                 try {
-                  const r = await fetch("/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:false,metodoPago:"efectivo"})});
+                  const r = await fetch(WORKER_URL+"/api/reservar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),fecha,slots:slotsSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:false,metodoPago:"efectivo"})});
                   const d = await r.json();
                   if(!r.ok){setMsg(d.error||"Error al guardar. Intentalo de nuevo.");setSaving(false);return;}
                   setMiCodigo(d.referrer_code||"");
@@ -702,7 +702,7 @@ const PortalCliente = () => {
                 if(!form.documento.trim()){setMsg("Ingresá tu cédula de identidad.");return;}
                 setSaving(true);setMsg("");
                 try {
-                  const r = await fetch("/api/pagopar/crear-pago",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),documento:form.documento.trim(),fecha,slots:slotsSel,total:totalSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0,saldoUsado:descSaldo})});
+                  const r = await fetch(WORKER_URL+"/api/pagopar/crear-pago",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nombre:form.nombre.trim(),telefono:form.telefono.trim(),documento:form.documento.trim(),fecha,slots:slotsSel,total:totalSel,referrerCode:refValido?refCodeNorm:null,usarSaldo:usarSaldo&&descSaldo>0,saldoUsado:descSaldo})});
                   const d = await r.json();
                   if(!r.ok||!d.checkout_url){setMsg((d.error||"Error iniciando pago.")+(d.detail?` (${d.detail})`:""));console.error("[crear-pago]",d);setSaving(false);return;}
                   window.location.href = d.checkout_url;

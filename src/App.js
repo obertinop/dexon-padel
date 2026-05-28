@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 
 // ── lib ──
 import { C, DIAS, DIAS_FULL, MESES, card, metric, inp, lbl, LOGO, LOGO_STYLE_DARK } from "./lib/constants.js";
-import { auth, api, db, apiHeaders } from "./lib/api.js";
+import { auth, api, db, apiHeaders, WORKER_URL } from "./lib/api.js";
 import { useIsMobile, useFeriados } from "./lib/hooks.js";
 import { gs, hoy, fmtFechaLegible, fmtD, initials, avatarBg, avatarFg, genRefCode } from "./lib/utils.js";
 
@@ -141,7 +141,7 @@ export default function App() {
 
   useEffect(()=>{
     if(!tk) return;
-    const loadWaBadge=()=>fetch("/api/whatsapp/mensajes?limit=500").then(r=>r.json()).then(d=>setWaNoLeidos(Array.isArray(d)?d.filter(m=>!m.leido).length:0)).catch(()=>{});
+    const loadWaBadge=()=>fetch(WORKER_URL+"/api/whatsapp/mensajes?limit=500").then(r=>r.json()).then(d=>setWaNoLeidos(Array.isArray(d)?d.filter(m=>!m.leido).length:0)).catch(()=>{});
     loadWaBadge();
     const interval=setInterval(()=>{load();loadWaBadge();},10*1000);
     return()=>clearInterval(interval);
@@ -227,7 +227,7 @@ export default function App() {
       if(sena>0)await db.post("caja",{descripcion:`Seña - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:t.id},tk);
       await load();closeM();
       const c=cById(Number(form.cliente_id));
-      if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios:`${Number(form.hora)}:00hs`,monto:gs(precio),forma_pago:"Pago online"})}).catch(()=>{});}
+      if(c?.telefono){fetch(WORKER_URL+"/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios:`${Number(form.hora)}:00hs`,monto:gs(precio),forma_pago:"Pago online"})}).catch(()=>{});}
     } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
@@ -235,7 +235,7 @@ export default function App() {
   const confirmarTurno = async t=>{
     setSaving(true);
     try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
-    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){const esEfectivo=t.metodo_pago==="efectivo";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});}
+    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){const esEfectivo=t.metodo_pago==="efectivo";fetch(WORKER_URL+"/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});}
     setDlg(null);await load();}
     catch(e){notify(e.message,"error");}
     setSaving(false);
@@ -256,7 +256,7 @@ export default function App() {
         await db.patch("turnos",id,{estado:"confirmado",cobrado:true,saldo:0},tk);
         if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
         const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);
-        if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
+        if(c?.telefono){fetch(WORKER_URL+"/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
       }));
       await load();notify(`${ids.length} turno${ids.length!==1?"s":""} confirmado${ids.length!==1?"s":""}!`,"ok");
       setPendSel(new Set());
@@ -716,7 +716,7 @@ export default function App() {
           setSaving(true);
           try{
             await db.patch("turnos",form.id,{fecha:nF,hora:Number(nH),motivo_reprog:form.motivo_reprog||""},tk);
-            if(form.cliente?.telefono){const motivos={cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};const razon=motivos[form.motivo_reprog]||"";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"reprogramacion",nombre:form.cliente.nombre,telefono:form.cliente.telefono,fecha:fmtFechaLegible(nF),horarios:`${nH}:00hs`,motivo:razon})}).catch(()=>{});}
+            if(form.cliente?.telefono){const motivos={cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};const razon=motivos[form.motivo_reprog]||"";fetch(WORKER_URL+"/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"reprogramacion",nombre:form.cliente.nombre,telefono:form.cliente.telefono,fecha:fmtFechaLegible(nF),horarios:`${nH}:00hs`,motivo:razon})}).catch(()=>{});}
             await load();notify("Turno reprogramado","ok");setTimeout(()=>{closeM();setReprogramFecha("");setReprogramHora("");},700);
           }catch(e){console.error(e);notify("Error al reprogramar","error");}
           setSaving(false);

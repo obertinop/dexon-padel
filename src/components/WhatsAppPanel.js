@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { C } from "../lib/constants.js";
 import { gs, fmtFechaLegible } from "../lib/utils.js";
 import { Avatar, WhatsAppIcon, Dialog } from "./UI.js";
-import { apiHeaders } from "../lib/api.js";
+import { apiHeaders, WORKER_URL } from "../lib/api.js";
 
 const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMobile}) => {
   const WA_GREEN = "#25D366";
@@ -25,7 +25,7 @@ const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMo
   const cargar = useCallback(async () => {
     setError(null);
     try {
-      const r = await fetch("/api/whatsapp/mensajes?limit=500");
+      const r = await fetch(WORKER_URL+"/api/whatsapp/mensajes?limit=500");
       if (!r.ok) throw new Error(await r.text());
       const fresh = await r.json();
       setMsgs(prev => {
@@ -66,7 +66,7 @@ const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMo
   const marcarLeido = async (ids) => {
     if (!ids.length) return;
     try {
-      await fetch("/api/whatsapp/mensajes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
+      await fetch(WORKER_URL+"/api/whatsapp/mensajes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
     } catch { return; }
     setMsgs(p => p.map(m => ids.includes(m.id) ? { ...m, leido: true } : m));
     setWaNoLeidos(n => Math.max(0, n - ids.length));
@@ -79,7 +79,7 @@ const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMo
     if (inputRef.current) inputRef.current.style.height = "auto";
     setEnviando(true);
     try {
-      const r = await fetch("/api/whatsapp/responder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ telefono: convAbierta, mensaje: texto }) });
+      const r = await fetch(WORKER_URL+"/api/whatsapp/responder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ telefono: convAbierta, mensaje: texto }) });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || "Error enviando");
       const optimista = { id: `opt-${Date.now()}`, de: convAbierta, nombre: "DEXON", mensaje: texto, tipo: "text", meta_id: data.message_id || null, leido: true, direccion: "saliente", created_at: new Date().toISOString() };
@@ -98,7 +98,7 @@ const WhatsAppPanel = ({convAbierta, setConvAbierta, setWaNoLeidos, notify, isMo
   const eliminarConversacion = async () => {
     if (!confirmDelete) return;
     try {
-      await fetch("/api/whatsapp/mensajes", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ de: confirmDelete.tel }) });
+      await fetch(WORKER_URL+"/api/whatsapp/mensajes", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ de: confirmDelete.tel }) });
       setConvAbierta(null);
       setConfirmDelete(null);
       await cargar();
@@ -362,7 +362,7 @@ const ReenviarConfirmacionBtn = ({turno, cliente, notify}) => {
   const enviar = async () => {
     setLoading(true);
     try {
-      await fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),
+      await fetch(WORKER_URL+"/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),
         body:JSON.stringify({tipo:"confirmacion_manual",nombre:cliente.nombre,telefono:cliente.telefono,
           fecha:fmtFechaLegible(turno.fecha),horarios:`${turno.hora}:00hs`,
           monto:gs(turno.precio),forma_pago:turno.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})});
