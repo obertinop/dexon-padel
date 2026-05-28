@@ -11,11 +11,7 @@ import { runRecordatorios } from './routes/cron.js';
 const app = new Hono();
 
 app.use('*', cors({
-  origin: (origin, c) => {
-    const allowed = c.env.APP_URL || '*';
-    if (allowed === '*') return '*';
-    return origin === allowed ? origin : allowed;
-  },
+  origin: '*',
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'x-api-secret'],
 }));

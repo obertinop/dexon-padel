@@ -255,17 +255,24 @@ app.post('/webhook', async (c) => {
     // WhatsApp al cliente (fire & forget)
     const primerTurno = turnos[0];
     const cliente = await d1First(db, `SELECT nombre, telefono FROM clientes WHERE id = ? LIMIT 1`, [primerTurno.cliente_id]);
-    if (cliente) {
+    if (cliente && c.env.WHATSAPP_PHONE_NUMBER_ID && c.env.WHATSAPP_TOKEN) {
       const horasStr = turnos.map(t => `${t.hora}:00`).join(' · ');
       const montoTotal = turnos.reduce((a, t) => a + t.precio, 0);
-      const appUrl = c.env.APP_URL || 'https://www.dexon.com.py';
-      fetch(`${appUrl}/api/whatsapp/enviar`, {
+      let tel = cliente.telefono.replace(/\D/g, '');
+      if (tel.startsWith('0')) tel = '595' + tel.slice(1);
+      if (!tel.startsWith('595')) tel = '595' + tel;
+      fetch(`https://graph.facebook.com/v19.0/${c.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-secret': c.env.API_SECRET || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${c.env.WHATSAPP_TOKEN}` },
         body: JSON.stringify({
-          tipo: 'pago_confirmado', nombre: cliente.nombre, telefono: cliente.telefono,
-          fecha: primerTurno.fecha, horarios: horasStr,
-          monto: `Gs ${montoTotal.toLocaleString('es-PY')}`, forma_pago: data.forma_pago || 'Pago online',
+          messaging_product: 'whatsapp', to: tel, type: 'template',
+          template: { name: 'dexon_pago_confirmado', language: { code: 'es' }, components: [{ type: 'body', parameters: [
+            { type: 'text', text: cliente.nombre },
+            { type: 'text', text: primerTurno.fecha },
+            { type: 'text', text: horasStr },
+            { type: 'text', text: `Gs ${montoTotal.toLocaleString('es-PY')}` },
+            { type: 'text', text: data.forma_pago || 'Pago online' },
+          ]}]},
         }),
       }).catch(() => {});
     }
