@@ -2,7 +2,7 @@
 // Helpers para el portal "Mi cuenta" — invocan los endpoints /api/cliente/*
 // Usa el mismo patrón que src/lib/api.js (no Supabase JS directo desde el browser).
 
-const BASE = ""; // mismo origen / Vercel
+const BASE = import.meta.env.VITE_WORKER_URL || '';
 
 const TOKEN_KEY = "dx_cliente_token";
 const CLIENTE_KEY = "dx_cliente";

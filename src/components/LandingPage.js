@@ -31,7 +31,7 @@ function LandingPage({ onAdmin }) {
     Promise.all([
       db.get("config", "limit=1&select=hora_inicio,hora_fin,horarios_por_dia"),
       db.get("turnos", `fecha=eq.${fecha}&estado=neq.cancelado&select=hora`),
-      db.get("abono_turnos", `dia=eq.${diaSemana}&select=hora,abonos!inner(estado,fecha_vencimiento)`),
+      db.get("abono_turnos", `dia=eq.${diaSemana}&select=hora`),
     ]).then(([cfgArr, turnos, abonoTurnos]) => {
       const cfg = cfgArr?.[0];
       if (!cfg) return;

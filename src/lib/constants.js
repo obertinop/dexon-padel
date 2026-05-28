@@ -1,6 +1,5 @@
 // ── CONSTANTES GLOBALES ──
-export const SUPA_URL = import.meta.env.VITE_SUPA_URL;
-export const SUPA_KEY = import.meta.env.VITE_SUPA_KEY;
+export const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 export const ADMIN_TEL = import.meta.env.VITE_ADMIN_TEL;
 export const LOGO = "/logo.svg";
 export const LOGO_STYLE_DARK = { objectFit: "contain", filter: "brightness(0) invert(1)" };

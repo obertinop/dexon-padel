@@ -1,0 +1,11 @@
+name = "dexon-padel"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dexon-padel-db"
+database_id = "44b15d76-783b-48be-9d66-0db86f2394ce"
+
+[triggers]
+crons = ["0 15 * * *"]
