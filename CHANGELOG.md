@@ -30,7 +30,7 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 **Por qué:** profesionalizar la bandeja de entrada y cerrar fugas de datos. El número de avisos es el personal del dueño porque el número de la empresa (emisor) no puede notificarse a sí mismo.
 
-**Notas:** nuevas env vars opcionales: `WHATSAPP_APP_SECRET`, `WHATSAPP_WABA_ID`, `WHATSAPP_API_VERSION`. **Pendiente (fuera de alcance):** otras tablas (`clientes`, `caja`, `turnos`, `perfiles`…) tienen la misma política `public USING(true)` — revisar aparte para no romper el portal público.
+**Notas:** nuevas env vars opcionales: `WHATSAPP_APP_SECRET`, `WHATSAPP_WABA_ID`, `WHATSAPP_API_VERSION`. Los endpoints `mensajes/responder/upload/templates/enviar/media` se consolidaron en **una sola función** `api/whatsapp/[action].js` (despacho por `req.query.action`) para no exceder el límite de 12 funciones serverless del plan Hobby de Vercel — las URLs no cambian. **Pendiente (fuera de alcance):** otras tablas (`clientes`, `caja`, `turnos`, `perfiles`…) tienen la misma política `public USING(true)` — revisar aparte para no romper el portal público.
 
 ---
 
