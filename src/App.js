@@ -141,7 +141,7 @@ export default function App() {
 
   useEffect(()=>{
     if(!tk) return;
-    const loadWaBadge=()=>fetch("/api/whatsapp/mensajes?limit=500").then(r=>r.json()).then(d=>setWaNoLeidos(Array.isArray(d)?d.filter(m=>!m.leido).length:0)).catch(()=>{});
+    const loadWaBadge=()=>fetch("/api/whatsapp/mensajes?limit=500",{headers:apiHeaders()}).then(r=>r.json()).then(d=>setWaNoLeidos(Array.isArray(d)?d.filter(m=>!m.leido&&m.direccion!=="saliente").length:0)).catch(()=>{});
     loadWaBadge();
     const interval=setInterval(()=>{load();loadWaBadge();},10*1000);
     return()=>clearInterval(interval);
@@ -355,7 +355,7 @@ export default function App() {
   const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="salida"&&item.precio_venta>0)await db.post("caja",{descripcion:`Venta - ${item.nombre} x${form.cantidad_mov}`,tipo:"ingreso",categoria:"stock",monto:item.precio_venta*Number(form.cantidad_mov),fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarConfig = async()=>{setSaving(true);try{
     const dias=Array.isArray(form.desc_martes_jueves_dias)?form.desc_martes_jueves_dias:(typeof form.desc_martes_jueves_dias==="string"?(()=>{try{return JSON.parse(form.desc_martes_jueves_dias);}catch{return[2,4];}})():[2,4]);
-    await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_percent:Number(form.referral_discount_percent||10)},tk);
+    await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_percent:Number(form.referral_discount_percent||10),wa_admin_tel:form.wa_admin_tel||null,wa_bienvenida_activo:form.wa_bienvenida_activo||false,wa_bienvenida_texto:form.wa_bienvenida_texto||null,wa_recordatorio_activo:form.wa_recordatorio_activo||false,wa_recordatorio_template:form.wa_recordatorio_template||null},tk);
     await load();closeM();
   }catch(e){notify(e.message,"error");}setSaving(false);};
 
@@ -532,7 +532,7 @@ export default function App() {
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:12}}>{[0,1,2,3].map(i=><SK key={i} h={76} r={12} mb={0}/>)}</div>
       <SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/>
     </div>
-    :<>{tab==="hoy"&&<HoyTab/>}{tab==="pendientes"&&<PendientesTab/>}{tab==="agenda"&&<AgendaTab/>}{tab==="clientes"&&<ClientesTab/>}{tab==="abonados"&&<AbonadosTab/>}{tab==="caja"&&<CajaTab/>}{tab==="stock"&&<StockTab/>}{tab==="stats"&&<StatsTab/>}{tab==="whatsapp"&&<WhatsAppPanel convAbierta={waConvAbierta} setConvAbierta={setWaConvAbierta} setWaNoLeidos={setWaNoLeidos} notify={notify} isMobile={isMobile}/>}{tab==="config"&&<ConfigTab/>}</>;
+    :<>{tab==="hoy"&&<HoyTab/>}{tab==="pendientes"&&<PendientesTab/>}{tab==="agenda"&&<AgendaTab/>}{tab==="clientes"&&<ClientesTab/>}{tab==="abonados"&&<AbonadosTab/>}{tab==="caja"&&<CajaTab/>}{tab==="stock"&&<StockTab/>}{tab==="stats"&&<StatsTab/>}{tab==="whatsapp"&&<WhatsAppPanel convAbierta={waConvAbierta} setConvAbierta={setWaConvAbierta} setWaNoLeidos={setWaNoLeidos} notify={notify} isMobile={isMobile} token={tk}/>}{tab==="config"&&<ConfigTab/>}</>;
 
   const adminCtxValue = {
     // data
@@ -937,6 +937,18 @@ export default function App() {
       <Div/><div style={{fontSize:13,fontWeight:600,color:C.t1,marginBottom:6}}>Programa de referidos</div>
       <div style={{fontSize:11,color:C.t2,marginBottom:10,lineHeight:1.5}}>El monto se descuenta al cliente que usa el código y se acredita como saldo a favor al referente.</div>
       <Inp label="Descuento por referido (%)" type="number" value={form.referral_discount_percent||10} onChange={sf("referral_discount_percent")}/>
+
+      <Div/>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><WhatsAppIcon size={16}/><span style={{fontSize:13,fontWeight:600,color:C.t1}}>WhatsApp</span></div>
+      <div style={{fontSize:11,color:C.t2,marginBottom:12,lineHeight:1.5}}>El número de la <strong>empresa</strong> (emisor) se configura en las variables de entorno de Meta. El número de abajo es <strong>tuyo</strong>: ahí recibís los avisos internos (no puede ser el de la empresa, un número no puede notificarse a sí mismo).</div>
+      <Inp label="Tu WhatsApp personal — recibís los avisos acá (con código de país, ej: 595981086046)" type="text" value={form.wa_admin_tel||""} onChange={sf("wa_admin_tel")}/>
+
+      <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer"}}><input type="checkbox" checked={form.wa_bienvenida_activo||false} onChange={e=>setForm(f=>({...f,wa_bienvenida_activo:e.target.checked}))}/><span style={{fontSize:13,color:C.t2}}>Mensaje de bienvenida automático (primer contacto)</span></label>
+      {form.wa_bienvenida_activo&&<FG><textarea value={form.wa_bienvenida_texto||""} onChange={sf("wa_bienvenida_texto")} rows={3} placeholder="¡Hola! Gracias por escribir a DEXON PADEL. ¿En qué te ayudamos?" style={{...inp,resize:"vertical",minHeight:64}}/></FG>}
+
+      <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer"}}><input type="checkbox" checked={form.wa_recordatorio_activo||false} onChange={e=>setForm(f=>({...f,wa_recordatorio_activo:e.target.checked}))}/><span style={{fontSize:13,color:C.t2}}>Recordatorio diario de turnos (cron 10:00)</span></label>
+      {form.wa_recordatorio_activo&&<Inp label="Nombre de la plantilla de recordatorio aprobada en Meta" type="text" value={form.wa_recordatorio_template||""} onChange={sf("wa_recordatorio_template")}/>}
+
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarConfig} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 

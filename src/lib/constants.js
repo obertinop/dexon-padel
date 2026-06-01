@@ -10,6 +10,19 @@ export const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 export const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 export const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
+// Respuestas rápidas para el chat de WhatsApp (admin).
+export const WA_QUICK_REPLIES = [
+  "¡Hola! 👋 Gracias por escribir a DEXON PADEL.",
+  "Sí, hay disponibilidad en ese horario. ¿Te lo reservo?",
+  "Ese horario ya está ocupado. ¿Querés que te pase otras opciones?",
+  "Para confirmar la reserva necesitamos la seña. Te paso los datos.",
+  "¡Listo! Tu reserva quedó confirmada. ✅",
+  "¡Gracias! Cualquier cosa quedamos a las órdenes. 🎾",
+];
+
+// Reacciones rápidas (emoji) disponibles en el chat.
+export const WA_REACTIONS = ["👍", "❤️", "😂", "😮", "🙏", "🎾"];
+
 // ── PALETA ──
 export const C = {
   bg:"#060D1A", bgCard:"#0C1628", bgElev:"#101D38", bgHover:"#162240",

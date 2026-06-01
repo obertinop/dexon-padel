@@ -103,3 +103,38 @@ GRANT EXECUTE ON FUNCTION update_saldo_favor TO service_role;
 -- FIN — Verificar con:
 -- SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname='public';
 -- ============================================================
+
+
+-- ============================================================
+-- WHATSAPP INBOX — Mejoras (2026-06-01)
+-- (Ya aplicado en prod vía migraciones whatsapp_inbox_upgrade + whatsapp_fix_public_policy)
+-- ============================================================
+
+-- 1. Columnas nuevas: estado de entrega, error, cita y reacción
+ALTER TABLE whatsapp_mensajes ADD COLUMN IF NOT EXISTS estado     text DEFAULT 'enviado';
+ALTER TABLE whatsapp_mensajes ADD COLUMN IF NOT EXISTS error_msg  text;
+ALTER TABLE whatsapp_mensajes ADD COLUMN IF NOT EXISTS replied_to text;
+ALTER TABLE whatsapp_mensajes ADD COLUMN IF NOT EXISTS reaccion   text;
+
+CREATE INDEX IF NOT EXISTS whatsapp_mensajes_de_created_idx ON whatsapp_mensajes (de, created_at DESC);
+
+-- 2. RLS — SEGURIDAD: quitar acceso público (anon) y dejar solo admin + service_role
+ALTER TABLE whatsapp_mensajes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "service role full access" ON whatsapp_mensajes;  -- ⚠ era public USING(true)
+DROP POLICY IF EXISTS whatsapp_service_all ON whatsapp_mensajes;
+CREATE POLICY whatsapp_service_all ON whatsapp_mensajes FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS whatsapp_auth_all ON whatsapp_mensajes;
+CREATE POLICY whatsapp_auth_all ON whatsapp_mensajes FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- 3. Realtime: identidad completa + agregar a la publicación
+ALTER TABLE whatsapp_mensajes REPLICA IDENTITY FULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname='supabase_realtime' AND schemaname='public' AND tablename='whatsapp_mensajes'
+  ) THEN
+    EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE whatsapp_mensajes';
+  END IF;
+END $$;
+-- ============================================================

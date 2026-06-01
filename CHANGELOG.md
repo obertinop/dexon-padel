@@ -16,6 +16,24 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-06-01] Mejoras integrales del chat de WhatsApp (admin)
+**Archivos:** `lib/whatsapp.js` (nuevo), `api/whatsapp/*` , `api/cron/recordatorios.js`, `src/components/WhatsAppPanel.js`, `src/lib/supabase.js` (nuevo), `src/lib/constants.js`, `src/App.js`, migraciones `whatsapp_inbox_upgrade` + `whatsapp_fix_public_policy`
+
+**Qué:**
+- **Seguridad:** se eliminó la política RLS `public USING(true)` sobre `whatsapp_mensajes` (cualquiera con la anon key podía leer/borrar mensajes). Ahora solo `authenticated` (admin) + `service_role`. Los endpoints `mensajes`/`responder`/`upload`/`templates` exigen `x-api-secret`. El webhook valida la firma `X-Hub-Signature-256` (HMAC con `WHATSAPP_APP_SECRET`).
+- **Ventana de 24h:** el panel detecta si la conversación está abierta; fuera de las 24h bloquea el texto libre y ofrece enviar una plantilla aprobada.
+- **Estados de entrega:** el webhook procesa `statuses[]` (enviado/entregado/leído/fallido) y el panel muestra el tilde correcto (gris/doble/azul/⚠). Marca leído en Meta (tildes azules al cliente) al abrir la conversación.
+- **Tiempo real:** suscripción Supabase Realtime sobre `whatsapp_mensajes` (con poll lento de respaldo) en vez de polling cada 10s.
+- **Adjuntos, plantillas, respuestas rápidas, citar mensajes y reacciones** desde el panel.
+- **UI de config:** se exponen `wa_admin_tel` (tu WhatsApp personal de avisos), bienvenida automática y recordatorio — antes solo editables por SQL.
+- Versión de la Graph API centralizada y subida a `v21.0` (era `v19.0`).
+
+**Por qué:** profesionalizar la bandeja de entrada y cerrar fugas de datos. El número de avisos es el personal del dueño porque el número de la empresa (emisor) no puede notificarse a sí mismo.
+
+**Notas:** nuevas env vars opcionales: `WHATSAPP_APP_SECRET`, `WHATSAPP_WABA_ID`, `WHATSAPP_API_VERSION`. **Pendiente (fuera de alcance):** otras tablas (`clientes`, `caja`, `turnos`, `perfiles`…) tienen la misma política `public USING(true)` — revisar aparte para no romper el portal público.
+
+---
+
 ## Baseline — 2026-05-22
 
 Documentación del estado completo del sistema al momento de crear este archivo.
