@@ -138,3 +138,34 @@ BEGIN
   END IF;
 END $$;
 -- ============================================================
+
+
+-- ============================================================
+-- ENDURECIMIENTO RLS GLOBAL (2026-06-01)
+-- (Ya aplicado en prod vía migración rls_hardening_lockdown)
+-- anon pierde TODA escritura; solo lee las tablas del portal público.
+-- authenticated (admin) y service_role mantienen acceso total.
+-- ============================================================
+DO $$
+DECLARE t text; p text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'clientes','caja','config','turnos','abonos','planes','instructores','stock','espera',
+    'abono_turnos','perfiles','flow_logs','referrals','codigos_referido','turno_items',
+    'dias_bloqueados','codigos_verificacion','otp_codes','cliente_sessions','cliente_favoritos',
+    'mensualidades','reservas','stock_movimientos','configuracion'
+  ]
+  LOOP
+    FOR p IN SELECT policyname FROM pg_policies WHERE schemaname='public' AND tablename=t LOOP
+      EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', p, t);
+    END LOOP;
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+    EXECUTE format('CREATE POLICY %I ON public.%I FOR ALL TO service_role USING (true) WITH CHECK (true)', t||'_service_all', t);
+    EXECUTE format('CREATE POLICY %I ON public.%I FOR ALL TO authenticated USING (true) WITH CHECK (true)', t||'_auth_all', t);
+  END LOOP;
+  FOREACH t IN ARRAY ARRAY['config','turnos','clientes','codigos_referido','abono_turnos','abonos','dias_bloqueados','planes']
+  LOOP
+    EXECUTE format('CREATE POLICY %I ON public.%I FOR SELECT TO anon USING (true)', t||'_anon_read', t);
+  END LOOP;
+END $$;
+-- ============================================================

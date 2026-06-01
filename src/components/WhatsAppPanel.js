@@ -12,7 +12,7 @@ const WA_BUBBLE_OUT = "#0D3320";
 const WA_BORDER = "rgba(255,255,255,0.06)";
 const DAY = 86400000;
 
-const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isMobile, token }) => {
+const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isMobile, token, clientes = [], turnos = [] }) => {
   const WA_BUBBLE_IN = C.bgElev;
 
   const [msgs, setMsgs] = useState([]);
@@ -26,10 +26,14 @@ const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isM
   const [replyTo, setReplyTo] = useState(null);          // mensaje citado
   const [msgMenu, setMsgMenu] = useState(null);          // meta_id con menú abierto
   const [cannedOpen, setCannedOpen] = useState(false);   // respuestas rápidas
+  const [convSearch, setConvSearch] = useState("");      // buscar dentro de la conversación
+  const [showConvSearch, setShowConvSearch] = useState(false);
   const [tpl, setTpl] = useState({ open: false, loading: false, configured: true, list: [], sel: null, params: [], sending: false });
   const chatRef = useRef(null);
   const inputRef = useRef(null);
   const fileRef = useRef(null);
+  const seenIds = useRef(null);
+  const audioCtxRef = useRef(null);
 
   // ── Carga inicial (REST) ──
   const cargar = useCallback(async () => {
@@ -92,7 +96,7 @@ const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isM
   }, [convAbierta, msgs.length]);
 
   useEffect(() => { if (convAbierta && inputRef.current && !isMobile) inputRef.current.focus(); }, [convAbierta, isMobile]);
-  useEffect(() => { setReplyTo(null); setMsgMenu(null); setCannedOpen(false); }, [convAbierta]);
+  useEffect(() => { setReplyTo(null); setMsgMenu(null); setCannedOpen(false); setConvSearch(""); setShowConvSearch(false); }, [convAbierta]);
 
   const marcarLeido = async (ids) => {
     if (!ids.length) return;
@@ -227,6 +231,74 @@ const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isM
   const windowOpen = convActual?.lastInbound ? (Date.now() - new Date(convActual.lastInbound).getTime() < DAY) : false;
   const horasRestantes = convActual?.lastInbound ? Math.max(0, Math.ceil((DAY - (Date.now() - new Date(convActual.lastInbound).getTime())) / 3600000)) : 0;
 
+  // ── Ficha del cliente (match por teléfono, tolera código de país) ──
+  const clienteActual = React.useMemo(() => {
+    if (!convAbierta) return null;
+    const tel = convAbierta.replace(/\D/g, "");
+    return clientes.find(c => {
+      const ct = (c.telefono || "").replace(/\D/g, "");
+      return ct && (ct === tel || (ct.length >= 8 && tel.length >= 8 && ct.slice(-8) === tel.slice(-8)));
+    }) || null;
+  }, [convAbierta, clientes]);
+
+  const turnoCliente = React.useMemo(() => {
+    if (!clienteActual) return null;
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    return turnos
+      .filter(t => t.cliente_id === clienteActual.id && t.fecha >= hoyStr && t.estado !== "cancelado")
+      .sort((a, b) => (a.fecha + String(a.hora).padStart(2, "0")).localeCompare(b.fecha + String(b.hora).padStart(2, "0")))[0] || null;
+  }, [clienteActual, turnos]);
+
+  // ── Avisos del navegador + sonido al llegar un mensaje nuevo ──
+  useEffect(() => { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}); }, []);
+
+  const beep = useCallback(() => {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = "sine"; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+      o.start(); o.stop(ctx.currentTime + 0.26);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoaded) return;
+    if (seenIds.current === null) { seenIds.current = new Set(msgs.map(m => m.id)); return; }
+    const nuevos = msgs.filter(m => !seenIds.current.has(m.id) && m.direccion !== "saliente");
+    msgs.forEach(m => seenIds.current.add(m.id));
+    if (!nuevos.length) return;
+    const ult = nuevos[nuevos.length - 1];
+    beep();
+    if ("Notification" in window && Notification.permission === "granted" && (document.hidden || convAbierta !== ult.de)) {
+      try {
+        const n = new Notification(`💬 ${ult.nombre || ult.de}`, { body: (ult.mensaje || "Nuevo mensaje").slice(0, 80), tag: "wa-" + ult.de });
+        n.onclick = () => { window.focus(); setConvAbierta(ult.de); n.close(); };
+      } catch {}
+    }
+  }, [msgs, hasLoaded, beep, convAbierta, setConvAbierta]);
+
+  // Reintentar un mensaje saliente fallido.
+  const reintentar = async (m) => {
+    if (m.tipo !== "text" || !m.mensaje) { notify("Solo se puede reintentar texto", "info"); return; }
+    setEnviando(true);
+    try {
+      const r = await fetch("/api/whatsapp/responder", { method: "POST", headers: apiHeaders(), body: JSON.stringify({ telefono: convAbierta, mensaje: m.mensaje, context_message_id: m.replied_to || null }) });
+      const data = await r.json();
+      if (!r.ok) { if (data.code === "window_closed") abrirTemplates(); throw new Error(data.error || "Error"); }
+      pushOptimista({ mensaje: m.mensaje, tipo: "text", meta_id: data.message_id });
+      flashEnviado();
+    } catch (e) { notify("No se pudo reenviar: " + e.message, "error"); }
+    finally { setEnviando(false); }
+  };
+
   const busNorm = busqueda.replace(/\D/g, "");
   const convsFiltradas = conversaciones.filter(c => {
     if (!busqueda.trim()) return true;
@@ -283,6 +355,7 @@ const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isM
 
   const msgsOrdenados = convActual ? convActual.mensajes.slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) : [];
   const msgByMeta = React.useMemo(() => { const m = {}; msgsOrdenados.forEach(x => { if (x.meta_id) m[x.meta_id] = x; }); return m; }, [msgsOrdenados]);
+  const msgsVisibles = convSearch.trim() ? msgsOrdenados.filter(m => (m.mensaje || "").toLowerCase().includes(convSearch.trim().toLowerCase())) : msgsOrdenados;
 
   const renderMediaContent = (m, out) => {
     if ((m.tipo === "audio" || m.tipo === "voice") && m.media_id)
@@ -324,16 +397,17 @@ const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isM
               <span style={{ fontSize: 10, color: out ? "rgba(200,240,216,0.5)" : C.t3 }}>{fmtHora(m.created_at)}</span>
               {tick(m)}
             </div>
+            {out && m.estado === "fallido" && <button onClick={() => reintentar(m)} style={{ marginTop: 5, background: "rgba(240,96,96,0.12)", border: `1px solid ${C.redBd}`, color: C.red, borderRadius: 8, padding: "3px 9px", fontSize: 11, cursor: "pointer", fontFamily: "var(--font-sans)" }}>↻ Reintentar</button>}
           </div>
           {/* Reacción sobre la burbuja */}
           {m.reaccion && <span style={{ position: "absolute", bottom: -10, [out ? "right" : "left"]: 8, background: C.bgCard, border: `1px solid ${WA_BORDER}`, borderRadius: 12, padding: "1px 5px", fontSize: 12, boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}>{m.reaccion}</span>}
           {/* Botón de acciones */}
           {m.meta_id && <button onClick={() => setMsgMenu(menuOpen ? null : m.meta_id)} aria-label="Acciones"
             style={{ position: "absolute", top: 2, [out ? "left" : "right"]: -26, width: 22, height: 22, borderRadius: "50%", background: C.bgCard, border: `1px solid ${WA_BORDER}`, color: C.t3, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7, fontFamily: "var(--font-sans)" }}>⋯</button>}
-          {/* Menú: responder + reaccionar */}
+          {/* Menú: responder + reaccionar (reaccionás a los mensajes del cliente) */}
           {menuOpen && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, justifyContent: out ? "flex-end" : "flex-start", flexWrap: "wrap" }}>
             <button onClick={() => { setReplyTo(m); setMsgMenu(null); inputRef.current?.focus(); }} style={chipBtn}>↩ Responder</button>
-            {WA_REACTIONS.map(e => <button key={e} onClick={() => enviarReaccion(m, e)} style={{ ...chipBtn, padding: "3px 7px", fontSize: 15 }}>{e}</button>)}
+            {!out && WA_REACTIONS.map(e => <button key={e} onClick={() => enviarReaccion(m, e)} style={{ ...chipBtn, padding: "3px 7px", fontSize: 15 }}>{e}</button>)}
           </div>}
         </div>
       </div>
@@ -473,6 +547,8 @@ const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isM
             {convActual.tel} · {windowOpen ? `ventana abierta (${horasRestantes}h)` : "ventana cerrada"}
           </div>
         </div>
+        <button onClick={() => { setShowConvSearch(s => !s); setConvSearch(""); }} aria-label="Buscar en la conversación"
+          style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: `1px solid ${WA_BORDER}`, color: showConvSearch ? WA_GREEN : C.t3, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-sans)" }}>🔍</button>
         <button onClick={() => window.open(`https://wa.me/${convActual.tel.replace(/\D/g, "")}`, "_blank")} aria-label="Abrir en WhatsApp"
           style={{ display: "flex", alignItems: "center", gap: 6, padding: isMobile ? "8px 10px" : "7px 14px", borderRadius: 20, fontSize: 12.5, cursor: "pointer", background: WA_GREEN, color: "#fff", border: "none", fontFamily: "var(--font-sans)", fontWeight: 600, flexShrink: 0 }}>
           <WhatsAppIcon size={13} color="#fff" />
@@ -482,11 +558,27 @@ const WhatsAppPanel = ({ convAbierta, setConvAbierta, setWaNoLeidos, notify, isM
           style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: `1px solid ${WA_BORDER}`, color: C.t3, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-sans)" }}>🗑</button>
       </div>
 
+      {/* Ficha del cliente vinculado */}
+      {clienteActual && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: "rgba(37,211,102,0.05)", borderBottom: `1px solid ${WA_BORDER}`, flexShrink: 0, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 12, color: C.t2 }}>👤 <strong style={{ color: C.t1 }}>{clienteActual.nombre}</strong></span>
+        {clienteActual.saldo_favor > 0 && <span style={{ fontSize: 11, color: C.green }}>Saldo {gs(clienteActual.saldo_favor)}</span>}
+        {turnoCliente
+          ? <span style={{ fontSize: 11, color: C.t2 }}>📅 {fmtFechaLegible(turnoCliente.fecha)} · {turnoCliente.hora}:00 · {turnoCliente.estado}</span>
+          : <span style={{ fontSize: 11, color: C.t3 }}>Sin turnos próximos</span>}
+        {turnoCliente && <div style={{ marginLeft: "auto", minWidth: 200 }}><ReenviarConfirmacionBtn turno={turnoCliente} cliente={clienteActual} notify={notify} /></div>}
+      </div>}
+
+      {/* Buscar dentro de la conversación */}
+      {showConvSearch && <div style={{ padding: "8px 12px", background: C.bgCard, borderBottom: `1px solid ${WA_BORDER}`, flexShrink: 0 }}>
+        <input autoFocus value={convSearch} onChange={e => setConvSearch(e.target.value)} placeholder="Buscar en esta conversación…"
+          style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", background: C.bgElev, border: `1px solid ${WA_BORDER}`, borderRadius: 18, fontSize: 15, color: C.t1, fontFamily: "var(--font-sans)", outline: "none" }} />
+      </div>}
+
       <div ref={chatRef} onClick={() => msgMenu && setMsgMenu(null)} style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "8px 0 12px", display: "flex", flexDirection: "column" }}>
-        {msgsOrdenados.length === 0
-          ? <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.t3, fontSize: 13 }}>Sin mensajes</div>
-          : msgsOrdenados.map((m, i) => {
-            const prev = msgsOrdenados[i - 1];
+        {msgsVisibles.length === 0
+          ? <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.t3, fontSize: 13 }}>{convSearch.trim() ? "Sin coincidencias" : "Sin mensajes"}</div>
+          : msgsVisibles.map((m, i) => {
+            const prev = msgsVisibles[i - 1];
             const showSep = !prev || new Date(m.created_at).toISOString().slice(0, 10) !== new Date(prev.created_at).toISOString().slice(0, 10);
             return renderBurbuja(m, showSep);
           })

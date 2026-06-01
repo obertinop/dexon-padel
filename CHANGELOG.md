@@ -16,6 +16,22 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-06-01] Endurecimiento RLS global + más features del chat WhatsApp
+**Archivos:** migración `rls_hardening_lockdown`, `src/components/WhatsAppPanel.js`, `src/App.js`
+
+**Qué:**
+- **RLS endurecido en TODA la base:** `anon` perdió **toda escritura** (antes cualquiera con la anon key del bundle podía borrar reservas, tocar la caja o modificar clientes) y conserva **solo lectura** de las 8 tablas que usa el portal público (`config`, `turnos`, `clientes`, `codigos_referido`, `abono_turnos`, `abonos`, `dias_bloqueados`, `planes`). Tablas sensibles (`caja`, `perfiles`, `stock`, etc.) ya no son accesibles por `anon`. Admin (`authenticated`) y `service_role` mantienen acceso total.
+- **Ficha del cliente en el chat:** match por teléfono → muestra cliente, saldo y próximo turno, con botón de reenviar confirmación.
+- **Avisos del navegador + sonido** al llegar un mensaje nuevo.
+- **Buscar dentro de una conversación** y **reintentar** mensajes salientes fallidos.
+- **Reacciones:** el menú de reaccionar aparece solo sobre los mensajes del cliente.
+
+**Por qué:** cerrar la fuga sistémica de RLS y profesionalizar la bandeja.
+
+**Notas:** **Pendiente:** el portal todavía lee `clientes`/`turnos` completos con `anon` (solo lectura) — mover a un endpoint server-side de disponibilidad para no exponer PII. Las **reacciones entrantes** requieren el webhook nuevo en producción. **Notas de voz**: pendientes por incompatibilidad de formatos (MediaRecorder del browser vs los que acepta Meta) — requieren transcodificar.
+
+---
+
 ### [2026-06-01] Mejoras integrales del chat de WhatsApp (admin)
 **Archivos:** `lib/whatsapp.js` (nuevo), `api/whatsapp/*` , `api/cron/recordatorios.js`, `src/components/WhatsAppPanel.js`, `src/lib/supabase.js` (nuevo), `src/lib/constants.js`, `src/App.js`, migraciones `whatsapp_inbox_upgrade` + `whatsapp_fix_public_policy`
 

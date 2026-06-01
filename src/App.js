@@ -532,7 +532,7 @@ export default function App() {
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:12}}>{[0,1,2,3].map(i=><SK key={i} h={76} r={12} mb={0}/>)}</div>
       <SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/>
     </div>
-    :<>{tab==="hoy"&&<HoyTab/>}{tab==="pendientes"&&<PendientesTab/>}{tab==="agenda"&&<AgendaTab/>}{tab==="clientes"&&<ClientesTab/>}{tab==="abonados"&&<AbonadosTab/>}{tab==="caja"&&<CajaTab/>}{tab==="stock"&&<StockTab/>}{tab==="stats"&&<StatsTab/>}{tab==="whatsapp"&&<WhatsAppPanel convAbierta={waConvAbierta} setConvAbierta={setWaConvAbierta} setWaNoLeidos={setWaNoLeidos} notify={notify} isMobile={isMobile} token={tk}/>}{tab==="config"&&<ConfigTab/>}</>;
+    :<>{tab==="hoy"&&<HoyTab/>}{tab==="pendientes"&&<PendientesTab/>}{tab==="agenda"&&<AgendaTab/>}{tab==="clientes"&&<ClientesTab/>}{tab==="abonados"&&<AbonadosTab/>}{tab==="caja"&&<CajaTab/>}{tab==="stock"&&<StockTab/>}{tab==="stats"&&<StatsTab/>}{tab==="whatsapp"&&<WhatsAppPanel convAbierta={waConvAbierta} setConvAbierta={setWaConvAbierta} setWaNoLeidos={setWaNoLeidos} notify={notify} isMobile={isMobile} token={tk} clientes={clientes} turnos={turnos}/>}{tab==="config"&&<ConfigTab/>}</>;
 
   const adminCtxValue = {
     // data
