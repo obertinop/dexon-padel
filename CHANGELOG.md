@@ -16,6 +16,17 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-06-02] Fix: renovación automática de sesión (caja/stats/stock vacíos)
+**Archivos:** `src/lib/api.js`, `src/components/Login.js`, `src/App.js`
+
+**Qué:** el `access_token` del admin vencía y la app no lo renovaba → las consultas caían a rol `anon`. Tras el endurecimiento de RLS, `anon` ya no lee `caja`/`stock`/etc., así que esos tabs aparecían vacíos (las tablas del portal sí, porque `anon` las lee). Se agregó `auth.refresh` y un efecto que renueva el token al montar y cada 45 min (guardando `refresh_token`). En fallo de refresh, cierra sesión.
+
+**Por qué:** mantener al admin siempre autenticado sin reabrir acceso anónimo a tablas sensibles.
+
+**Notas:** las sesiones ya abiertas deben **cerrar sesión y volver a entrar una vez** para guardar el `refresh_token`; de ahí en más se mantiene solo.
+
+---
+
 ### [2026-06-01] Endurecimiento RLS global + más features del chat WhatsApp
 **Archivos:** migración `rls_hardening_lockdown`, `src/components/WhatsAppPanel.js`, `src/App.js`
 

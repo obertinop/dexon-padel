@@ -14,6 +14,7 @@ const Login = ({onLogin}) => {
     try {
       const d = await auth.login(email,pw);
       localStorage.setItem("dx_token",d.access_token);
+      if(d.refresh_token) localStorage.setItem("dx_refresh",d.refresh_token);
       localStorage.setItem("dx_user",JSON.stringify({id:d.user.id,email:d.user.email}));
       onLogin(d.access_token,d.user);
     } catch(e) { setErr(e.message); }

@@ -19,6 +19,15 @@ export const auth = {
   logout: async (token) => {
     await fetch(`${SUPA_URL}/auth/v1/logout`, { method:"POST", headers:{ apikey:SUPA_KEY, Authorization:`Bearer ${token}` } });
   },
+  refresh: async (refresh_token) => {
+    const r = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method:"POST", headers:{ apikey:SUPA_KEY, "Content-Type":"application/json" },
+      body: JSON.stringify({ refresh_token }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error_description||"No se pudo refrescar la sesión");
+    return d;
+  },
 };
 
 // ── DB ──

@@ -139,6 +139,32 @@ export default function App() {
     return()=>{clearTimeout(timer);evs.forEach(e=>window.removeEventListener(e,reset));};
   },[session]);
 
+  // Renueva el token de sesión (al montar + cada 45 min) para que el admin no
+  // "caiga" a rol anónimo cuando vence el access_token (sino no ve caja/stock/stats).
+  useEffect(()=>{
+    if(!session) return;
+    let cancelled=false;
+    const refrescar=async()=>{
+      const rt=localStorage.getItem("dx_refresh");
+      if(!rt) return;
+      try{
+        const d=await auth.refresh(rt);
+        if(cancelled) return;
+        localStorage.setItem("dx_token",d.access_token);
+        if(d.refresh_token) localStorage.setItem("dx_refresh",d.refresh_token);
+        setSession(s=>s?{...s,token:d.access_token}:s);
+      }catch{
+        if(cancelled) return;
+        localStorage.removeItem("dx_token");localStorage.removeItem("dx_user");localStorage.removeItem("dx_refresh");
+        setSession(null);
+      }
+    };
+    refrescar();
+    const id=setInterval(refrescar,45*60*1000);
+    return()=>{cancelled=true;clearInterval(id);};
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[session?.user?.id]);
+
   useEffect(()=>{
     if(!tk) return;
     const loadWaBadge=()=>fetch("/api/whatsapp/mensajes?limit=500",{headers:apiHeaders()}).then(r=>r.json()).then(d=>setWaNoLeidos(Array.isArray(d)?d.filter(m=>!m.leido&&m.direccion!=="saliente").length:0)).catch(()=>{});
@@ -167,6 +193,7 @@ export default function App() {
     if(session?.token) await auth.logout(session.token);
     localStorage.removeItem("dx_token");
     localStorage.removeItem("dx_user");
+    localStorage.removeItem("dx_refresh");
     setSession(null);
   };
 
