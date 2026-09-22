@@ -48,6 +48,17 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-09-22] Cobrar productos de varios turnos del mismo cliente en un solo click
+**Archivos:** `src/App.js` (`cobrarItemsTurno`, modal `verTurno`)
+
+**Qué:** cuando un cliente reserva más de un turno el mismo día (ej. 2 horas seguidas → 2 filas en `turnos`), los productos cargados en cada uno quedaban separados y había que cobrar turno por turno. Ahora el modal del turno detecta los turnos del mismo `cliente_id` + `fecha` (sin contar cancelados), junta todos sus productos pendientes en una sola lista (marcando de qué hora es cada uno cuando hay más de un turno) y el botón "💰 Cobrar" genera **una sola venta** con todo, en vez de tener que abrir cada turno por separado.
+
+**Por qué:** pedido directo — era el motivo real de tener que "cobrar 1 a 1" en vez de cobrar todo junto.
+
+**Notas:** `cobrarItemsTurno` ahora acepta un array de ids de turno (sigue aceptando uno solo también). El movimiento de caja generado enlaza `turno_id` solo cuando es un único turno; si junta varios, ese campo queda `null` (la trazabilidad completa vive en la nota de la venta, que lista todos los `#id` involucrados). Esto no fusiona los turnos en sí — siguen siendo reservas separadas en la Agenda — solo unifica el cobro de sus productos.
+
+---
+
 ### [2026-09-22] Fix de seguridad: acceso anónimo a `update_saldo_favor`
 **Archivos:** `supabase-migrations.sql`
 

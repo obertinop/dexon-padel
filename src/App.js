@@ -452,20 +452,24 @@ export default function App() {
     } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
-  const cobrarItemsTurno = async(turnoId)=>{
-    const items=turno_items.filter(i=>i.turno_id===turnoId&&!i.cobrado);
+  // turnoIds: un id suelto o un array — cuando el cliente tiene varios turnos el mismo
+  // día (ej. reservó 2 horas seguidas), se cobran los productos de todos juntos.
+  const cobrarItemsTurno = async(turnoIds)=>{
+    const ids=Array.isArray(turnoIds)?turnoIds:[turnoIds];
+    const items=turno_items.filter(i=>ids.includes(i.turno_id)&&!i.cobrado);
     if(!items.length) return;
     setSaving(true);
     try {
-      const turno=turnos.find(t=>t.id===turnoId);
+      const turno=turnos.find(t=>t.id===ids[0]);
       const cliente=clientes.find(c=>c.id===turno?.cliente_id);
       const total=items.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
       const fecha=turno?.fecha||hoy();
+      const etiquetaTurnos=ids.length>1?ids.map(id=>`#${id}`).join(", "):`#${ids[0]}`;
       // Misma fuente de verdad que la tab Ventas: crea la venta + sus items,
-      // y un único ingreso en caja para todo el lote (no uno por producto).
-      const[v]=await db.post("ventas",{fecha,cliente_id:cliente?.id||null,subtotal:total,descuento_pct:0,descuento_monto:0,total,metodo_pago:"efectivo",notas:`Productos cobrados en turno #${turnoId}`},tk);
+      // y un único ingreso en caja para todo el lote (no uno por producto ni por turno).
+      const[v]=await db.post("ventas",{fecha,cliente_id:cliente?.id||null,subtotal:total,descuento_pct:0,descuento_monto:0,total,metodo_pago:"efectivo",notas:`Productos cobrados en turno${ids.length>1?"s":""} ${etiquetaTurnos}`},tk);
       await db.post("venta_items",items.map(i=>({venta_id:v.id,stock_id:i.stock_id||null,nombre:i.nombre,cantidad:i.cantidad,precio_unitario:i.precio_unitario,subtotal:i.precio_unitario*i.cantidad})),tk);
-      const[mov]=await db.post("caja",{descripcion:`Venta mostrador${cliente?` — ${cliente.nombre}`:""} (turno #${turnoId}, ${items.length} ítem${items.length!==1?"s":""})`,tipo:"ingreso",categoria:"venta",monto:total,fecha,turno_id:turnoId},tk);
+      const[mov]=await db.post("caja",{descripcion:`Venta mostrador${cliente?` — ${cliente.nombre}`:""} (turno${ids.length>1?"s":""} ${etiquetaTurnos}, ${items.length} ítem${items.length!==1?"s":""})`,tipo:"ingreso",categoria:"venta",monto:total,fecha,turno_id:ids.length===1?ids[0]:null},tk);
       await db.patch("ventas",v.id,{caja_mov_id:mov.id},tk);
       await api(`turno_items?id=in.(${items.map(i=>i.id).join(",")})`,{method:"PATCH",body:JSON.stringify({cobrado:true}),prefer:"return=minimal"},tk);
       await load();
@@ -854,18 +858,25 @@ export default function App() {
 
       {/* ── Productos vendidos en el turno ── */}
       {form.id&&(()=>{
-        const items=turno_items.filter(i=>i.turno_id===form.id);
+        // Agrupa por cliente+fecha: si reservó varias horas seguidas (o varios turnos el mismo
+        // día), quedan como turnos separados pero se cobran todos juntos desde acá.
+        const turnosHermanos=turnos.filter(t=>t.cliente_id===form.cliente_id&&t.fecha===form.fecha&&t.estado!=="cancelado");
+        const idsHermanos=turnosHermanos.map(t=>t.id);
+        const items=turno_items.filter(i=>idsHermanos.includes(i.turno_id));
         const pendientes=items.filter(i=>!i.cobrado);
         const cobrados=items.filter(i=>i.cobrado);
         const totalPend=pendientes.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+        const hayVariosTurnos=turnosHermanos.length>1;
         const stockDisp=stock.filter(s=>s.cantidad>0);
         return <><Div/>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontWeight:600,fontSize:13,color:C.t1}}>Productos en este turno</span>
-            {pendientes.length>0&&<Btn sm v="success" onClick={()=>cobrarItemsTurno(form.id)} disabled={saving}>💰 Cobrar {gs(totalPend)}</Btn>}
+            <span style={{fontWeight:600,fontSize:13,color:C.t1}}>{hayVariosTurnos?`Productos de hoy (${turnosHermanos.length} turnos)`:"Productos en este turno"}</span>
+            {pendientes.length>0&&<Btn sm v="success" onClick={()=>cobrarItemsTurno(idsHermanos)} disabled={saving}>💰 Cobrar {gs(totalPend)}</Btn>}
           </div>
+          {hayVariosTurnos&&<div style={{fontSize:11,color:C.t3,marginBottom:10,lineHeight:1.5}}>Este cliente tiene {turnosHermanos.length} turnos hoy ({turnosHermanos.map(t=>`${t.hora}:00`).join(", ")}) — los productos de todos se cobran juntos con un solo click.</div>}
           {items.length>0&&<div style={{background:C.bg,borderRadius:8,border:`1px solid ${C.border}`,marginBottom:10,overflow:"hidden"}}>
             {items.map(i=><div key={i.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+              {hayVariosTurnos&&<span style={{fontSize:10,color:C.t3,minWidth:36}}>{turnosHermanos.find(t=>t.id===i.turno_id)?.hora}:00</span>}
               <span style={{flex:1,color:C.t1,fontWeight:500}}>{i.nombre}</span>
               <span style={{color:C.t3}}>x{i.cantidad}</span>
               <span style={{color:i.cobrado?C.green:C.yellow,fontWeight:600,minWidth:70,textAlign:"right"}}>{gs(i.precio_unitario*i.cantidad)}</span>
