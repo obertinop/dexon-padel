@@ -106,6 +106,22 @@ Se revocó `EXECUTE` de `PUBLIC` y de `anon`, dejando la función solo para `ser
 
 ---
 
+### [2026-09-22] "Total a cobrar" — cancha + productos en un solo número y un solo click
+**Archivos:** `src/App.js` (`cobrarTodoGrupo`, modal `verTurno`)
+
+**Qué:** pedido directo — hay clientes que reservan manualmente y no se les cobra en el momento (llegan, juegan, consumen productos, y se les cobra todo junto al final). Calcular esa cuenta a mano (cancha + lo que consumieron) generaba fricción. Ahora el modal del turno muestra un cuadro **"Total a cobrar"** que suma:
+
+- La **cancha**, pero *solo si todavía no fue cobrada* (turno en estado "reservado"). Si el cliente ya pagó adelantado (Pagopar, o vos ya lo confirmaste antes), esta parte da **0** — no se cobra dos veces.
+- Los **productos pendientes** de ese cliente ese día (mismo criterio que ya usaba la sección de productos).
+
+Un solo botón, **"💰 Cobrar todo"**, con un diálogo de confirmación, dispara ambas cosas a la vez: confirma la reserva (o el grupo completo, si son varias horas) y cobra los productos pendientes, en un solo paso. Si solo falta una de las dos partes (por ejemplo la cancha ya está paga y solo quedan productos), el cuadro se ajusta solo y cobra únicamente lo que falta.
+
+**Por qué:** evitar el cálculo manual y el ida y vuelta entre la sección de cancha y la de productos para armar la cuenta final de un cliente.
+
+**Notas:** esto no reemplaza los botones existentes ("✓ Cobrar y confirmar" para solo la cancha, "💰 Cobrar" para solo productos) — siguen ahí para cuando se quiere cobrar por partes. El cuadro "Total a cobrar" solo aparece cuando hay algo pendiente de cobro.
+
+---
+
 ### [2026-06-02] Fix: renovación automática de sesión (caja/stats/stock vacíos)
 **Archivos:** `src/lib/api.js`, `src/components/Login.js`, `src/App.js`
 

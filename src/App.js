@@ -524,6 +524,13 @@ export default function App() {
     } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
+  // Cobra en un solo paso la cancha pendiente de una reserva (si todavía no fue
+  // confirmada/cobrada) + los productos pendientes del cliente ese día.
+  const cobrarTodoGrupo = async({grupo,idsItems})=>{
+    if(grupo?.length) await confirmarGrupo(grupo);
+    if(idsItems?.length) await cobrarItemsTurno(idsItems);
+    setDlg(null);
+  };
   const eliminarItemTurno = async(itemId,stockId,cant)=>{
     setSaving(true);
     try {
@@ -737,7 +744,7 @@ export default function App() {
     guardarStock, moverStock,
     guardarConfig,
     guardarCodigoRef, eliminarCodigoRef,
-    agregarItemTurno, cobrarItemsTurno, eliminarItemTurno,
+    agregarItemTurno, cobrarItemsTurno, cobrarTodoGrupo, eliminarItemTurno,
     guardarVenta, anularVenta,
     db,
   };
@@ -880,6 +887,17 @@ export default function App() {
         const precioTotal=turnosGrupo.reduce((a,t)=>a+(t.precio||0),0);
         const senaTotal=turnosGrupo.reduce((a,t)=>a+(t.sena||0),0);
         const horasStr=turnosGrupo.map(t=>`${t.hora}:00`).join(", ");
+        // Productos: se agrupan por cliente+fecha (no por grupo_reserva_id) para poder cobrar
+        // junto el consumo de cualquier turno del cliente ese día, sea o no la misma reserva.
+        const turnosHermanos=turnos.filter(t=>t.cliente_id===form.cliente_id&&t.fecha===form.fecha&&t.estado!=="cancelado");
+        const idsHermanos=turnosHermanos.map(t=>t.id);
+        const itemsCliente=turno_items.filter(i=>idsHermanos.includes(i.turno_id));
+        const pendientesCliente=itemsCliente.filter(i=>!i.cobrado);
+        const totalPendProductos=pendientesCliente.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+        // Cancha pendiente de cobro: solo si el turno todavía no fue confirmado/cobrado
+        // (si ya pagó adelantado — Pagopar, o vos ya lo confirmaste — esto da 0).
+        const canchaPendiente=form.estado==="reservado"?Math.max(0,precioTotal-senaTotal):0;
+        const totalACobrarAhora=canchaPendiente+totalPendProductos;
         return <>
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20}}><Avatar nombre={form.cliente.nombre} size={48}/><div><div style={{fontSize:16,fontWeight:600,color:C.t1}}>{form.cliente.nombre}</div><div style={{fontSize:13,color:C.t2}}>{form.cliente.telefono}</div></div></div>
       <div style={{...card,marginBottom:14}}>
@@ -898,6 +916,15 @@ export default function App() {
           </div>
         </div>
       </div>
+      {totalACobrarAhora>0&&<div style={{...card,background:"rgba(224,91,40,0.06)",border:`1px solid ${C.coralD}`,marginBottom:14}}>
+        <div style={{fontSize:12,color:C.coral,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Total a cobrar</div>
+        <div style={{display:"grid",gap:6,marginBottom:12}}>
+          {canchaPendiente>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:C.t2}}>Cancha{esGrupo?` (${turnosGrupo.length} horas)`:""}</span><span style={{color:C.t1,fontWeight:500}}>{gs(canchaPendiente)}</span></div>}
+          {totalPendProductos>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:C.t2}}>Productos</span><span style={{color:C.t1,fontWeight:500}}>{gs(totalPendProductos)}</span></div>}
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:15,fontWeight:700,paddingTop:8,marginTop:2,borderTop:`1px solid ${C.border}`}}><span style={{color:C.t1}}>Total</span><span style={{color:C.coral}}>{gs(totalACobrarAhora)}</span></div>
+        </div>
+        <Btn v="success" style={{width:"100%"}} disabled={saving} onClick={()=>{closeM();setDlg({type:"cobrarTodo",grupo:canchaPendiente>0?turnosGrupo:[],idsItems:totalPendProductos>0?idsHermanos:[],monto:totalACobrarAhora,nombre:form.cliente.nombre});}}>💰 Cobrar todo {gs(totalACobrarAhora)}</Btn>
+      </div>}
       {esGrupo&&form.estado!=="cancelado"&&<div style={{fontSize:11,color:C.t3,marginBottom:14,lineHeight:1.5,marginTop:-8}}>Esta reserva ocupa {turnosGrupo.length} horarios seguidos ({horasStr}) — confirmar, cancelar o marcar no-show acá aplica a los {turnosGrupo.length} juntos.</div>}
       {form.estado!=="cancelado"&&!esGrupo&&<div style={{...card,background:C.greenBg,border:`1px solid ${C.greenBd}`,marginBottom:14}}>
         <div style={{fontSize:12,color:C.green,fontWeight:600,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Reprogramar turno</div>
@@ -938,19 +965,13 @@ export default function App() {
         <Btn v="danger" onClick={()=>{closeM();setDlg({type:"cancelar",grupo:turnosGrupo});}}>{esGrupo?`Cancelar reserva (${turnosGrupo.length} horas)`:"Cancelar turno"}</Btn>
       </div>}
       {form.estado==="confirmado"&&form.cliente?.telefono&&<ReenviarConfirmacionBtn turno={form} cliente={form.cliente} notify={notify}/>}
-        </>;
-      })()}
 
       {/* ── Productos vendidos en el turno ── */}
       {form.id&&(()=>{
-        // Agrupa por cliente+fecha: si reservó varias horas seguidas (o varios turnos el mismo
-        // día), quedan como turnos separados pero se cobran todos juntos desde acá.
-        const turnosHermanos=turnos.filter(t=>t.cliente_id===form.cliente_id&&t.fecha===form.fecha&&t.estado!=="cancelado");
-        const idsHermanos=turnosHermanos.map(t=>t.id);
-        const items=turno_items.filter(i=>idsHermanos.includes(i.turno_id));
-        const pendientes=items.filter(i=>!i.cobrado);
+        const items=itemsCliente;
+        const pendientes=pendientesCliente;
         const cobrados=items.filter(i=>i.cobrado);
-        const totalPend=pendientes.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+        const totalPend=totalPendProductos;
         const hayVariosTurnos=turnosHermanos.length>1;
         const stockDisp=stock.filter(s=>s.cantidad>0);
         return <><Div/>
@@ -996,6 +1017,8 @@ export default function App() {
             </div>}
             <Btn v="success" sm onClick={agregarItemTurno} disabled={saving||!form.item_stock_id}>+ Agregar</Btn>
           </div>}
+        </>;
+      })()}
         </>;
       })()}
     </Modal>
@@ -1291,6 +1314,7 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarCodigo"} title="Eliminar código" msg={`¿Eliminar el código "${dlg?.codigo}"? Se perderá el historial de usos.`} onOk={()=>eliminarCodigoRef(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>
 
     <Dialog show={dlg?.type==="confirmar"} title={dlg?.grupo?.length>1?`Confirmar cobro (${dlg.grupo.length} horas)`:"Confirmar cobro"} msg={`¿Cobrar ${gs((dlg?.grupo||[]).reduce((a,t)=>a+(t.precio-(t.sena||0)),0))} a ${cById(dlg?.grupo?.[0]?.cliente_id)?.nombre||"?"}?`} onOk={()=>confirmarGrupo(dlg.grupo)} onCancel={()=>setDlg(null)} okLabel="✓ Confirmar" okV="success" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="cobrarTodo"} title="Cobrar todo" msg={`¿Cobrar ${gs(dlg?.monto||0)} a ${dlg?.nombre||"?"}${dlg?.grupo?.length>0&&dlg?.idsItems?.length>0?" (cancha + productos)":dlg?.grupo?.length>0?" (cancha)":" (productos)"}?`} onOk={()=>cobrarTodoGrupo({grupo:dlg.grupo,idsItems:dlg.idsItems})} onCancel={()=>setDlg(null)} okLabel="💰 Cobrar" okV="success" okDisabled={saving}/>
     <Dialog show={dlg?.type==="cancelar"} title={dlg?.grupo?.length>1?"Cancelar reserva":"Cancelar turno"} msg={`¿Cancelar ${dlg?.grupo?.length>1?`la reserva de ${dlg.grupo.length} horas`:"el turno"} de ${cById(dlg?.grupo?.[0]?.cliente_id)?.nombre||"?"}?${(dlg?.grupo||[]).some(t=>t.sena>0)?" La seña se devuelve en caja.":""}`} onOk={()=>cancelarGrupo(dlg.grupo)} onCancel={()=>setDlg(null)} okLabel="Cancelar" okV="danger" okDisabled={saving}/>
     <Dialog show={dlg?.type==="noshow"} title="No show" msg={`¿Marcar a ${cById(dlg?.grupo?.[0]?.cliente_id)?.nombre||"?"} como no show${dlg?.grupo?.length>1?` (${dlg.grupo.length} horas)`:""}?`} onOk={()=>noShowGrupo(dlg.grupo)} onCancel={()=>setDlg(null)} okLabel="Marcar" okV="danger" okDisabled={saving}/>
     <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>
