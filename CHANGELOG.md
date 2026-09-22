@@ -33,7 +33,18 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 **DB:** correr el bloque nuevo al final de `supabase-migrations.sql` (tablas `ventas`/`venta_items` + RLS, mismo patrón que el resto: sin acceso `anon`, `authenticated`/`service_role` con acceso total).
 
-**Notas / deuda técnica introducida:** el flujo de "items vendidos en turno" (`turno_items` + `cobrarItemsTurno`) no fue migrado a las tablas nuevas — queda como un segundo camino de venta que no aparece en el historial de la tab Ventas ni sus métricas. Es candidato a unificarse a futuro (que "cobrar items del turno" también cree una fila en `ventas`/`venta_items`) para tener una sola fuente de verdad de todo lo vendido.
+**Notas / deuda técnica introducida:** el flujo de "items vendidos en turno" (`turno_items` + `cobrarItemsTurno`) no fue migrado a las tablas nuevas — queda como un segundo camino de venta que no aparece en el historial de la tab Ventas ni sus métricas. **Resuelto el [2026-09-22]**, ver entrada más abajo.
+
+---
+
+### [2026-09-22] Unifica "productos cobrados en turno" con el historial de Ventas
+**Archivos:** `src/App.js` (`cobrarItemsTurno`)
+
+**Qué:** al cobrar los productos pendientes de un turno (botón "💰 Cobrar" dentro del modal de turno en Agenda/Hoy/Pendientes) ahora se crea una fila en `ventas` + sus `venta_items` — igual que una venta hecha desde la tab Ventas — además del ingreso en caja. Antes generaba un movimiento de caja por cada producto (categoría `stock`) sin dejar rastro en `ventas`, así que esas ventas no aparecían en el historial ni en las métricas de la tab Ventas. Ahora se genera **un solo** ingreso en caja por todo el lote cobrado (categoría `venta`, igual que el resto de las ventas), en vez de uno por producto.
+
+**Por qué:** una sola fuente de verdad de todo lo vendido en el club, sin importar si el producto se vendió en la tab Ventas o dentro de una reserva.
+
+**Notas:** el flujo para agregar/quitar productos a un turno (dentro del modal del turno) no cambió — sigue exactamente igual. La venta generada queda con `metodo_pago: "efectivo"` por defecto (no había selector de método de pago en ese flujo) y con una nota (`Productos cobrados en turno #N`) para poder rastrear su origen. Si se anula esa venta desde la tab Ventas, el stock y la caja se revierten igual que cualquier otra venta, pero los `turno_items` originales quedan marcados como cobrados igual (no hay reversión automática hacia el turno) — caso de uso poco común, se puede ajustar a mano si hace falta.
 
 ---
 

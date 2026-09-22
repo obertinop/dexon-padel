@@ -459,10 +459,15 @@ export default function App() {
     try {
       const turno=turnos.find(t=>t.id===turnoId);
       const cliente=clientes.find(c=>c.id===turno?.cliente_id);
-      for(const i of items){
-        await db.post("caja",{descripcion:`Venta ${i.nombre} x${i.cantidad}${cliente?` — ${cliente.nombre}`:""}`,tipo:"ingreso",categoria:"stock",monto:i.precio_unitario*i.cantidad,fecha:turno?.fecha||hoy(),turno_id:turnoId},tk);
-        await db.patch("turno_items",i.id,{cobrado:true},tk);
-      }
+      const total=items.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+      const fecha=turno?.fecha||hoy();
+      // Misma fuente de verdad que la tab Ventas: crea la venta + sus items,
+      // y un único ingreso en caja para todo el lote (no uno por producto).
+      const[v]=await db.post("ventas",{fecha,cliente_id:cliente?.id||null,subtotal:total,descuento_pct:0,descuento_monto:0,total,metodo_pago:"efectivo",notas:`Productos cobrados en turno #${turnoId}`},tk);
+      await db.post("venta_items",items.map(i=>({venta_id:v.id,stock_id:i.stock_id||null,nombre:i.nombre,cantidad:i.cantidad,precio_unitario:i.precio_unitario,subtotal:i.precio_unitario*i.cantidad})),tk);
+      const[mov]=await db.post("caja",{descripcion:`Venta mostrador${cliente?` — ${cliente.nombre}`:""} (turno #${turnoId}, ${items.length} ítem${items.length!==1?"s":""})`,tipo:"ingreso",categoria:"venta",monto:total,fecha,turno_id:turnoId},tk);
+      await db.patch("ventas",v.id,{caja_mov_id:mov.id},tk);
+      await api(`turno_items?id=in.(${items.map(i=>i.id).join(",")})`,{method:"PATCH",body:JSON.stringify({cobrado:true}),prefer:"return=minimal"},tk);
       await load();
     } catch(e){notify(e.message,"error");}
     setSaving(false);
