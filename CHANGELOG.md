@@ -37,6 +37,19 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-09-22] Fix de seguridad: acceso anónimo a `update_saldo_favor`
+**Archivos:** `supabase-migrations.sql`
+
+**Qué:** al conectar el servicio de Ventas se detectó (vía advisor de seguridad de Supabase) que la función `update_saldo_favor` — creada en la migración de RLS hardening — podía ser ejecutada por el rol **`anon`** (la clave pública embebida en el bundle del portal), porque Postgres otorga `EXECUTE` a `PUBLIC` por defecto al crear una función y esa migración solo agregó el `GRANT` a `service_role` sin revocar el de `PUBLIC`. Cualquiera podía llamar `POST /rest/v1/rpc/update_saldo_favor` sin autenticarse y sumarle saldo a favor ilimitado a cualquier `cliente_id`, para después gastarlo en reservas o en la tab Ventas.
+
+Se revocó `EXECUTE` de `PUBLIC` y de `anon`, dejando la función solo para `service_role` y `authenticated` (admin). De paso se fijó `search_path` en esa función y en `limpiar_otps_vencidos` (mismo tipo de hallazgo del linter) para evitar hijacking vía `search_path` mutable en funciones `SECURITY DEFINER`.
+
+**Por qué:** riesgo directo de fraude económico — saldo a favor falso es dinero real perdido para el club (se puede canjear por reservas o, ahora, por productos en la tab Ventas).
+
+**Notas:** ya aplicado directamente en producción (Supabase project `dexon-padel`) el mismo día que se detectó. Este archivo queda como historial/documentación y para poder reproducirlo en otro ambiente.
+
+---
+
 ### [2026-06-02] Fix: renovación automática de sesión (caja/stats/stock vacíos)
 **Archivos:** `src/lib/api.js`, `src/components/Login.js`, `src/App.js`
 

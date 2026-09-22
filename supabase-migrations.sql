@@ -221,3 +221,23 @@ CREATE POLICY venta_items_auth_all ON venta_items FOR ALL TO authenticated USING
 -- atómica de saldo a favor al pagar una venta con saldo del cliente.
 GRANT EXECUTE ON FUNCTION update_saldo_favor TO authenticated;
 -- ============================================================
+
+
+-- ============================================================
+-- FIX DE SEGURIDAD — cierra acceso anon a update_saldo_favor (2026-09-22)
+-- (Ya aplicado en prod al conectar el servicio de Ventas)
+-- Postgres otorga EXECUTE a PUBLIC por defecto al crear una función; la
+-- migración original de update_saldo_favor solo agregó el GRANT a
+-- service_role pero nunca revocó el de PUBLIC. En la práctica, el rol
+-- anon (clave pública del bundle del portal) podía llamar
+-- /rest/v1/rpc/update_saldo_favor y sumarle saldo a favor ilimitado a
+-- cualquier cliente sin autenticarse.
+-- ============================================================
+REVOKE EXECUTE ON FUNCTION public.update_saldo_favor(bigint, numeric) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.update_saldo_favor(bigint, numeric) FROM anon;
+GRANT  EXECUTE ON FUNCTION public.update_saldo_favor(bigint, numeric) TO service_role, authenticated;
+
+-- search_path fijo en funciones SECURITY DEFINER (evita hijacking vía search_path mutable)
+ALTER FUNCTION public.update_saldo_favor(bigint, numeric) SET search_path = public;
+ALTER FUNCTION public.limpiar_otps_vencidos() SET search_path = public;
+-- ============================================================
