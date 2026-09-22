@@ -24,6 +24,7 @@ import AgendaTab from "./tabs/Agenda.js";
 import ClientesTab from "./tabs/Clientes.js";
 import AbonadosTab from "./tabs/Abonados.js";
 import CajaTab from "./tabs/Caja.js";
+import VentasTab from "./tabs/Ventas.js";
 import StockTab from "./tabs/Stock.js";
 import StatsTab from "./tabs/Stats.js";
 import ConfigTab from "./tabs/Config.js";
@@ -44,13 +45,16 @@ export default function App() {
   const [cajaFechaIni,setCajaFechaIni] = useState("");
   const [cajaFechaFin,setCajaFechaFin] = useState("");
   const [cajaTipo,setCajaTipo] = useState("");
+  const [ventaFechaIni,setVentaFechaIni] = useState("");
+  const [ventaFechaFin,setVentaFechaFin] = useState("");
+  const [ventaMetodo,setVentaMetodo] = useState("");
   const [isRefreshing,setIsRefreshing] = useState(false);
   const [session,setSession] = useState(()=>{
     const tk=localStorage.getItem("dx_token");
     const u=localStorage.getItem("dx_user");
     return tk?{token:tk,user:u?JSON.parse(u):null}:null;
   });
-  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],abono_turnos:[],codigos_ref:[],turno_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
+  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],abono_turnos:[],codigos_ref:[],turno_items:[],ventas:[],venta_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [semOff,setSemOff] = useState(0);
@@ -100,7 +104,7 @@ export default function App() {
     if(!tk) return;
     setIsRefreshing(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,cf,at,cr,ti,db2] = await Promise.all([
+      const [tu,cl,ab,pl,ins,ca,st,cf,at,cr,ti,db2,ve,vi] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc",tk),
         db.get("clientes","order=nombre.asc",tk),
         db.get("abonos","order=fecha_vencimiento.asc",tk),
@@ -113,8 +117,10 @@ export default function App() {
         db.get("codigos_referido","order=created_at.desc",tk),
         db.get("turno_items","order=created_at.asc",tk),
         db.get("dias_bloqueados","order=fecha.asc",tk),
+        db.get("ventas","order=fecha.desc,id.desc",tk),
+        db.get("venta_items","order=id.asc",tk),
       ]);
-      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],cfg:cf?.[0]||prev.cfg}));
+      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],ventas:ve||[],venta_items:vi||[],cfg:cf?.[0]||prev.cfg}));
       setDiasBloqueados(db2||[]);
     } catch(e){console.error(e);}
     setIsRefreshing(false);
@@ -199,7 +205,7 @@ export default function App() {
 
   if(!session) return <Login onLogin={(token,user)=>setSession({token,user})}/>;
 
-  const {turnos,clientes,abonos,planes,instructores,caja,stock,abono_turnos,codigos_ref,turno_items,cfg} = data;
+  const {turnos,clientes,abonos,planes,instructores,caja,stock,abono_turnos,codigos_ref,turno_items,ventas,venta_items,cfg} = data;
   const getHorasForDay = (dayOfWeek)=>{
     if(!cfg.horarios_por_dia) return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
     try {
@@ -445,6 +451,59 @@ export default function App() {
     setSaving(false);
   };
 
+  // ── Ventas de mostrador (POS) — venta directa de stock sin turno asociado ──
+  const guardarVenta = async()=>{
+    const carrito=form.carrito||[];
+    if(!carrito.length){notify("Agregá al menos un producto","error");return;}
+    const metodo=form.metodo_pago||"efectivo";
+    const subtotal=carrito.reduce((a,i)=>a+Number(i.cantidad)*Number(i.precio_unitario),0);
+    const descPct=Number(form.descuento_pct||0);
+    const descMonto=Math.round(subtotal*descPct/100);
+    const total=Math.max(0,subtotal-descMonto);
+    const cliente=form.cliente_id?cById(Number(form.cliente_id)):null;
+    if(metodo==="saldo_favor"){
+      if(!cliente){notify("Elegí un cliente para pagar con saldo a favor","error");return;}
+      if((cliente.saldo_favor||0)<total){notify("El cliente no tiene saldo suficiente","error");return;}
+    }
+    setSaving(true);
+    try{
+      const[v]=await db.post("ventas",{fecha:hoy(),cliente_id:cliente?.id||null,subtotal,descuento_pct:descPct,descuento_monto:descMonto,total,metodo_pago:metodo,notas:form.notas||""},tk);
+      await db.post("venta_items",carrito.map(i=>({venta_id:v.id,stock_id:i.stock_id||null,nombre:i.nombre,cantidad:Number(i.cantidad),precio_unitario:Number(i.precio_unitario),subtotal:Number(i.cantidad)*Number(i.precio_unitario)})),tk);
+      for(const i of carrito){
+        if(!i.stock_id) continue;
+        const item=stock.find(s=>s.id===i.stock_id);
+        if(item) await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad-Number(i.cantidad))},tk);
+      }
+      if(metodo==="saldo_favor"){
+        await api("rpc/update_saldo_favor",{method:"POST",body:JSON.stringify({p_cliente_id:cliente.id,p_delta:-total})},tk);
+      } else {
+        const[mov]=await db.post("caja",{descripcion:`Venta mostrador${cliente?` — ${cliente.nombre}`:""} (${carrito.length} ítem${carrito.length!==1?"s":""})`,tipo:"ingreso",categoria:"venta",monto:total,fecha:hoy()},tk);
+        await db.patch("ventas",v.id,{caja_mov_id:mov.id},tk);
+      }
+      await load();closeM();notify("Venta registrada","ok");
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
+  const anularVenta = async venta=>{
+    setSaving(true);
+    try{
+      const items=venta_items.filter(i=>i.venta_id===venta.id);
+      for(const i of items){
+        if(!i.stock_id) continue;
+        const item=stock.find(s=>s.id===i.stock_id);
+        if(item) await db.patch("stock",item.id,{cantidad:item.cantidad+Number(i.cantidad)},tk);
+      }
+      if(venta.metodo_pago==="saldo_favor"&&venta.cliente_id){
+        await api("rpc/update_saldo_favor",{method:"POST",body:JSON.stringify({p_cliente_id:venta.cliente_id,p_delta:venta.total})},tk);
+      } else if(venta.caja_mov_id){
+        await db.post("caja",{descripcion:`Anulación venta #${venta.id}`,tipo:"egreso",categoria:"venta",monto:venta.total,fecha:hoy()},tk);
+      }
+      await db.patch("ventas",venta.id,{anulada:true},tk);
+      await load();setDlg(null);notify("Venta anulada","ok");
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
+
   const TABS=[
     {id:"agenda",l:"Agenda",ic:"📅"},
     {id:"hoy",l:"Hoy",ic:"🕐"},
@@ -452,6 +511,7 @@ export default function App() {
     {id:"clientes",l:"Clientes",ic:"👥"},
     {id:"abonados",l:"Abonados",ic:"⭐"},
     {id:"caja",l:"Caja",ic:"💰"},
+    {id:"ventas",l:"Ventas",ic:"🛒"},
     {id:"stock",l:"Stock",ic:"📦"},
     {id:"stats",l:"Stats",ic:"📊"},
     {id:"whatsapp",l:"WhatsApp",ic:"wa"},
@@ -559,17 +619,18 @@ export default function App() {
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:8,marginBottom:12}}>{[0,1,2,3].map(i=><SK key={i} h={76} r={12} mb={0}/>)}</div>
       <SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/><SK h={52}/>
     </div>
-    :<>{tab==="hoy"&&<HoyTab/>}{tab==="pendientes"&&<PendientesTab/>}{tab==="agenda"&&<AgendaTab/>}{tab==="clientes"&&<ClientesTab/>}{tab==="abonados"&&<AbonadosTab/>}{tab==="caja"&&<CajaTab/>}{tab==="stock"&&<StockTab/>}{tab==="stats"&&<StatsTab/>}{tab==="whatsapp"&&<WhatsAppPanel convAbierta={waConvAbierta} setConvAbierta={setWaConvAbierta} setWaNoLeidos={setWaNoLeidos} notify={notify} isMobile={isMobile} token={tk} clientes={clientes} turnos={turnos}/>}{tab==="config"&&<ConfigTab/>}</>;
+    :<>{tab==="hoy"&&<HoyTab/>}{tab==="pendientes"&&<PendientesTab/>}{tab==="agenda"&&<AgendaTab/>}{tab==="clientes"&&<ClientesTab/>}{tab==="abonados"&&<AbonadosTab/>}{tab==="caja"&&<CajaTab/>}{tab==="ventas"&&<VentasTab/>}{tab==="stock"&&<StockTab/>}{tab==="stats"&&<StatsTab/>}{tab==="whatsapp"&&<WhatsAppPanel convAbierta={waConvAbierta} setConvAbierta={setWaConvAbierta} setWaNoLeidos={setWaNoLeidos} notify={notify} isMobile={isMobile} token={tk} clientes={clientes} turnos={turnos}/>}{tab==="config"&&<ConfigTab/>}</>;
 
   const adminCtxValue = {
     // data
-    turnos, clientes, abonos, planes, instructores, caja, stock, abono_turnos, codigos_ref, turno_items, cfg,
+    turnos, clientes, abonos, planes, instructores, caja, stock, abono_turnos, codigos_ref, turno_items, ventas, venta_items, cfg,
     diasBloqueados, feriados,
     // state
     isMobile, saving, setSaving, semOff, setSemOff,
     nowTime, agendaDiaIdx, setAgendaDiaIdx,
     pendSel, setPendSel, pendFiltro, setPendFiltro,
     cajaFechaIni, setCajaFechaIni, cajaFechaFin, setCajaFechaFin, cajaTipo, setCajaTipo,
+    ventaFechaIni, setVentaFechaIni, ventaFechaFin, setVentaFechaFin, ventaMetodo, setVentaMetodo,
     draggingId, setDraggingId, dragOver, setDragOver,
     dayConfigFecha, setDayConfigFecha,
     reprogramFecha, setReprogramFecha, reprogramHora, setReprogramHora,
@@ -593,6 +654,7 @@ export default function App() {
     guardarConfig,
     guardarCodigoRef, eliminarCodigoRef,
     agregarItemTurno, cobrarItemsTurno, eliminarItemTurno,
+    guardarVenta, anularVenta,
     db,
   };
 
@@ -680,6 +742,7 @@ export default function App() {
         clientes:{l:"Cliente",a:()=>openM("cliente",{nivel:"intermedio"})},
         abonados:{l:"Abono",a:()=>openM("abono",{fecha_inicio:hoy(),slots:[]})},
         caja:{l:"Movimiento",a:()=>openM("movCaja",{tipo:"egreso",categoria:"gasto",fecha:hoy()})},
+        ventas:{l:"Venta",a:()=>openM("venta",{descuento_pct:0,metodo_pago:"efectivo",carrito:[]})},
         stock:{l:"Producto",a:()=>openM("stockItem",{categoria:"pelotas",cantidad:"0",minimo:"0"})},
       };
       const f=fabs[tab];
@@ -914,6 +977,73 @@ export default function App() {
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={moverStock} disabled={saving}>{saving?"Guardando...":"Confirmar"}</Btn></div>
     </Modal>
 
+    <Modal show={modal==="venta"} onClose={closeM} title="Nueva venta" width={480}>
+      <Sel label="Cliente (opcional)" value={form.cliente_id||""} onChange={sf("cliente_id")}>
+        <option value="">Venta sin cliente</option>
+        {clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}{c.saldo_favor>0?` — saldo ${gs(c.saldo_favor)}`:""}</option>)}
+      </Sel>
+      <Div/>
+      <div style={{fontSize:13,fontWeight:600,color:C.t1,marginBottom:8}}>Productos</div>
+      {(form.carrito||[]).length===0&&<div style={{fontSize:12,color:C.t3,padding:"6px 0 12px"}}>Sin productos agregados todavía.</div>}
+      {(form.carrito||[]).map((it,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:`1px solid ${C.border}`}}>
+        <span style={{flex:1,fontSize:13,color:C.t1}}>{it.nombre}</span>
+        <input type="number" min={1} value={it.cantidad} onChange={e=>setForm(f=>({...f,carrito:f.carrito.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x)}))} style={{...inp,width:52,padding:"5px 6px",textAlign:"center"}}/>
+        <span style={{fontSize:12,color:C.t3,minWidth:64,textAlign:"right"}}>x {gs(it.precio_unitario)}</span>
+        <span style={{fontSize:13,fontWeight:600,color:C.t1,minWidth:78,textAlign:"right"}}>{gs(Number(it.cantidad||0)*Number(it.precio_unitario||0))}</span>
+        <button onClick={()=>setForm(f=>({...f,carrito:f.carrito.filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>
+      </div>)}
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",marginTop:12,flexWrap:"wrap"}}>
+        <div style={{flex:2,minWidth:140}}>
+          <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Producto</label>
+          <select style={inp} value={form.item_stock_id||""} onChange={e=>setForm(f=>({...f,item_stock_id:e.target.value,item_cantidad:1}))}>
+            <option value="">Seleccionar...</option>
+            {stock.filter(s=>s.cantidad>0).map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad})</option>)}
+          </select>
+        </div>
+        <div style={{width:65}}>
+          <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Cant.</label>
+          <input type="number" min={1} style={inp} value={form.item_cantidad||1} onChange={e=>setForm(f=>({...f,item_cantidad:e.target.value}))}/>
+        </div>
+        <Btn v="success" sm disabled={!form.item_stock_id} onClick={()=>{
+          const s=stock.find(x=>x.id===Number(form.item_stock_id));
+          if(!s) return;
+          const cant=Number(form.item_cantidad||1);
+          setForm(f=>{
+            const carrito=[...(f.carrito||[])];
+            const idx=carrito.findIndex(x=>x.stock_id===s.id);
+            if(idx>=0) carrito[idx]={...carrito[idx],cantidad:Number(carrito[idx].cantidad)+cant};
+            else carrito.push({stock_id:s.id,nombre:s.nombre,cantidad:cant,precio_unitario:s.precio_venta||0});
+            return {...f,carrito,item_stock_id:"",item_cantidad:1};
+          });
+        }}>+ Agregar</Btn>
+      </div>
+      <Div/>
+      {(()=>{
+        const carrito=form.carrito||[];
+        const subtotal=carrito.reduce((a,i)=>a+Number(i.cantidad||0)*Number(i.precio_unitario||0),0);
+        const descPct=Number(form.descuento_pct||0);
+        const descMonto=Math.round(subtotal*descPct/100);
+        const total=Math.max(0,subtotal-descMonto);
+        return <>
+          <R2 isMobile={isMobile}>
+            <Inp label="Descuento (%)" type="number" value={form.descuento_pct||""} onChange={sf("descuento_pct")}/>
+            <Sel label="Método de pago" value={form.metodo_pago||"efectivo"} onChange={sf("metodo_pago")}>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="saldo_favor">Saldo a favor del cliente</option>
+            </Sel>
+          </R2>
+          <div style={{background:C.bg,borderRadius:8,padding:"10px 12px",fontSize:13,color:C.t2,marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between"}}><span>Subtotal</span><span style={{color:C.t1}}>{gs(subtotal)}</span></div>
+            {descMonto>0&&<div style={{display:"flex",justifyContent:"space-between"}}><span>Descuento ({descPct}%)</span><span style={{color:C.red}}>-{gs(descMonto)}</span></div>}
+            <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,marginTop:4,fontSize:15}}><span style={{color:C.t1}}>Total</span><span style={{color:C.coral}}>{gs(total)}</span></div>
+          </div>
+        </>;
+      })()}
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarVenta} disabled={saving||!(form.carrito||[]).length}>{saving?"Guardando...":"Confirmar venta"}</Btn></div>
+    </Modal>
+
     <Modal show={modal==="horarios"} onClose={closeM} title="Horarios por día">
       <div style={{marginBottom:16}}>
         {DIAS_FULL.map((dia,i)=>{
@@ -1019,6 +1149,7 @@ export default function App() {
     <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
     <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
+    <Dialog show={dlg?.type==="anularVenta"} title="Anular venta" msg={`¿Anular la venta #${dlg?.v?.id}? Se repone el stock${dlg?.v?.metodo_pago==="saldo_favor"?" y se devuelve el saldo al cliente." : dlg?.v?.caja_mov_id?" y se registra un egreso compensatorio en caja.":"."}`} onOk={()=>anularVenta(dlg.v)} onCancel={()=>setDlg(null)} okLabel="Anular venta" okV="danger"/>
     <DiaConfigModal/>
     <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.fechaLabel||dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
 

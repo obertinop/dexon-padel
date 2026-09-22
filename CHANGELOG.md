@@ -16,6 +16,27 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-09-22] Servicio de Ventas (POS) en el admin
+**Archivos:** `src/tabs/Ventas.js` (nuevo), `src/App.js`, `supabase-migrations.sql`
+
+**Qué:** nueva tab "Ventas" en el panel admin — un punto de venta simple para vender productos de stock **sin necesidad de un turno asociado** (mostrador/bar), a diferencia del flujo existente de "items vendidos en turno" (que sigue intacto, pensado para consumos durante una reserva).
+
+- **Carrito de venta:** el admin arma una venta con uno o más productos del stock (autocompletado con stock disponible), cantidad y precio editable por línea.
+- **Cliente opcional:** la venta puede asociarse a un cliente existente o quedar anónima ("venta sin cliente").
+- **Descuento manual** por porcentaje sobre el subtotal.
+- **4 métodos de pago:** efectivo, transferencia, tarjeta o **saldo a favor del cliente** (débito del `saldo_favor` acumulado por referidos, vía la función atómica `update_saldo_favor` — antes solo la ejecutaba `service_role` y no se usaba desde ningún lado del código; ahora también se le otorga permiso a `authenticated`).
+- **Al confirmar:** descuenta stock de cada producto, crea la venta + sus ítems (`ventas`/`venta_items`), y — si el pago no es con saldo — registra un ingreso en `caja` (categoría `venta`) enlazado a la venta.
+- **Anular venta:** repone el stock vendido y, según el método de pago, devuelve el saldo al cliente o registra un egreso compensatorio en caja (no se borra el ingreso original, para no perder el rastro contable).
+- **Historial de ventas:** listado con filtros por fecha y método de pago (mismo patrón de UI que la tab Caja), métricas de ventas de hoy/mes y ticket promedio.
+
+**Por qué:** hasta ahora la única forma de "vender" algo del stock sin pasar por un turno era el modal genérico "Movimiento de stock" (una sola línea, sin carrito, sin cliente, sin descuento ni métodos de pago) — insuficiente para un mostrador real con ventas de varios productos a la vez.
+
+**DB:** correr el bloque nuevo al final de `supabase-migrations.sql` (tablas `ventas`/`venta_items` + RLS, mismo patrón que el resto: sin acceso `anon`, `authenticated`/`service_role` con acceso total).
+
+**Notas / deuda técnica introducida:** el flujo de "items vendidos en turno" (`turno_items` + `cobrarItemsTurno`) no fue migrado a las tablas nuevas — queda como un segundo camino de venta que no aparece en el historial de la tab Ventas ni sus métricas. Es candidato a unificarse a futuro (que "cobrar items del turno" también cree una fila en `ventas`/`venta_items`) para tener una sola fuente de verdad de todo lo vendido.
+
+---
+
 ### [2026-06-02] Fix: renovación automática de sesión (caja/stats/stock vacíos)
 **Archivos:** `src/lib/api.js`, `src/components/Login.js`, `src/App.js`
 
@@ -131,7 +152,7 @@ Todas las acciones (guardar, confirmar, cancelar) y datos viven en `App.js` y se
 **Archivo:** `src/App.js:98-121`
 
 Al autenticarse, se cargan en paralelo con `Promise.all` todas las tablas:
-`turnos`, `clientes`, `abonos`, `planes`, `instructores`, `caja`, `stock`, `espera`, `config`, `abono_turnos`, `codigos_referido`, `turno_items`, `dias_bloqueados`
+`turnos`, `clientes`, `abonos`, `planes`, `instructores`, `caja`, `stock`, `espera`, `config`, `abono_turnos`, `codigos_referido`, `turno_items`, `dias_bloqueados`, `ventas`, `venta_items`
 
 Sin filtro de fecha en turnos — se trae el historial completo.
 
@@ -203,6 +224,16 @@ Sin filtro de fecha en turnos — se trae el historial completo.
 - Totales del período filtrado
 - Agregar movimiento manual (ingreso o egreso)
 - Eliminar movimiento
+
+---
+
+### Tab: Ventas (POS de mostrador)
+
+**Archivo:** `src/tabs/Ventas.js` — ver detalle en la entrada `[2026-09-22]` arriba.
+
+- Punto de venta con carrito multi-producto, cliente opcional, descuento y 4 métodos de pago
+- Historial filtrable por fecha/método + métricas de hoy, mes y ticket promedio
+- Independiente del flujo de "items vendidos en turno" (ver Deuda técnica)
 
 ---
 
@@ -501,3 +532,13 @@ Algoritmo: toma letras del nombre + dígitos del teléfono, las mezcla evitando 
 - `PortalCliente.js`: tres handlers de submit casi idénticos (transferencia, efectivo, pagopar)
 - Tests: solo existe un test boilerplate (`src/App.test.js`)
 - Sin paginación en la tab Clientes
+- `App.js` carga **todo el historial** de `turnos`/`caja`/`ventas` sin filtro de fecha en cada refresh de 10s (`App.js:99-121`) — funciona hoy por el volumen bajo del club, pero escala mal; candidato a paginar o filtrar por rango al crecer la base.
+- Ventas de stock hoy tienen **dos caminos distintos** que no comparten historial: "items vendidos en turno" (`turno_items`) y la nueva tab Ventas (`ventas`/`venta_items`). Ver nota en la entrada de Ventas más arriba.
+- `saldo_favor` del cliente se actualiza con lectura-y-patch manual (no atómico) en `api/reservar.js` y `api/pagopar/crear-pago.js`, pese a existir `update_saldo_favor` (función atómica creada en la migración RLS pero nunca invocada hasta la tab Ventas). Con dos reservas simultáneas del mismo referido podría perderse un incremento de saldo — candidato a reemplazar esos `PATCH` directos por la función atómica.
+- Auditoría de copy/texto (2026-09-22) — inconsistencias detectadas, ninguna bloqueante:
+  - "Reprogramar" (admin, `App.js`) vs "Reagendar" (portal cliente, `MiCuenta.js`/`cliente-api.js`) para la misma acción — mismo concepto, dos nombres de cara al usuario.
+  - El estado visual de un turno se calcula distinto en cada lado: el admin usa el campo `estado` (`estadoBadge` en `UI.js`), el portal usa `turno.pagado`. Un turno `confirmado` con `pagado:false` puede mostrarse como "Confirmado" al admin y "Pendiente" al cliente.
+  - Mensajes de validación casi duplicados con redacción ligeramente distinta entre `api/reservar.js` y `api/pagopar/crear-pago.js` ("Faltan datos obligatorios", "Fecha inválida", "Horarios inválidos", "No se pudo leer la configuración") — son dos endpoints casi gemelos, candidatos a compartir un helper de validación.
+  - Alias bancario UENO (`80168039-5`) hardcodeado 3 veces en `PortalCliente.js` en vez de vivir en `constants.js`.
+  - Dominio del sitio inconsistente entre `https://dexon.com.py` y `https://www.dexon.com.py` según el archivo (`PortalCliente.js`, `MiCuenta.js`, `api/pagopar/webhook.js`, `index.html`).
+  - Tarifas por defecto (`tarifa_base`/`tarifa_pico`) duplicadas como fallback inicial en `App.js` y `PortalCliente.js` — si cambia el default hay que tocar dos lugares.

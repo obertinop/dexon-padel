@@ -169,3 +169,55 @@ BEGIN
   END LOOP;
 END $$;
 -- ============================================================
+
+
+-- ============================================================
+-- SERVICIO DE VENTAS (POS) — (2026-09-22)
+-- Venta de productos de stock en mostrador, sin turno asociado.
+-- Tabla admin-only: mismo patrón de RLS que caja/stock (sin acceso anon).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ventas (
+  id                bigint generated always as identity primary key,
+  fecha             date not null default current_date,
+  created_at        timestamptz not null default now(),
+  cliente_id        bigint references clientes(id) on delete set null,
+  subtotal          numeric not null default 0,
+  descuento_pct     numeric not null default 0,
+  descuento_monto   numeric not null default 0,
+  total             numeric not null default 0,
+  metodo_pago       text not null default 'efectivo', -- efectivo | transferencia | tarjeta | saldo_favor
+  notas             text,
+  anulada           boolean not null default false,
+  caja_mov_id       bigint references caja(id) on delete set null
+);
+
+CREATE TABLE IF NOT EXISTS venta_items (
+  id                bigint generated always as identity primary key,
+  venta_id          bigint not null references ventas(id) on delete cascade,
+  stock_id          bigint references stock(id) on delete set null,
+  nombre            text not null,
+  cantidad          numeric not null,
+  precio_unitario   numeric not null,
+  subtotal          numeric not null
+);
+
+CREATE INDEX IF NOT EXISTS ventas_fecha_idx      ON ventas(fecha desc);
+CREATE INDEX IF NOT EXISTS venta_items_venta_idx ON venta_items(venta_id);
+
+ALTER TABLE ventas       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE venta_items  ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS ventas_service_all ON ventas;
+CREATE POLICY ventas_service_all ON ventas FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS ventas_auth_all ON ventas;
+CREATE POLICY ventas_auth_all ON ventas FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS venta_items_service_all ON venta_items;
+CREATE POLICY venta_items_service_all ON venta_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS venta_items_auth_all ON venta_items;
+CREATE POLICY venta_items_auth_all ON venta_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Permite que el admin (rol authenticated, vía PostgREST) también use la función
+-- atómica de saldo a favor al pagar una venta con saldo del cliente.
+GRANT EXECUTE ON FUNCTION update_saldo_favor TO authenticated;
+-- ============================================================
