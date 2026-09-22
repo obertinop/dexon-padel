@@ -14,7 +14,7 @@ export default function Stock() {
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 12 : 16, gap: 8, flexWrap: "wrap" }}>
       <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 600, color: C.t1 }}>Stock</span>
       <div style={{ display: "flex", gap: 6 }}>
-        <Btn v="ghost" sm={isMobile} onClick={() => openM("moverStock", { tipo_mov: "salida" })}>{isMobile ? "Movim." : "Registrar movimiento"}</Btn>
+        <Btn v="ghost" sm={isMobile} onClick={() => openM("moverStock", { tipo_mov: "entrada" })}>{isMobile ? "Reponer" : "Reponer / ajustar stock"}</Btn>
         {!isMobile && <Btn v="primary" onClick={() => openM("stockItem", { categoria: "pelotas", cantidad: "0", minimo: "0" })}>+ Producto</Btn>}
       </div>
     </div>
