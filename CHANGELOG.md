@@ -72,7 +72,7 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 **Por qué:** pedido directo — reservar 2 horas seguidas generaba 2 turnos que había que confirmar/cancelar/cobrar uno por uno.
 
 **Notas / limitaciones conocidas:**
-- Reservas creadas por el admin manualmente (modal "Nueva reserva") siguen siendo de un solo horario — el admin no tiene hoy una forma de crear una reserva de varias horas de una sola vez, así que no generan grupo (no hacía falta: nace como turno único).
+- ~~Reservas creadas por el admin manualmente (modal "Nueva reserva") siguen siendo de un solo horario~~ — **resuelto el mismo día**, ver entrada más abajo.
 - **Reprogramar sigue siendo por horario individual** para reservas de grupo — el modal lo aclara y sugiere reprogramar cada turno por separado o cancelar y recrear. Reprogramar el grupo completo en un solo paso queda pendiente si se necesita.
 - La confirmación/cancelación **masiva** (checkboxes + "Confirmar/Cancelar" en Pendientes) todavía no agrupa — si seleccionás a mano las 2 horas de una misma reserva, sigue mandando un WhatsApp por cada una. Es un caso más acotado (selección manual explícita) y se puede unificar después si molesta.
 - Turnos ya existentes en la base (creados antes de esta migración) no tienen `grupo_reserva_id` — se comportan como turnos sueltos, igual que siempre.
@@ -89,6 +89,20 @@ Se revocó `EXECUTE` de `PUBLIC` y de `anon`, dejando la función solo para `ser
 **Por qué:** riesgo directo de fraude económico — saldo a favor falso es dinero real perdido para el club (se puede canjear por reservas o, ahora, por productos en la tab Ventas).
 
 **Notas:** ya aplicado directamente en producción (Supabase project `dexon-padel`) el mismo día que se detectó. Este archivo queda como historial/documentación y para poder reproducirlo en otro ambiente.
+
+---
+
+### [2026-09-22] Modal "Nueva reserva": elegir varias horas seguidas (también quedan agrupadas)
+**Archivos:** `src/App.js` (`guardarTurno`, modal `turno`)
+
+**Qué:** el modal manual de "Nueva reserva" en el admin solo permitía elegir una hora. Ahora la hora es un **selector de chips múltiple** (igual idea que ya usa el cliente en el portal): se puede tocar más de una hora para la misma fecha y se crea un turno por cada una, todas compartiendo el mismo `grupo_reserva_id` — así quedan agrupadas para verse/confirmarse/cancelarse juntas, igual que las reservas de varias horas que vienen del portal.
+
+- El precio mostrado en el modal es el **total** de todas las horas elegidas (cada hora sigue cobrándose a su propia tarifa base/pico).
+- La **seña** ingresada se registra una sola vez, contra el primer turno del grupo (no se divide entre horas).
+- El WhatsApp de confirmación al guardar lista todos los horarios juntos, no uno por mensaje.
+- Sigue funcionando exactamente igual que antes si solo tocás una hora (nada cambia para el caso de un turno suelto).
+
+**Por qué:** consistencia — no tenía sentido que agrupar reservas de varias horas funcionara solo para lo que entra por el portal y no para lo que carga el propio admin.
 
 ---
 

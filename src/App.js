@@ -250,17 +250,30 @@ export default function App() {
 
   // ── ACCIONES ──
   const guardarTurno = async()=>{
-    if(!form.cliente_id||!form.fecha||form.hora===undefined)return;
-    if(turnos.find(t=>t.fecha===form.fecha&&t.hora===Number(form.hora)&&t.estado!=="cancelado")){notify("Ese horario ya está ocupado","error");return;}
+    const horas=[...new Set((form.horas||(form.hora!==undefined?[Number(form.hora)]:[])).map(Number))].sort((a,b)=>a-b);
+    if(!form.cliente_id||!form.fecha||!horas.length)return;
+    const ocupado=horas.find(h=>turnos.find(t=>t.fecha===form.fecha&&t.hora===h&&t.estado!=="cancelado"));
+    if(ocupado!==undefined){notify(`Ese horario ya está ocupado (${ocupado}:00)`,"error");return;}
     setSaving(true);
     try {
-      const precio=form.tipo==="clase"?Number(form.precio_clase||0):precioTurno(Number(form.hora));
+      // Si son varias horas, se crea un turno por hora (necesario para disponibilidad/precio
+      // por hora) pero todas comparten grupo_reserva_id para tratarse como una sola reserva.
+      const grupoReservaId=horas.length>1?crypto.randomUUID():null;
       const sena=Number(form.sena||0);
-      const[t]=await db.post("turnos",{fecha:form.fecha,hora:Number(form.hora),tipo:form.tipo||"ocasional",estado:"reservado",cliente_id:Number(form.cliente_id),instructor_id:form.instructor_id?Number(form.instructor_id):null,precio,sena,saldo:precio-sena,notas:form.notas||""},tk);
-      if(sena>0)await db.post("caja",{descripcion:`Seña - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:t.id},tk);
+      const turnosBody=horas.map((h,i)=>{
+        const precio=form.tipo==="clase"?Number(form.precio_clase||0):precioTurno(h);
+        const senaAplicada=i===0?sena:0; // la seña se registra una sola vez, en el primer turno del grupo
+        return {fecha:form.fecha,hora:h,tipo:form.tipo||"ocasional",estado:"reservado",cliente_id:Number(form.cliente_id),instructor_id:form.instructor_id?Number(form.instructor_id):null,precio,sena:senaAplicada,saldo:precio-senaAplicada,notas:form.notas||"",grupo_reserva_id:grupoReservaId};
+      });
+      const turnosCreados=await db.post("turnos",turnosBody,tk);
+      if(sena>0)await db.post("caja",{descripcion:`Seña - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:turnosCreados[0].id},tk);
       await load();closeM();
       const c=cById(Number(form.cliente_id));
-      if(c?.telefono&&cfg.wa_auto_admin_activo!==false){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios:`${Number(form.hora)}:00hs`,monto:gs(precio),forma_pago:"Pago online"})}).catch(()=>{});}
+      if(c?.telefono&&cfg.wa_auto_admin_activo!==false){
+        const horarios=horas.map(h=>`${h}:00`).join(", ")+"hs";
+        const precioTotal=turnosBody.reduce((a,t)=>a+t.precio,0);
+        fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios,monto:gs(precioTotal),forma_pago:"Pago online"})}).catch(()=>{});
+      }
     } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
@@ -828,10 +841,34 @@ export default function App() {
     {/* MODALES */}
     <Modal show={modal==="turno"} onClose={closeM} title="Nueva reserva">
       <Sel label="Cliente" value={form.cliente_id||""} onChange={sf("cliente_id")}><option value="">Seleccioná un cliente</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
-      <R2 isMobile={isMobile}><Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/><FG label="Hora"><select style={inp} value={form.hora??""} onChange={sf("hora")}>{getHorasForDay(form.fecha?new Date(form.fecha+"T00:00:00").getDay():new Date().getDay()).map(h=><option key={h} value={h}>{h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}</option>)}</select></FG></R2>
+      <Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/>
+      {(()=>{
+        const horasSel=form.horas||(form.hora!==undefined?[Number(form.hora)]:[]);
+        const horasDia=getHorasForDay(form.fecha?new Date(form.fecha+"T00:00:00").getDay():new Date().getDay());
+        return <FG label={`Horas${horasSel.length>1?` (${horasSel.length} seleccionadas)`:""}`}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {horasDia.map(h=>{
+              const activo=horasSel.includes(h);
+              const ocupado=turnos.some(t=>t.fecha===form.fecha&&t.hora===h&&t.estado!=="cancelado");
+              return <button key={h} type="button" disabled={ocupado} onClick={()=>setForm(f=>{
+                const actuales=f.horas||(f.hora!==undefined?[Number(f.hora)]:[]);
+                const nuevas=actuales.includes(h)?actuales.filter(x=>x!==h):[...actuales,h].sort((a,b)=>a-b);
+                return {...f,horas:nuevas,hora:undefined};
+              })} style={{padding:"6px 10px",borderRadius:8,fontSize:12,fontWeight:activo?700:500,border:`1.5px solid ${activo?C.coral:C.border}`,background:ocupado?C.bgElev:activo?"rgba(224,91,40,0.12)":"transparent",color:ocupado?C.t3:activo?C.coral:C.t2,cursor:ocupado?"not-allowed":"pointer",fontFamily:"var(--font-sans)",opacity:ocupado?0.4:1}}>
+                {h}:00{h>=cfg.hora_pico_inicio&&h<cfg.hora_pico_fin?" 🔥":""}
+              </button>;
+            })}
+          </div>
+          {horasSel.length>1&&<div style={{fontSize:11,color:C.t3,marginTop:6,lineHeight:1.5}}>Se crea un turno por cada hora, agrupados como una sola reserva (podés confirmarlos/cancelarlos juntos después).</div>}
+        </FG>;
+      })()}
       <Sel label="Tipo" value={form.tipo||"ocasional"} onChange={sf("tipo")}><option value="ocasional">Ocasional</option><option value="clase">Clase con instructor</option><option value="bloqueado">Bloquear horario</option></Sel>
-      {form.tipo==="clase"&&<><Sel label="Instructor" value={form.instructor_id||""} onChange={sf("instructor_id")}><option value="">Sin instructor</option>{instructores.map(i=><option key={i.id} value={i.id}>{i.nombre}</option>)}</Sel><Inp label="Precio clase (Gs)" type="number" value={form.precio_clase||""} onChange={sf("precio_clase")}/></>}
-      {form.tipo==="ocasional"&&<><div style={{background:C.bg,borderRadius:8,padding:"10px 12px",fontSize:13,marginBottom:14,color:C.t2}}>Precio: <strong style={{color:C.t1}}>{gs(precioTurno(Number(form.hora||cfg.hora_inicio)))}</strong>{Number(form.hora)>=cfg.hora_pico_inicio&&Number(form.hora)<cfg.hora_pico_fin&&<span style={{color:C.coral}}> (pico)</span>}</div><Inp label="Seña (Gs) — opcional" type="number" value={form.sena||""} onChange={sf("sena")}/></>}
+      {form.tipo==="clase"&&<><Sel label="Instructor" value={form.instructor_id||""} onChange={sf("instructor_id")}><option value="">Sin instructor</option>{instructores.map(i=><option key={i.id} value={i.id}>{i.nombre}</option>)}</Sel><Inp label="Precio clase por hora (Gs)" type="number" value={form.precio_clase||""} onChange={sf("precio_clase")}/></>}
+      {form.tipo==="ocasional"&&(()=>{
+        const horasSel=form.horas||(form.hora!==undefined?[Number(form.hora)]:[cfg.hora_inicio]);
+        const precioTotal=horasSel.reduce((a,h)=>a+precioTurno(h),0);
+        return <><div style={{background:C.bg,borderRadius:8,padding:"10px 12px",fontSize:13,marginBottom:14,color:C.t2}}>Precio{horasSel.length>1?` total (${horasSel.length} horas)`:""}: <strong style={{color:C.t1}}>{gs(precioTotal)}</strong></div><Inp label="Seña (Gs) — opcional" type="number" value={form.sena||""} onChange={sf("sena")}/></>;
+      })()}
       <Inp label="Notas" type="text" value={form.notas||""} onChange={sf("notas")}/>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarTurno} disabled={saving}>{saving?"Guardando...":"Guardar reserva"}</Btn></div>
     </Modal>
