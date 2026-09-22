@@ -117,8 +117,8 @@ export default function App() {
         db.get("codigos_referido","order=created_at.desc",tk),
         db.get("turno_items","order=created_at.asc",tk),
         db.get("dias_bloqueados","order=fecha.asc",tk),
-        db.get("ventas","order=fecha.desc,id.desc",tk),
-        db.get("venta_items","order=id.asc",tk),
+        db.get("ventas","order=fecha.desc,id.desc",tk).catch(()=>[]),
+        db.get("venta_items","order=id.asc",tk).catch(()=>[]),
       ]);
       setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],ventas:ve||[],venta_items:vi||[],cfg:cf?.[0]||prev.cfg}));
       setDiasBloqueados(db2||[]);
