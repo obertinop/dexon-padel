@@ -385,7 +385,34 @@ export default function App() {
   const guardarMovCaja = async()=>{if(!form.descripcion||!form.monto)return;setSaving(true);try{await db.post("caja",{descripcion:form.descripcion,tipo:form.tipo||"egreso",categoria:form.categoria||"gasto",monto:Number(form.monto),fecha:form.fecha||hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const eliminarMovCaja = async id=>{setSaving(true);try{await db.del("caja",id,tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
-  const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const moverStock = async()=>{
+    if(!form.stock_id||!form.cantidad_mov)return;
+    setSaving(true);
+    try{
+      const item=stock.find(s=>s.id===Number(form.stock_id));
+      if(!item)return;
+      const cant=Number(form.cantidad_mov);
+      const delta=form.tipo_mov==="entrada"?cant:-cant;
+      const costoTotalCompra=Number(form.costo_total_compra||0);
+      const patchStock={cantidad:Math.max(0,item.cantidad+delta)};
+      // Compra a granel (caja de pelotas, pack de bebidas, etc.): recalcula el costo
+      // unitario como promedio ponderado entre el stock que ya había y lo nuevo que entra.
+      if(form.tipo_mov==="entrada"&&costoTotalCompra>0){
+        const costoUnitNuevo=costoTotalCompra/cant;
+        const costoPrevioValido=item.precio_costo>0&&item.cantidad>0;
+        const costoPromedio=costoPrevioValido?((item.cantidad*item.precio_costo)+(cant*costoUnitNuevo))/(item.cantidad+cant):costoUnitNuevo;
+        patchStock.precio_costo=Math.round(costoPromedio);
+      }
+      await db.patch("stock",item.id,patchStock,tk);
+      await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:cant,motivo:form.motivo||"",fecha:hoy()},tk);
+      if(form.tipo_mov==="entrada"){
+        const montoEgreso=costoTotalCompra>0?costoTotalCompra:(item.precio_costo>0?item.precio_costo*cant:0);
+        if(montoEgreso>0) await db.post("caja",{descripcion:`Compra - ${item.nombre} x${cant}`,tipo:"egreso",categoria:"stock",monto:montoEgreso,fecha:hoy()},tk);
+      }
+      await load();closeM();
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
   const guardarConfig = async()=>{setSaving(true);try{
     const dias=Array.isArray(form.desc_martes_jueves_dias)?form.desc_martes_jueves_dias:(typeof form.desc_martes_jueves_dias==="string"?(()=>{try{return JSON.parse(form.desc_martes_jueves_dias);}catch{return[2,4];}})():[2,4]);
     await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_percent:Number(form.referral_discount_percent||10),wa_admin_tel:form.wa_admin_tel||null,wa_auto_admin_activo:form.wa_auto_admin_activo!==false,wa_bienvenida_activo:form.wa_bienvenida_activo||false,wa_bienvenida_texto:form.wa_bienvenida_texto||null,wa_recordatorio_activo:form.wa_recordatorio_activo||false,wa_recordatorio_template:form.wa_recordatorio_template||null},tk);
@@ -972,7 +999,23 @@ export default function App() {
 
     <Modal show={modal==="moverStock"} onClose={closeM} title="Reponer / ajustar stock">
       <Sel label="Producto" value={form.stock_id||""} onChange={sf("stock_id")}><option value="">Seleccioná un producto</option>{stock.map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad})</option>)}</Sel>
-      <R2 isMobile={isMobile}><Sel label="Tipo" value={form.tipo_mov||"entrada"} onChange={sf("tipo_mov")}><option value="entrada">Entrada (compra / reposición)</option><option value="ajuste">Ajuste (pérdida, rotura, uso interno)</option></Sel><Inp label="Cantidad" type="number" value={form.cantidad_mov||""} onChange={sf("cantidad_mov")}/></R2>
+      <R2 isMobile={isMobile}><Sel label="Tipo" value={form.tipo_mov||"entrada"} onChange={sf("tipo_mov")}><option value="entrada">Entrada (compra / reposición)</option><option value="ajuste">Ajuste (pérdida, rotura, uso interno)</option></Sel><Inp label="Cantidad (unidades)" type="number" value={form.cantidad_mov||""} onChange={sf("cantidad_mov")}/></R2>
+      {form.tipo_mov==="entrada"&&<>
+        <Inp label="Costo total de la compra (Gs) — opcional" type="number" value={form.costo_total_compra||""} onChange={sf("costo_total_compra")} placeholder="Ej: 3 tubos de pelotas (12 unidades) por 180.000 Gs en total"/>
+        {(()=>{
+          const item=stock.find(s=>s.id===Number(form.stock_id));
+          const cant=Number(form.cantidad_mov||0);
+          const costoTotal=Number(form.costo_total_compra||0);
+          if(!item||cant<=0||costoTotal<=0) return null;
+          const costoUnitNuevo=costoTotal/cant;
+          const costoPrevioValido=item.precio_costo>0&&item.cantidad>0;
+          const costoPromedio=costoPrevioValido?((item.cantidad*item.precio_costo)+(cant*costoUnitNuevo))/(item.cantidad+cant):costoUnitNuevo;
+          return <div style={{background:C.bg,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.t2,marginBottom:14,lineHeight:1.6}}>
+            Costo de esta compra: <strong style={{color:C.t1}}>{gs(costoUnitNuevo)}</strong> por unidad.<br/>
+            Nuevo costo promedio del producto: <strong style={{color:C.coral}}>{gs(costoPromedio)}</strong> por unidad{costoPrevioValido?<> (antes {gs(item.precio_costo)})</>:null}.
+          </div>;
+        })()}
+      </>}
       <Inp label="Motivo" type="text" value={form.motivo||""} onChange={sf("motivo")} placeholder={form.tipo_mov==="ajuste"?"Ej: se rompieron 2 pelotas":"Ej: compra al proveedor"}/>
       <div style={{fontSize:11,color:C.t3,marginBottom:14,lineHeight:1.5}}>Para vender un producto usá la tab <strong style={{color:C.t2}}>Ventas</strong> — este movimiento no genera ingreso en caja.</div>
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={moverStock} disabled={saving}>{saving?"Guardando...":"Confirmar"}</Btn></div>
