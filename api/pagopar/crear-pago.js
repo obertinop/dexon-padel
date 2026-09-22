@@ -233,11 +233,15 @@ export default async function handler(req, res) {
 
   // ── 6. Guardar turnos ────────────────────────────────────────────────────
   const refNota = refMatch ? ` - Ref: ${refMatch.nombre}` : codigoRefDoc ? ` - Código: ${codigoRefDoc.codigo}` : "";
+  // Si reserva más de un horario a la vez, todas las filas comparten un id de
+  // grupo para poder verse/confirmarse/cancelarse como una sola reserva en el admin.
+  const grupoReservaId = slots.length > 1 ? crypto.randomUUID() : null;
   const turnosBody = slots.map((h, i) => ({
     fecha, hora: h, tipo: "ocasional", estado: "pendiente_pago",
     cliente_id: clienteId, precio: preciosPorSlot[i], sena: 0, saldo: preciosPorSlot[i],
     notas: `Pago online vía Pagopar - Pedido ${pedidoNum}${refNota}`,
     metodo_pago: "pagopar",
+    grupo_reserva_id: grupoReservaId,
     pagopar_hash: hashPedido, pagopar_pedido_num: pedidoNum, pagopar_id_pedido: idPedido,
     applied_referral_code: (refMatch || codigoRefDoc) ? refCodeNorm : null,
     referral_discount_amount: (refMatch || codigoRefDoc) ? Math.round(descRef * (preciosPorSlot[i] / (subtotal || 1))) : 0,

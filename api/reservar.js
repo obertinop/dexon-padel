@@ -165,6 +165,9 @@ export default async function handler(req, res) {
 
   // ── 7. Guardar turnos ────────────────────────────────────────────────────
   const nota = "Comprobante enviado vía WhatsApp - Pendiente confirmación";
+  // Si reserva más de un horario a la vez, todas las filas comparten un id de
+  // grupo para poder verse/confirmarse/cancelarse como una sola reserva en el admin.
+  const grupoReservaId = slots.length > 1 ? crypto.randomUUID() : null;
   const turnosBody = slots.map((h, i) => ({
     fecha, hora: h, tipo: "ocasional", estado: "pendiente_pago",
     cliente_id: clienteId,
@@ -172,6 +175,7 @@ export default async function handler(req, res) {
     sena: 0, saldo: preciosPorSlot[i],
     notas: nota,
     metodo_pago: "transferencia",
+    grupo_reserva_id: grupoReservaId,
     day_discount_amount: calcularPrecio(h, { ...cfg, desc_martes_jueves_enabled: false }) - preciosPorSlot[i],
     applied_referral_code: refMatch ? refCodeNorm : null,
     referral_discount_amount: refMatch ? Math.round(descRef * (preciosPorSlot[i] / (subtotal || 1))) : 0,

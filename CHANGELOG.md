@@ -59,6 +59,26 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-09-22] Reservas de varias horas: un solo bloque para ver/confirmar/cancelar
+**Archivos:** `api/reservar.js`, `api/pagopar/crear-pago.js`, `src/App.js`, `src/tabs/Hoy.js`, `src/tabs/Pendientes.js`, migración `turnos_grupo_reserva_id`
+
+**Qué:** cuando alguien reserva más de una hora seguida desde el portal (transferencia o Pagopar), cada hora sigue naciendo como una fila separada en `turnos` (necesario para disponibilidad y precio por hora), pero ahora todas comparten un `grupo_reserva_id` generado en el momento de la reserva. En el admin:
+
+- El modal del turno detecta el grupo (`grupoDeTurno`) y muestra **"Reserva de N horas"** con el precio total y todos los horarios juntos, en vez de un turno suelto.
+- **"✓ Cobrar y confirmar"**, **"Cancelar"** y **"Marcar como no show"** ahora actúan sobre **todos los horarios del grupo a la vez** — un solo click, un solo diálogo de confirmación, en vez de repetir la acción horario por horario.
+- Al confirmar un grupo se manda **un solo WhatsApp** con todos los horarios (`"19:00, 20:00hs"`) en vez de un mensaje separado por cada hora — esto probablemente también era una fuente de "mensajes duplicados" para el cliente.
+- Los botones rápidos de confirmar/cancelar en las tabs **Hoy** y **Pendientes** (los que no pasan por el modal del turno) también resuelven el grupo antes de abrir el diálogo, así que el comportamiento es consistente entren por donde entren.
+
+**Por qué:** pedido directo — reservar 2 horas seguidas generaba 2 turnos que había que confirmar/cancelar/cobrar uno por uno.
+
+**Notas / limitaciones conocidas:**
+- Reservas creadas por el admin manualmente (modal "Nueva reserva") siguen siendo de un solo horario — el admin no tiene hoy una forma de crear una reserva de varias horas de una sola vez, así que no generan grupo (no hacía falta: nace como turno único).
+- **Reprogramar sigue siendo por horario individual** para reservas de grupo — el modal lo aclara y sugiere reprogramar cada turno por separado o cancelar y recrear. Reprogramar el grupo completo en un solo paso queda pendiente si se necesita.
+- La confirmación/cancelación **masiva** (checkboxes + "Confirmar/Cancelar" en Pendientes) todavía no agrupa — si seleccionás a mano las 2 horas de una misma reserva, sigue mandando un WhatsApp por cada una. Es un caso más acotado (selección manual explícita) y se puede unificar después si molesta.
+- Turnos ya existentes en la base (creados antes de esta migración) no tienen `grupo_reserva_id` — se comportan como turnos sueltos, igual que siempre.
+
+---
+
 ### [2026-09-22] Fix de seguridad: acceso anónimo a `update_saldo_favor`
 **Archivos:** `supabase-migrations.sql`
 

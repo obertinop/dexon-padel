@@ -7,7 +7,7 @@ import { useAdmin } from "../context/AdminContext.js";
 export default function Hoy() {
   const {
     turnos, clientes, caja, stock, abonos, cfg,
-    isMobile, clima, openM, setDlg, cById, iById,
+    isMobile, clima, openM, setDlg, cById, iById, grupoDeTurno,
   } = useAdmin();
 
   const h = hoy(); const mes = h.slice(0, 7);
@@ -93,8 +93,8 @@ export default function Hoy() {
           <Avatar nombre={c?.nombre} size={isMobile ? 32 : 36} />
           <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, fontSize: 13, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c?.nombre || "?"}</div><div style={{ fontSize: 11, color: C.t2, marginTop: 2, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>{tipoBadge(t.tipo)} {!isMobile && estadoBadge(t.estado)}{ins && !isMobile && <span>· {ins.nombre}</span>}{t.sena > 0 && !isMobile && <span style={{ color: C.green }}>· Seña: {gs(t.sena)}</span>}</div></div>
           {(t.estado === "reservado" || t.estado === "pendiente_pago") && <div style={{ display: "flex", gap: 5, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-            <Btn v="success" sm onClick={() => setDlg({ type: "confirmar", t })}>{isMobile ? "💰" : (t.estado === "pendiente_pago" ? "💰 Confirmar pago" : `✓ Cobrar ${gs(t.precio - (t.sena || 0))}`)}</Btn>
-            <Btn v="danger" sm onClick={() => setDlg({ type: "cancelar", t })}>✗</Btn>
+            <Btn v="success" sm onClick={() => setDlg({ type: "confirmar", grupo: grupoDeTurno(t) })}>{isMobile ? "💰" : (t.estado === "pendiente_pago" ? "💰 Confirmar pago" : `✓ Cobrar ${gs(t.precio - (t.sena || 0))}`)}</Btn>
+            <Btn v="danger" sm onClick={() => setDlg({ type: "cancelar", grupo: grupoDeTurno(t) })}>✗</Btn>
           </div>}
         </div>; })}
       </div>}

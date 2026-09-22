@@ -265,21 +265,56 @@ export default function App() {
     setSaving(false);
   };
 
-  const confirmarTurno = async t=>{
+  // Turnos de una misma reserva (mismo grupo_reserva_id, ej. 2 horas seguidas) —
+  // sin grupo, es simplemente ese turno solo. Se usa para ver/confirmar/cancelar/
+  // marcar no-show todos los horarios de una reserva de una sola vez.
+  const grupoDeTurno = t=>{
+    if(!t) return [];
+    if(!t.grupo_reserva_id) return [t];
+    return turnos.filter(x=>x.grupo_reserva_id===t.grupo_reserva_id&&x.estado!=="cancelado").sort((a,b)=>a.hora-b.hora);
+  };
+  const confirmarGrupo = async grupo=>{
+    if(!grupo?.length) return;
     setSaving(true);
-    try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
-    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono&&cfg.wa_auto_admin_activo!==false){const esEfectivo=t.metodo_pago==="efectivo";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});}
-    setDlg(null);await load();}
-    catch(e){notify(e.message,"error");}
+    try{
+      for(const t of grupo){
+        const saldo=t.precio-(t.sena||0);
+        await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);
+        if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
+      }
+      const primero=grupo[0];
+      const[c]=await db.get("clientes",`id=eq.${primero.cliente_id}`,tk);
+      if(c?.telefono&&cfg.wa_auto_admin_activo!==false){
+        const esEfectivo=primero.metodo_pago==="efectivo";
+        const horarios=grupo.map(t=>`${t.hora}:00`).join(", ")+"hs";
+        const montoTotal=grupo.reduce((a,t)=>a+t.precio,0);
+        fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(primero.fecha),horarios}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(primero.fecha),horarios,monto:gs(montoTotal),forma_pago:primero.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});
+      }
+      setDlg(null);await load();
+    }catch(e){notify(e.message,"error");}
     setSaving(false);
   };
-  const cancelarTurno = async t=>{
+  const cancelarGrupo = async grupo=>{
+    if(!grupo?.length) return;
     setSaving(true);
-    try{await db.patch("turnos",t.id,{estado:"cancelado"},tk);if(t.sena>0)await db.post("caja",{descripcion:`Dev. seña - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"egreso",categoria:"reserva",monto:t.sena,fecha:hoy(),turno_id:t.id},tk);setDlg(null);closeM();await load();}
-    catch(e){notify(e.message,"error");}
+    try{
+      for(const t of grupo){
+        await db.patch("turnos",t.id,{estado:"cancelado"},tk);
+        if(t.sena>0)await db.post("caja",{descripcion:`Dev. seña - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"egreso",categoria:"reserva",monto:t.sena,fecha:hoy(),turno_id:t.id},tk);
+      }
+      setDlg(null);closeM();await load();
+    }catch(e){notify(e.message,"error");}
     setSaving(false);
   };
-  const noShow = async t=>{setSaving(true);try{await db.patch("turnos",t.id,{estado:"no_show"},tk);setDlg(null);closeM();await load();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const noShowGrupo = async grupo=>{
+    if(!grupo?.length) return;
+    setSaving(true);
+    try{
+      for(const t of grupo) await db.patch("turnos",t.id,{estado:"no_show"},tk);
+      setDlg(null);closeM();await load();
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
   const confirmarBulk = async ids=>{
     setSaving(true);
     try{
@@ -680,7 +715,7 @@ export default function App() {
     getSemana, turnosAbonados, getHorasForDay, precioTurno,
     getFeriado, enviarWsp,
     // actions
-    guardarTurno, confirmarTurno, cancelarTurno, noShow,
+    guardarTurno, confirmarGrupo, cancelarGrupo, noShowGrupo, grupoDeTurno,
     confirmarBulk, cancelarBulk,
     guardarCliente, eliminarCliente,
     guardarAbono, cancelarAbono, editarAbono, materilarizarTurnosAbono,
@@ -802,11 +837,18 @@ export default function App() {
     </Modal>
 
     <Modal show={modal==="verTurno"} onClose={closeM} title="Turno">
-      {form.cliente&&<><div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20}}><Avatar nombre={form.cliente.nombre} size={48}/><div><div style={{fontSize:16,fontWeight:600,color:C.t1}}>{form.cliente.nombre}</div><div style={{fontSize:13,color:C.t2}}>{form.cliente.telefono}</div></div></div>
+      {form.cliente&&(()=>{
+        const turnosGrupo=grupoDeTurno(form);
+        const esGrupo=turnosGrupo.length>1;
+        const precioTotal=turnosGrupo.reduce((a,t)=>a+(t.precio||0),0);
+        const senaTotal=turnosGrupo.reduce((a,t)=>a+(t.sena||0),0);
+        const horasStr=turnosGrupo.map(t=>`${t.hora}:00`).join(", ");
+        return <>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20}}><Avatar nombre={form.cliente.nombre} size={48}/><div><div style={{fontSize:16,fontWeight:600,color:C.t1}}>{form.cliente.nombre}</div><div style={{fontSize:13,color:C.t2}}>{form.cliente.telefono}</div></div></div>
       <div style={{...card,marginBottom:14}}>
-        <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Turno actual</div>
+        <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>{esGrupo?`Reserva de ${turnosGrupo.length} horas`:"Turno actual"}</div>
         <div style={{display:"grid",gap:6}}>
-          {[["Fecha",form.fecha],["Hora",`${form.hora}:00`],["Precio",gs(form.precio)]].map(([k,v])=>(
+          {[["Fecha",form.fecha],[esGrupo?"Horas":"Hora",esGrupo?horasStr:`${form.hora}:00`],["Precio",gs(precioTotal)]].map(([k,v])=>(
             <div key={k} style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
               <span style={{color:C.t2}}>{k}</span><span style={{color:C.t1,fontWeight:500}}>{v}</span>
             </div>
@@ -819,7 +861,8 @@ export default function App() {
           </div>
         </div>
       </div>
-      {form.estado!=="cancelado"&&<div style={{...card,background:C.greenBg,border:`1px solid ${C.greenBd}`,marginBottom:14}}>
+      {esGrupo&&form.estado!=="cancelado"&&<div style={{fontSize:11,color:C.t3,marginBottom:14,lineHeight:1.5,marginTop:-8}}>Esta reserva ocupa {turnosGrupo.length} horarios seguidos ({horasStr}) — confirmar, cancelar o marcar no-show acá aplica a los {turnosGrupo.length} juntos.</div>}
+      {form.estado!=="cancelado"&&!esGrupo&&<div style={{...card,background:C.greenBg,border:`1px solid ${C.greenBd}`,marginBottom:14}}>
         <div style={{fontSize:12,color:C.green,fontWeight:600,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Reprogramar turno</div>
         <R2 isMobile={isMobile}>
           <FG label="Nueva fecha"><input type="date" value={reprogramFecha||form.fecha||""} onChange={e=>setReprogramFecha(e.target.value)} style={inp}/></FG>
@@ -848,13 +891,18 @@ export default function App() {
           setSaving(false);
         }} style={{width:"100%",marginTop:10}} disabled={saving}>{saving?"Guardando...":"Reprogramar y avisar"}</Btn>
       </div>}
+      {esGrupo&&form.estado!=="cancelado"&&<div style={{...card,marginBottom:14}}>
+        <div style={{fontSize:11,color:C.t3,lineHeight:1.5}}>Para reprogramar una reserva de varias horas, todavía hay que hacerlo horario por horario — cancelala y creá una nueva, o reprogramá cada turno por separado desde la Agenda.</div>
+      </div>}
       {form.estado==="reservado"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        <Btn v="success" onClick={()=>{closeM();setDlg({type:"confirmar",t:form});}}>✓ Cobrar y confirmar {gs(form.precio-(form.sena||0))}</Btn>
+        <Btn v="success" onClick={()=>{closeM();setDlg({type:"confirmar",grupo:turnosGrupo});}}>✓ Cobrar y confirmar {gs(precioTotal-senaTotal)}</Btn>
         {form.cliente?.telefono&&<ReenviarConfirmacionBtn turno={form} cliente={form.cliente} notify={notify}/>}
-        <Btn v="ghost" onClick={()=>{closeM();setDlg({type:"noshow",t:form});}}>Marcar como no show</Btn>
-        <Btn v="danger" onClick={()=>{closeM();setDlg({type:"cancelar",t:form});}}>Cancelar turno</Btn>
+        <Btn v="ghost" onClick={()=>{closeM();setDlg({type:"noshow",grupo:turnosGrupo});}}>Marcar como no show{esGrupo?` (${turnosGrupo.length} horas)`:""}</Btn>
+        <Btn v="danger" onClick={()=>{closeM();setDlg({type:"cancelar",grupo:turnosGrupo});}}>{esGrupo?`Cancelar reserva (${turnosGrupo.length} horas)`:"Cancelar turno"}</Btn>
       </div>}
       {form.estado==="confirmado"&&form.cliente?.telefono&&<ReenviarConfirmacionBtn turno={form} cliente={form.cliente} notify={notify}/>}
+        </>;
+      })()}
 
       {/* ── Productos vendidos en el turno ── */}
       {form.id&&(()=>{
@@ -913,7 +961,6 @@ export default function App() {
           </div>}
         </>;
       })()}
-      </>}
     </Modal>
 
     <Modal show={modal==="cliente"} onClose={closeM} title={form.id?"Editar cliente":"Nuevo cliente"} width={500}>
@@ -1206,9 +1253,9 @@ export default function App() {
 
     <Dialog show={dlg?.type==="eliminarCodigo"} title="Eliminar código" msg={`¿Eliminar el código "${dlg?.codigo}"? Se perderá el historial de usos.`} onOk={()=>eliminarCodigoRef(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>
 
-    <Dialog show={dlg?.type==="confirmar"} title="Confirmar cobro" msg={`¿Cobrar ${gs((dlg?.t?.precio||0)-(dlg?.t?.sena||0))} a ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?`} onOk={()=>confirmarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="✓ Confirmar" okV="success" okDisabled={saving}/>
-    <Dialog show={dlg?.type==="cancelar"} title="Cancelar turno" msg={`¿Cancelar turno de ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?${dlg?.t?.sena>0?" La seña se devuelve en caja.":""}`} onOk={()=>cancelarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Cancelar turno" okV="danger" okDisabled={saving}/>
-    <Dialog show={dlg?.type==="noshow"} title="No show" msg={`¿Marcar a ${cById(dlg?.t?.cliente_id)?.nombre||"?"} como no show?`} onOk={()=>noShow(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Marcar" okV="danger" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="confirmar"} title={dlg?.grupo?.length>1?`Confirmar cobro (${dlg.grupo.length} horas)`:"Confirmar cobro"} msg={`¿Cobrar ${gs((dlg?.grupo||[]).reduce((a,t)=>a+(t.precio-(t.sena||0)),0))} a ${cById(dlg?.grupo?.[0]?.cliente_id)?.nombre||"?"}?`} onOk={()=>confirmarGrupo(dlg.grupo)} onCancel={()=>setDlg(null)} okLabel="✓ Confirmar" okV="success" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="cancelar"} title={dlg?.grupo?.length>1?"Cancelar reserva":"Cancelar turno"} msg={`¿Cancelar ${dlg?.grupo?.length>1?`la reserva de ${dlg.grupo.length} horas`:"el turno"} de ${cById(dlg?.grupo?.[0]?.cliente_id)?.nombre||"?"}?${(dlg?.grupo||[]).some(t=>t.sena>0)?" La seña se devuelve en caja.":""}`} onOk={()=>cancelarGrupo(dlg.grupo)} onCancel={()=>setDlg(null)} okLabel="Cancelar" okV="danger" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="noshow"} title="No show" msg={`¿Marcar a ${cById(dlg?.grupo?.[0]?.cliente_id)?.nombre||"?"} como no show${dlg?.grupo?.length>1?` (${dlg.grupo.length} horas)`:""}?`} onOk={()=>noShowGrupo(dlg.grupo)} onCancel={()=>setDlg(null)} okLabel="Marcar" okV="danger" okDisabled={saving}/>
     <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>
     <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger" okDisabled={saving}/>
     <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>

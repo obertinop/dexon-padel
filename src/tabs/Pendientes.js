@@ -7,7 +7,7 @@ import { useAdmin } from "../context/AdminContext.js";
 export default function Pendientes() {
   const {
     turnos, clientes, isMobile, saving,
-    openM, setDlg, cById, getSemana,
+    openM, setDlg, cById, getSemana, grupoDeTurno,
     pendSel, setPendSel, pendFiltro, setPendFiltro,
     confirmarBulk, cancelarBulk, notify, load,
   } = useAdmin();
@@ -94,8 +94,8 @@ export default function Pendientes() {
               }
               catch (err) { notify("Error consultando Pagopar", "error"); }
             }}>🔍 Verificar</Btn>}
-            <Btn v="success" sm onClick={e => { e.stopPropagation(); setDlg({ type: "confirmar", t }); }}>💰 Confirmar</Btn>
-            <Btn v="danger" sm onClick={e => { e.stopPropagation(); setDlg({ type: "cancelar", t }); }}>✗</Btn>
+            <Btn v="success" sm onClick={e => { e.stopPropagation(); setDlg({ type: "confirmar", grupo: grupoDeTurno(t) }); }}>💰 Confirmar</Btn>
+            <Btn v="danger" sm onClick={e => { e.stopPropagation(); setDlg({ type: "cancelar", grupo: grupoDeTurno(t) }); }}>✗</Btn>
           </div>
         </div>
       </div>; })}

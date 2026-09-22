@@ -251,3 +251,16 @@ ALTER FUNCTION public.limpiar_otps_vencidos() SET search_path = public;
 -- ============================================================
 ALTER TABLE config ADD COLUMN IF NOT EXISTS wa_auto_admin_activo boolean default true;
 -- ============================================================
+
+
+-- ============================================================
+-- AGRUPA TURNOS DE UNA MISMA RESERVA (2026-09-22)
+-- Cuando alguien reserva varias horas seguidas, cada hora sigue siendo
+-- una fila en turnos (necesario para disponibilidad/precio por hora),
+-- pero ahora todas comparten un grupo_reserva_id para poder verlas,
+-- confirmarlas, cancelarlas y cobrar sus productos como una sola unidad
+-- desde el admin, en vez de una por una.
+-- ============================================================
+ALTER TABLE turnos ADD COLUMN IF NOT EXISTS grupo_reserva_id text;
+CREATE INDEX IF NOT EXISTS turnos_grupo_reserva_idx ON turnos(grupo_reserva_id) WHERE grupo_reserva_id IS NOT NULL;
+-- ============================================================
