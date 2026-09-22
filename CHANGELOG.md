@@ -122,6 +122,23 @@ Un solo botón, **"💰 Cobrar todo"**, con un diálogo de confirmación, dispar
 
 ---
 
+### [2026-09-22] Avisos al admin por plantilla — se termina el mensaje diario a las 7am
+**Archivos:** `lib/wa-handlers.js`, `api/whatsapp/webhook.js`
+
+**Qué:** los avisos de WhatsApp al número personal del admin ("📋 Nueva reserva", "🔄 Turno reprogramado", "✅ Confirmado presencial", "📩 Mensaje de un cliente") se mandaban como **texto libre** (`sendText`). Meta trata cualquier número al que el sistema le escribe primero —incluido el del propio dueño— con la misma "ventana de 24 horas" de un cliente cualquiera: si el admin no le escribía algo a Dexon en las últimas 24h, esos avisos quedaban bloqueados. Por eso había que mandarle un mensaje manual a Dexon todas las mañanas para "abrir la ventana".
+
+Se reemplazaron esos dos avisos por **plantillas aprobadas por Meta** (categoría Marketing, aprobadas el mismo día):
+- `dexon_aviso_admin` — cubre nueva reserva, reprogramación y confirmación presencial, con un campo de "detalle" que arma el código según el caso.
+- `dexon_aviso_mensaje` — mensaje entrante de un cliente.
+
+Las plantillas se pueden enviar en cualquier momento sin depender de que el admin le haya escrito antes a la empresa — se termina el ritual diario.
+
+**Por qué:** pedido directo, era tedioso y dependía de acordarse todos los días.
+
+**Notas:** el mensaje de **bienvenida automática al cliente** (`wa_bienvenida_texto`) sigue siendo texto libre — ahí no hace falta plantilla porque el cliente acaba de escribir, la ventana de 24h está abierta por definición. Si en el futuro se agregan más tipos de aviso al admin (ej. abono vencido, stock bajo), van a necesitar su propia plantilla aprobada por el mismo motivo.
+
+---
+
 ### [2026-06-02] Fix: renovación automática de sesión (caja/stats/stock vacíos)
 **Archivos:** `src/lib/api.js`, `src/components/Login.js`, `src/App.js`
 

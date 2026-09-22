@@ -11,7 +11,7 @@
 
 import {
   sbAdmin, waConfigured, PHONE_ID, TOKEN, ADMIN_TEL,
-  sendText, verifyWebhookSignature,
+  sendText, sendTemplate, verifyWebhookSignature,
 } from "../../lib/whatsapp.js";
 
 // Necesitamos el body CRUDO para validar la firma → desactivamos el parser de Vercel.
@@ -148,10 +148,15 @@ export default async function handler(req, res) {
   }
 
   // Aviso al admin (a TU número personal — el de la empresa no puede notificarse a sí mismo).
+  // Plantilla aprobada por Meta (dexon_aviso_mensaje): a diferencia de un texto libre, llega
+  // aunque no le hayas escrito nada a Dexon en las últimas 24h.
   const adminTel = cfg.wa_admin_tel || ADMIN_TEL;
   if (de !== adminTel) {
-    const preview = texto && texto.length > 60 ? texto.slice(0, 60) + "…" : texto;
-    tareas.push(sendText(adminTel, `📩 Mensaje de ${nombre}:\n${preview}`).catch((e) => console.error("[webhook] notif admin:", e)));
+    const preview = (texto && texto.length > 60 ? texto.slice(0, 60) + "…" : texto) || "(sin texto)";
+    tareas.push(sendTemplate(adminTel, {
+      name: "dexon_aviso_mensaje", language: { code: "es" },
+      components: [{ type: "body", parameters: [nombre || "-", preview].map(text => ({ type: "text", text: String(text) })) }],
+    }).catch((e) => console.error("[webhook] notif admin:", e)));
   }
 
   await Promise.all(tareas);
