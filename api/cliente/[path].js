@@ -13,6 +13,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { graphUrl, PHONE_ID as WA_PHONE_ID, TOKEN as WA_TOKEN, waConfigured } from "../../lib/whatsapp.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": process.env.APP_URL || "*",
@@ -103,13 +104,11 @@ async function handleAuthSend(req, res) {
   });
   if (insErr) return res.status(500).json({ error: "No se pudo generar el código" });
 
-  const PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const TOKEN    = process.env.WHATSAPP_TOKEN;
-  if (!PHONE_ID || !TOKEN) return res.status(500).json({ error: "WhatsApp no configurado" });
+  if (!waConfigured()) return res.status(500).json({ error: "WhatsApp no configurado" });
 
-  const r = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
+  const r = await fetch(graphUrl(`${WA_PHONE_ID}/messages`), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${WA_TOKEN}` },
     body: JSON.stringify({
       messaging_product: "whatsapp",
       to: tel,

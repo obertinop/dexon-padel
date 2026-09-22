@@ -260,7 +260,7 @@ export default function App() {
       if(sena>0)await db.post("caja",{descripcion:`Seña - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:t.id},tk);
       await load();closeM();
       const c=cById(Number(form.cliente_id));
-      if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios:`${Number(form.hora)}:00hs`,monto:gs(precio),forma_pago:"Pago online"})}).catch(()=>{});}
+      if(c?.telefono&&cfg.wa_auto_admin_activo!==false){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios:`${Number(form.hora)}:00hs`,monto:gs(precio),forma_pago:"Pago online"})}).catch(()=>{});}
     } catch(e){notify(e.message,"error");}
     setSaving(false);
   };
@@ -268,7 +268,7 @@ export default function App() {
   const confirmarTurno = async t=>{
     setSaving(true);
     try{const saldo=t.precio-(t.sena||0);await db.patch("turnos",t.id,{estado:"confirmado",cobrado:true,saldo:0},tk);if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
-    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono){const esEfectivo=t.metodo_pago==="efectivo";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});}
+    const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);if(c?.telefono&&cfg.wa_auto_admin_activo!==false){const esEfectivo=t.metodo_pago==="efectivo";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});}
     setDlg(null);await load();}
     catch(e){notify(e.message,"error");}
     setSaving(false);
@@ -289,7 +289,7 @@ export default function App() {
         await db.patch("turnos",id,{estado:"confirmado",cobrado:true,saldo:0},tk);
         if(saldo>0)await db.post("caja",{descripcion:`Reserva - ${cById(t.cliente_id)?.nombre||"?"}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:saldo,fecha:t.fecha,turno_id:t.id},tk);
         const[c]=await db.get("clientes",`id=eq.${t.cliente_id}`,tk);
-        if(c?.telefono){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
+        if(c?.telefono&&cfg.wa_auto_admin_activo!==false){fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(t.fecha),horarios:`${t.hora}:00hs`,monto:gs(t.precio),forma_pago:t.metodo_pago==="transferencia"?"Transferencia bancaria":"Efectivo"})}).catch(()=>{});}
       }));
       await load();notify(`${ids.length} turno${ids.length!==1?"s":""} confirmado${ids.length!==1?"s":""}!`,"ok");
       setPendSel(new Set());
@@ -388,7 +388,7 @@ export default function App() {
   const moverStock = async()=>{if(!form.stock_id||!form.cantidad_mov)return;setSaving(true);try{const item=stock.find(s=>s.id===Number(form.stock_id));if(!item)return;const delta=form.tipo_mov==="entrada"?Number(form.cantidad_mov):-Number(form.cantidad_mov);await db.patch("stock",item.id,{cantidad:Math.max(0,item.cantidad+delta)},tk);await db.post("stock_movimientos",{stock_id:item.id,tipo:form.tipo_mov,cantidad:Number(form.cantidad_mov),motivo:form.motivo||"",fecha:hoy()},tk);if(form.tipo_mov==="entrada"&&item.precio_costo>0)await db.post("caja",{descripcion:`Compra - ${item.nombre} x${form.cantidad_mov}`,tipo:"egreso",categoria:"stock",monto:item.precio_costo*Number(form.cantidad_mov),fecha:hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarConfig = async()=>{setSaving(true);try{
     const dias=Array.isArray(form.desc_martes_jueves_dias)?form.desc_martes_jueves_dias:(typeof form.desc_martes_jueves_dias==="string"?(()=>{try{return JSON.parse(form.desc_martes_jueves_dias);}catch{return[2,4];}})():[2,4]);
-    await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_percent:Number(form.referral_discount_percent||10),wa_admin_tel:form.wa_admin_tel||null,wa_bienvenida_activo:form.wa_bienvenida_activo||false,wa_bienvenida_texto:form.wa_bienvenida_texto||null,wa_recordatorio_activo:form.wa_recordatorio_activo||false,wa_recordatorio_template:form.wa_recordatorio_template||null},tk);
+    await db.patch("config",cfg.id,{nombre_club:form.nombre_club,hora_inicio:Number(form.hora_inicio),hora_fin:Number(form.hora_fin),tarifa_base:Number(form.tarifa_base),tarifa_pico:Number(form.tarifa_pico),hora_pico_inicio:Number(form.hora_pico_inicio),hora_pico_fin:Number(form.hora_pico_fin),desc_martes_jueves_enabled:form.desc_martes_jueves_enabled||false,desc_martes_jueves_percent:Number(form.desc_martes_jueves_percent||20),desc_martes_jueves_dias:JSON.stringify(dias),referral_discount_percent:Number(form.referral_discount_percent||10),wa_admin_tel:form.wa_admin_tel||null,wa_auto_admin_activo:form.wa_auto_admin_activo!==false,wa_bienvenida_activo:form.wa_bienvenida_activo||false,wa_bienvenida_texto:form.wa_bienvenida_texto||null,wa_recordatorio_activo:form.wa_recordatorio_activo||false,wa_recordatorio_template:form.wa_recordatorio_template||null},tk);
     await load();closeM();
   }catch(e){notify(e.message,"error");}setSaving(false);};
 
@@ -806,7 +806,7 @@ export default function App() {
           setSaving(true);
           try{
             await db.patch("turnos",form.id,{fecha:nF,hora:Number(nH),motivo_reprog:form.motivo_reprog||""},tk);
-            if(form.cliente?.telefono){const motivos={cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};const razon=motivos[form.motivo_reprog]||"";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"reprogramacion",nombre:form.cliente.nombre,telefono:form.cliente.telefono,fecha:fmtFechaLegible(nF),horarios:`${nH}:00hs`,motivo:razon})}).catch(()=>{});}
+            if(form.cliente?.telefono&&cfg.wa_auto_admin_activo!==false){const motivos={cliente_solicito:"a tu solicitud",conflicto_cancha:"por conflicto de cancha",instructor_no_disponible:"por indisponibilidad de instructor",mantenimiento:"por mantenimiento",clima:"por condiciones climáticas",otro:"por motivos internos"};const razon=motivos[form.motivo_reprog]||"";fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"reprogramacion",nombre:form.cliente.nombre,telefono:form.cliente.telefono,fecha:fmtFechaLegible(nF),horarios:`${nH}:00hs`,motivo:razon})}).catch(()=>{});}
             await load();notify("Turno reprogramado","ok");setTimeout(()=>{closeM();setReprogramFecha("");setReprogramHora("");},700);
           }catch(e){console.error(e);notify("Error al reprogramar","error");}
           setSaving(false);
@@ -1101,6 +1101,9 @@ export default function App() {
       <div style={{fontSize:11,color:C.t2,marginBottom:12,lineHeight:1.5}}>El número de la <strong>empresa</strong> (emisor) se configura en las variables de entorno de Meta. El número de abajo es <strong>tuyo</strong>: ahí recibís los avisos internos (no puede ser el de la empresa, un número no puede notificarse a sí mismo).</div>
       <Inp label="Tu WhatsApp personal — recibís los avisos acá (con código de país, ej: 595981086046)" type="text" value={form.wa_admin_tel||""} onChange={sf("wa_admin_tel")}/>
 
+      <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer"}}><input type="checkbox" checked={form.wa_auto_admin_activo!==false} onChange={e=>setForm(f=>({...f,wa_auto_admin_activo:e.target.checked}))}/><span style={{fontSize:13,color:C.t2}}>Enviar WhatsApp automático al reservar/confirmar/reprogramar desde el admin</span></label>
+      <div style={{fontSize:11,color:C.t3,marginBottom:14,lineHeight:1.5}}>Si lo apagás, esas acciones ya no avisan solas al cliente — podés avisarle vos manualmente con el botón <strong style={{color:C.t2}}>"Reenviar confirmación"</strong> dentro del turno cuando quieras. No afecta las notificaciones cuando el cliente reserva solo desde el portal.</div>
+
       <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer"}}><input type="checkbox" checked={form.wa_bienvenida_activo||false} onChange={e=>setForm(f=>({...f,wa_bienvenida_activo:e.target.checked}))}/><span style={{fontSize:13,color:C.t2}}>Mensaje de bienvenida automático (primer contacto)</span></label>
       {form.wa_bienvenida_activo&&<FG><textarea value={form.wa_bienvenida_texto||""} onChange={sf("wa_bienvenida_texto")} rows={3} placeholder="¡Hola! Gracias por escribir a DEXON PADEL. ¿En qué te ayudamos?" style={{...inp,resize:"vertical",minHeight:64}}/></FG>}
 
@@ -1142,17 +1145,17 @@ export default function App() {
       </div>
     </Modal>
 
-    <Dialog show={dlg?.type==="eliminarCodigo"} title="Eliminar código" msg={`¿Eliminar el código "${dlg?.codigo}"? Se perderá el historial de usos.`} onOk={()=>eliminarCodigoRef(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
+    <Dialog show={dlg?.type==="eliminarCodigo"} title="Eliminar código" msg={`¿Eliminar el código "${dlg?.codigo}"? Se perderá el historial de usos.`} onOk={()=>eliminarCodigoRef(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>
 
-    <Dialog show={dlg?.type==="confirmar"} title="Confirmar cobro" msg={`¿Cobrar ${gs((dlg?.t?.precio||0)-(dlg?.t?.sena||0))} a ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?`} onOk={()=>confirmarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="✓ Confirmar" okV="success"/>
-    <Dialog show={dlg?.type==="cancelar"} title="Cancelar turno" msg={`¿Cancelar turno de ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?${dlg?.t?.sena>0?" La seña se devuelve en caja.":""}`} onOk={()=>cancelarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Cancelar turno" okV="danger"/>
-    <Dialog show={dlg?.type==="noshow"} title="No show" msg={`¿Marcar a ${cById(dlg?.t?.cliente_id)?.nombre||"?"} como no show?`} onOk={()=>noShow(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Marcar" okV="danger"/>
-    <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
-    <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger"/>
-    <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger"/>
-    <Dialog show={dlg?.type==="anularVenta"} title="Anular venta" msg={`¿Anular la venta #${dlg?.v?.id}? Se repone el stock${dlg?.v?.metodo_pago==="saldo_favor"?" y se devuelve el saldo al cliente." : dlg?.v?.caja_mov_id?" y se registra un egreso compensatorio en caja.":"."}`} onOk={()=>anularVenta(dlg.v)} onCancel={()=>setDlg(null)} okLabel="Anular venta" okV="danger"/>
+    <Dialog show={dlg?.type==="confirmar"} title="Confirmar cobro" msg={`¿Cobrar ${gs((dlg?.t?.precio||0)-(dlg?.t?.sena||0))} a ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?`} onOk={()=>confirmarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="✓ Confirmar" okV="success" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="cancelar"} title="Cancelar turno" msg={`¿Cancelar turno de ${cById(dlg?.t?.cliente_id)?.nombre||"?"}?${dlg?.t?.sena>0?" La seña se devuelve en caja.":""}`} onOk={()=>cancelarTurno(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Cancelar turno" okV="danger" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="noshow"} title="No show" msg={`¿Marcar a ${cById(dlg?.t?.cliente_id)?.nombre||"?"} como no show?`} onOk={()=>noShow(dlg.t)} onCancel={()=>setDlg(null)} okLabel="Marcar" okV="danger" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="eliminarCliente"} title="Eliminar cliente" msg={`¿Eliminar a ${dlg?.nombre}?`} onOk={()=>eliminarCliente(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="cancelarAbono"} title="Cancelar abono" msg={`¿Cancelar el abono de ${dlg?.nombre}?`} onOk={()=>cancelarAbono(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Cancelar abono" okV="danger" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="eliminarMov"} title="Eliminar movimiento" msg={`¿Eliminar "${dlg?.desc}" de caja?`} onOk={()=>eliminarMovCaja(dlg.id)} onCancel={()=>setDlg(null)} okLabel="Eliminar" okV="danger" okDisabled={saving}/>
+    <Dialog show={dlg?.type==="anularVenta"} title="Anular venta" msg={`¿Anular la venta #${dlg?.v?.id}? Se repone el stock${dlg?.v?.metodo_pago==="saldo_favor"?" y se devuelve el saldo al cliente." : dlg?.v?.caja_mov_id?" y se registra un egreso compensatorio en caja.":"."}`} onOk={()=>anularVenta(dlg.v)} onCancel={()=>setDlg(null)} okLabel="Anular venta" okV="danger" okDisabled={saving}/>
     <DiaConfigModal/>
-    <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.fechaLabel||dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary"/>
+    <Dialog show={dlg?.type==="dragReprogram"} title="Reprogramar turno" msg={`¿Mover el turno de ${dlg?.nombre} al ${dlg?.fechaLabel||dlg?.newFecha} a las ${dlg?.newHora}:00?`} onOk={async()=>{setSaving(true);try{await db.patch("turnos",dlg.turnoId,{fecha:dlg.newFecha,hora:dlg.newHora},tk);await load();notify("Turno reprogramado","ok");}catch(e){notify(e.message,"error");}setSaving(false);setDlg(null);}} onCancel={()=>setDlg(null)} okLabel="Mover" okV="primary" okDisabled={saving}/>
 
     {dlg?.type==="wsp"&&<div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
       <div style={{backgroundColor:C.bgCard,borderRadius:16,padding:"24px",width:360,boxShadow:"0 8px 40px rgba(0,0,0,0.6)",border:`1px solid ${C.border}`}}>

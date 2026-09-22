@@ -241,3 +241,13 @@ GRANT  EXECUTE ON FUNCTION public.update_saldo_favor(bigint, numeric) TO service
 ALTER FUNCTION public.update_saldo_favor(bigint, numeric) SET search_path = public;
 ALTER FUNCTION public.limpiar_otps_vencidos() SET search_path = public;
 -- ============================================================
+
+
+-- ============================================================
+-- TOGGLE: WhatsApp automático en acciones del admin (2026-09-22)
+-- Apaga el auto-envío al reservar/confirmar/reprogramar desde el panel
+-- (el envío manual vía "Reenviar confirmación" y las notificaciones al
+-- cliente que reserva solo desde el portal no se ven afectadas).
+-- ============================================================
+ALTER TABLE config ADD COLUMN IF NOT EXISTS wa_auto_admin_activo boolean default true;
+-- ============================================================

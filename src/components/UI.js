@@ -86,7 +86,9 @@ export const Modal = ({show,onClose,title,children,width=420}) => {
 };
 
 // ── DIALOG ──
-export const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="danger"}) => {
+// okDisabled evita doble-submit (doble click/tap mientras la acción está en curso,
+// especialmente relevante en confirmaciones que disparan un envío de WhatsApp).
+export const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="danger",okDisabled=false}) => {
   if(!show) return null;
   return (
     <div style={{position:"fixed",inset:0,zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",backgroundColor:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)"}}>
@@ -94,8 +96,8 @@ export const Dialog = ({show,title,msg,onOk,onCancel,okLabel="Confirmar",okV="da
         <div style={{fontSize:16,fontWeight:600,marginBottom:8,color:C.t1}}>{title}</div>
         <div style={{fontSize:14,color:C.t2,marginBottom:24,lineHeight:1.6}}>{msg}</div>
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-          <Btn onClick={onCancel}>Cancelar</Btn>
-          <Btn v={okV} onClick={onOk}>{okLabel}</Btn>
+          <Btn onClick={onCancel} disabled={okDisabled}>Cancelar</Btn>
+          <Btn v={okV} onClick={onOk} disabled={okDisabled}>{okDisabled?"Procesando...":okLabel}</Btn>
         </div>
       </div>
     </div>
