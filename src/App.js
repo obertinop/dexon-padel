@@ -13,7 +13,7 @@ import LandingPage from "./components/LandingPage.js";
 import ResultadoPago from "./components/ResultadoPago.js";
 import MiCuenta from "./components/MiCuenta.js";
 import ListaPrecios from "./components/ListaPrecios.js";
-import QRLista from "./components/QRLista.js";
+import QRCompartir from "./components/QRCompartir.js";
 import WhatsAppPanel, { ReenviarConfirmacionBtn } from "./components/WhatsAppPanel.js";
 import DiasBloquedosPanel from "./components/DiasBloquedosPanel.js";
 import { Avatar, WhatsAppIcon, Badge, Btn, FG, Inp, Sel, R2, Div, Empty, estadoBadge, tipoBadge, Modal, Dialog } from "./components/UI.js";
@@ -1116,8 +1116,8 @@ export default function App() {
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarMovCaja} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 
-    <Modal show={modal==="verQR"} onClose={closeM} title="Lista de precios pública">
-      <QRLista/>
+    <Modal show={modal==="verQR"} onClose={closeM} title={form.tituloQR||"Compartir"}>
+      <QRCompartir path={form.path} descripcion={form.descripcionQR} filename={form.filenameQR}/>
     </Modal>
 
     <Modal show={modal==="stockItem"} onClose={closeM} title={form.id?"Editar producto":"Nuevo producto"}>

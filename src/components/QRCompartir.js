@@ -3,12 +3,13 @@ import QRCode from "qrcode";
 import { C } from "../lib/constants.js";
 import { Btn } from "./UI.js";
 
-export default function QRLista() {
-  const url = `${window.location.origin}/precios`;
+export default function QRCompartir({ path, descripcion, filename = "qr.png" }) {
+  const url = `${window.location.origin}${path}`;
   const [dataUrl, setDataUrl] = useState(null);
   const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
+    setDataUrl(null);
     QRCode.toDataURL(url, { width: 480, margin: 2, color: { dark: "#060D1A", light: "#FFFFFF" } })
       .then(setDataUrl).catch(() => setDataUrl(null));
   }, [url]);
@@ -20,14 +21,14 @@ export default function QRLista() {
   const descargar = () => {
     if (!dataUrl) return;
     const a = document.createElement("a");
-    a.href = dataUrl; a.download = "lista-precios-qr.png"; a.click();
+    a.href = dataUrl; a.download = filename; a.click();
   };
 
   return <div style={{ textAlign: "center" }}>
-    <div style={{ fontSize: 12, color: C.t2, marginBottom: 14, lineHeight: 1.5 }}>Apunta a la lista de precios pública, conectada con el stock activo. Imprimí este QR para las mesas o la recepción.</div>
+    {descripcion && <div style={{ fontSize: 12, color: C.t2, marginBottom: 14, lineHeight: 1.5 }}>{descripcion}</div>}
     <div style={{ background: "#fff", borderRadius: 12, padding: 16, display: "inline-block", marginBottom: 14 }}>
       {dataUrl
-        ? <img src={dataUrl} alt="QR de la lista de precios" style={{ width: 220, height: 220, display: "block" }} />
+        ? <img src={dataUrl} alt="Código QR" style={{ width: 220, height: 220, display: "block" }} />
         : <div style={{ width: 220, height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 13 }}>Generando...</div>}
     </div>
     <div style={{ fontSize: 12, color: C.t3, wordBreak: "break-all", marginBottom: 14 }}>{url}</div>
