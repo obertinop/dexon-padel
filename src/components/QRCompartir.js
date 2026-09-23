@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { C } from "../lib/constants.js";
 import { Btn } from "./UI.js";
 
-const LOGO_SRC = "/logo512.png";
+const LOGO_SRC = "/dexon-mark.svg";
 const SIZE = 480;
 
 function generarQrConLogo(url) {
