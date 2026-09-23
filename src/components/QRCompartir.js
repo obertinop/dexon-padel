@@ -4,47 +4,50 @@ import { C } from "../lib/constants.js";
 import { Btn } from "./UI.js";
 
 const LOGO_SRC = "/dexon-mark.svg";
-const SIZE = 480;
+const LOGO_RASTER_SIZE = 240; // resolución del logo embebido, independiente del tamaño de impresión del SVG
 
-function generarQrConLogo(url) {
+// El isotipo viene como un cuadrado negro con "dexon" recortado en negativo.
+// Para dejar solo las letras en negro sólido (sin el cuadrado) se rellena un
+// canvas de negro y se "borra" con el isotipo como máscara — queda
+// únicamente el trazo de las letras, con fondo transparente.
+function extraerLetrasPng() {
   return new Promise((resolve, reject) => {
-    const canvas = document.createElement("canvas");
-    QRCode.toCanvas(canvas, url, { width: SIZE, margin: 2, errorCorrectionLevel: "H", color: { dark: "#000000", light: "#FFFFFF" } })
-      .then(() => {
-        const ctx = canvas.getContext("2d");
-        const logo = new Image();
-        const dibujarLogo = () => {
-          const logoSize = SIZE * 0.2;
-          const boxSize = logoSize + 20;
-          const bx = (SIZE - boxSize) / 2, by = (SIZE - boxSize) / 2;
-          ctx.fillStyle = "#fff";
-          ctx.fillRect(bx, by, boxSize, boxSize);
-
-          // El isotipo viene como un cuadrado negro con "dexon" recortado en
-          // negativo. Para dejar solo las letras en negro sólido (sin el
-          // cuadrado), se rellena un canvas aparte de negro y se "borra" con
-          // el isotipo como máscara — queda únicamente el trazo de las letras.
-          const tmp = document.createElement("canvas");
-          tmp.width = logoSize; tmp.height = logoSize;
-          const tctx = tmp.getContext("2d");
-          tctx.fillStyle = "#000";
-          tctx.fillRect(0, 0, logoSize, logoSize);
-          tctx.globalCompositeOperation = "destination-out";
-          tctx.drawImage(logo, 0, 0, logoSize, logoSize);
-
-          const lx = (SIZE - logoSize) / 2, ly = (SIZE - logoSize) / 2;
-          ctx.drawImage(tmp, lx, ly);
-          resolve(canvas.toDataURL("image/png"));
-        };
-        logo.onload = dibujarLogo;
-        logo.onerror = () => resolve(canvas.toDataURL("image/png")); // sin logo si no carga
-        logo.src = LOGO_SRC;
-      })
-      .catch(reject);
+    const logo = new Image();
+    logo.onload = () => {
+      const tmp = document.createElement("canvas");
+      tmp.width = LOGO_RASTER_SIZE; tmp.height = LOGO_RASTER_SIZE;
+      const tctx = tmp.getContext("2d");
+      tctx.fillStyle = "#000";
+      tctx.fillRect(0, 0, LOGO_RASTER_SIZE, LOGO_RASTER_SIZE);
+      tctx.globalCompositeOperation = "destination-out";
+      tctx.drawImage(logo, 0, 0, LOGO_RASTER_SIZE, LOGO_RASTER_SIZE);
+      resolve(tmp.toDataURL("image/png"));
+    };
+    logo.onerror = reject;
+    logo.src = LOGO_SRC;
   });
 }
 
-export default function QRCompartir({ path, descripcion, filename = "qr.png" }) {
+// QR como SVG vectorial (no pixela al imprimirlo grande) con el logo
+// embebido como una pequeña imagen dentro del mismo SVG.
+async function generarQrConLogo(url) {
+  const [svgStr, logoPng] = await Promise.all([
+    QRCode.toString(url, { type: "svg", errorCorrectionLevel: "H", margin: 2, color: { dark: "#000000", light: "#FFFFFF" } }),
+    extraerLetrasPng(),
+  ]);
+
+  const w = Number(svgStr.match(/viewBox="0 0 ([\d.]+) [\d.]+"/)[1]);
+  const logoSize = w * 0.2;
+  const boxSize = logoSize + w * 0.0417;
+  const bx = (w - boxSize) / 2, by = bx;
+  const lx = (w - logoSize) / 2, ly = lx;
+
+  const overlay = `<rect x="${bx}" y="${by}" width="${boxSize}" height="${boxSize}" fill="#fff"/><image x="${lx}" y="${ly}" width="${logoSize}" height="${logoSize}" href="${logoPng}"/>`;
+  const composed = svgStr.replace("</svg>", overlay + "</svg>");
+  return `data:image/svg+xml,${encodeURIComponent(composed)}`;
+}
+
+export default function QRCompartir({ path, descripcion, filename = "qr.svg" }) {
   const url = `${window.location.origin}${path}`;
   const [dataUrl, setDataUrl] = useState(null);
   const [copiado, setCopiado] = useState(false);
@@ -77,7 +80,7 @@ export default function QRCompartir({ path, descripcion, filename = "qr.png" }) 
     <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
       <Btn v="ghost" onClick={copiar}>{copiado ? "¡Copiado!" : "Copiar link"}</Btn>
       <Btn v="ghost" onClick={() => window.open(url, "_blank", "noopener,noreferrer")}>Abrir</Btn>
-      <Btn v="primary" onClick={descargar} disabled={!dataUrl}>Descargar QR</Btn>
+      <Btn v="primary" onClick={descargar} disabled={!dataUrl}>Descargar QR (SVG)</Btn>
     </div>
   </div>;
 }

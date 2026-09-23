@@ -25,7 +25,7 @@ export default function Config() {
         <div style={{ fontWeight: 600, fontSize: 14, color: C.t1 }}>Portal de reservas online</div>
         <div style={{ fontSize: 12, color: C.t2, marginTop: 2 }}>Tus clientes reservan la cancha desde el celular, sin llamarte</div>
       </div>
-      <Btn v="ghost" onClick={() => openM("verQR", { path: "/reservar", tituloQR: "Reservar cancha", descripcionQR: "Apunta directo al portal de reservas online. Imprimí este QR para la entrada del club, tarjetas o redes sociales.", filenameQR: "reservar-cancha-qr.png" })}>QR / Compartir</Btn>
+      <Btn v="ghost" onClick={() => openM("verQR", { path: "/reservar", tituloQR: "Reservar cancha", descripcionQR: "Apunta directo al portal de reservas online. Imprimí este QR para la entrada del club, tarjetas o redes sociales.", filenameQR: "reservar-cancha-qr.svg" })}>QR / Compartir</Btn>
     </div>
 
     {instructores.length > 0 && <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, border: `1px solid ${C.border}`, padding: "16px 20px", marginBottom: 12 }}><div style={{ fontWeight: 600, marginBottom: 12, fontSize: 14, color: C.t1 }}>Instructores</div>{instructores.map(i => <div key={i.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13 }}><span style={{ fontWeight: 600, color: C.t1 }}>{i.nombre}</span><span style={{ color: C.t2 }}>{gs(i.tarifa_clase)}/clase</span></div>)}</div>}
