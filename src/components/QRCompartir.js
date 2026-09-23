@@ -6,22 +6,45 @@ import { Btn } from "./UI.js";
 const LOGO_SRC = "/dexon-mark.svg";
 const LOGO_RASTER_SIZE = 320; // resolución del logo embebido, independiente del tamaño de impresión del SVG
 
-// El isotipo viene como un cuadrado negro con "dexon" recortado en negativo.
-// Para dejar solo las letras en negro sólido (sin el cuadrado) se rellena un
-// canvas de negro y se "borra" con el isotipo como máscara — queda
-// únicamente el trazo de las letras, con fondo transparente.
+// El isotipo viene como un cuadrado negro (1024x1024) con "dexon" recortado
+// en negativo, pero el trazo real del wordmark es ancho y bajo — ocupa solo
+// una franja angosta en el medio del cuadrado. Se rellena un canvas de negro
+// y se "borra" con el isotipo como máscara (queda el trazo en negro sólido,
+// fondo transparente), y después se recorta al bounding box real del trazo
+// para no arrastrar el margen vacío del cuadrado original.
 function extraerLetrasPng() {
   return new Promise((resolve, reject) => {
     const logo = new Image();
     logo.onload = () => {
-      const tmp = document.createElement("canvas");
-      tmp.width = LOGO_RASTER_SIZE; tmp.height = LOGO_RASTER_SIZE;
-      const tctx = tmp.getContext("2d");
-      tctx.fillStyle = "#000";
-      tctx.fillRect(0, 0, LOGO_RASTER_SIZE, LOGO_RASTER_SIZE);
-      tctx.globalCompositeOperation = "destination-out";
-      tctx.drawImage(logo, 0, 0, LOGO_RASTER_SIZE, LOGO_RASTER_SIZE);
-      resolve(tmp.toDataURL("image/png"));
+      const raw = document.createElement("canvas");
+      raw.width = LOGO_RASTER_SIZE; raw.height = LOGO_RASTER_SIZE;
+      const rctx = raw.getContext("2d");
+      rctx.fillStyle = "#000";
+      rctx.fillRect(0, 0, LOGO_RASTER_SIZE, LOGO_RASTER_SIZE);
+      rctx.globalCompositeOperation = "destination-out";
+      rctx.drawImage(logo, 0, 0, LOGO_RASTER_SIZE, LOGO_RASTER_SIZE);
+
+      const { data } = rctx.getImageData(0, 0, LOGO_RASTER_SIZE, LOGO_RASTER_SIZE);
+      let minX = LOGO_RASTER_SIZE, minY = LOGO_RASTER_SIZE, maxX = 0, maxY = 0;
+      for (let y = 0; y < LOGO_RASTER_SIZE; y++) {
+        for (let x = 0; x < LOGO_RASTER_SIZE; x++) {
+          if (data[(y * LOGO_RASTER_SIZE + x) * 4 + 3] > 10) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      const pad = Math.round(LOGO_RASTER_SIZE * 0.02);
+      minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+      maxX = Math.min(LOGO_RASTER_SIZE - 1, maxX + pad); maxY = Math.min(LOGO_RASTER_SIZE - 1, maxY + pad);
+      const cw = maxX - minX + 1, ch = maxY - minY + 1;
+
+      const cropped = document.createElement("canvas");
+      cropped.width = cw; cropped.height = ch;
+      cropped.getContext("2d").drawImage(raw, minX, minY, cw, ch, 0, 0, cw, ch);
+      resolve({ dataUrl: cropped.toDataURL("image/png"), w: cw, h: ch });
     };
     logo.onerror = reject;
     logo.src = LOGO_SRC;
@@ -31,18 +54,26 @@ function extraerLetrasPng() {
 // QR como SVG vectorial (no pixela al imprimirlo grande) con el logo
 // embebido como una pequeña imagen dentro del mismo SVG.
 async function generarQrConLogo(url) {
-  const [svgStr, logoPng] = await Promise.all([
+  const [svgStr, logo] = await Promise.all([
     QRCode.toString(url, { type: "svg", errorCorrectionLevel: "H", margin: 2, color: { dark: "#000000", light: "#FFFFFF" } }),
     extraerLetrasPng(),
   ]);
 
   const w = Number(svgStr.match(/viewBox="0 0 ([\d.]+) [\d.]+"/)[1]);
-  const logoSize = w * 0.28;
-  const boxSize = logoSize * 1.15;
-  const bx = (w - boxSize) / 2, by = bx;
-  const lx = (w - logoSize) / 2, ly = lx;
+  // El recuadro blanco no puede ser muy ancho aunque el área total sea baja:
+  // una franja angosta que cruza gran parte del QR daña más módulos de los
+  // que tolera la corrección de errores que un bloque compacto de igual
+  // área. Se fija el ancho del recuadro y se deriva el resto del wordmark
+  // ya recortado (que es ancho y bajo), quedando más compacto que antes.
+  const padXRatio = 0.14, padYRatio = 0.3;
+  const bw = w * 0.32;
+  const logoW = bw / (1 + padXRatio * 2);
+  const logoH = logoW * (logo.h / logo.w);
+  const bh = logoH * (1 + padYRatio * 2);
+  const lx = (w - logoW) / 2, ly = (w - logoH) / 2;
+  const bx = (w - bw) / 2, by = (w - bh) / 2;
 
-  const overlay = `<rect x="${bx}" y="${by}" width="${boxSize}" height="${boxSize}" fill="#fff"/><image x="${lx}" y="${ly}" width="${logoSize}" height="${logoSize}" href="${logoPng}"/>`;
+  const overlay = `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="#fff"/><image x="${lx}" y="${ly}" width="${logoW}" height="${logoH}" href="${logo.dataUrl}"/>`;
   const composed = svgStr.replace("</svg>", overlay + "</svg>");
   return `data:image/svg+xml,${encodeURIComponent(composed)}`;
 }
