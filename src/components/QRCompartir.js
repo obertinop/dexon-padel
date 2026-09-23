@@ -51,71 +51,32 @@ function extraerLetrasPng() {
   });
 }
 
-// Un módulo cae dentro de alguno de los tres "ojos" (patrones de esquina,
-// 7x7 módulos) si se lo dibuja aparte, redondeado, en vez de como punto.
-function esOjo(row, col, size) {
-  const enEsquina = (r, c) => r >= 0 && r < 7 && c >= 0 && c < 7;
-  return enEsquina(row, col) || enEsquina(row, col - (size - 7)) || enEsquina(row - (size - 7), col);
-}
-
-function ojo(r0, c0) {
-  return `<rect x="${c0}" y="${r0}" width="7" height="7" rx="1.6" fill="#000"/>` +
-    `<rect x="${c0 + 1}" y="${r0 + 1}" width="5" height="5" rx="1.2" fill="#fff"/>` +
-    `<rect x="${c0 + 2}" y="${r0 + 2}" width="3" height="3" rx="0.8" fill="#000"/>`;
-}
-
-// QR dibujado módulo por módulo con esquinas suavizadas (no el patrón
-// estándar de cuadrados duros), con los tres ojos de las esquinas también
-// redondeados — para que se sienta diseñado junto con la píldora del logo,
-// no una pegatina genérica encima. Los módulos casi no pierden área
-// respecto a un cuadrado normal (solo se suavizan las esquinas): se probó
-// con puntos/círculos de verdad y perdían tanta área que, cerca del logo,
-// dejaban de decodificar — el redondeo tiene que ser sutil, no un punto.
-// Sigue siendo SVG vectorial (no pixela al imprimir grande), con el logo
-// embebido como imagen chica adentro.
+// QR con el patrón estándar de cuadrados duros (el renderer SVG de la
+// librería, vectorial — no pixela al imprimir grande). El logo va en una
+// placa cuadrada con marco negro en el centro, con el mismo lenguaje
+// visual que los "ojos" de las esquinas del propio QR (cuadrado negro con
+// un cuadrado blanco adentro), en vez de una píldora o pegatina aparte.
 async function generarQrConLogo(url) {
-  const [qr, logo] = await Promise.all([
-    QRCode.create(url, { errorCorrectionLevel: "H" }),
+  const [svgStr, logo] = await Promise.all([
+    QRCode.toString(url, { type: "svg", errorCorrectionLevel: "H", margin: 2, color: { dark: "#000000", light: "#FFFFFF" } }),
     extraerLetrasPng(),
   ]);
 
-  const size = qr.modules.size;
-  const margin = 2;
-  const w = size + margin * 2;
-  const moduleRx = 0.22; // radio de esquina de cada módulo, en unidades de módulo
+  const w = Number(svgStr.match(/viewBox="0 0 ([\d.]+) [\d.]+"/)[1]);
 
-  let modules = "";
-  for (let row = 0; row < size; row++) {
-    for (let col = 0; col < size; col++) {
-      if (!qr.modules.get(row, col) || esOjo(row, col, size)) continue;
-      modules += `<rect x="${col + margin}" y="${row + margin}" width="1" height="1" rx="${moduleRx}"/>`;
-    }
-  }
+  const S = w * 0.32; // lado de la placa cuadrada
+  const border = S * 0.06; // grosor del marco negro
+  const bx = (w - S) / 2, by = (w - S) / 2;
+  const inner = S - border * 2;
+  const escala = Math.min((inner * 0.82) / logo.w, (inner * 0.82) / logo.h);
+  const logoW = logo.w * escala, logoH = logo.h * escala;
+  const lx = bx + (S - logoW) / 2, ly = by + (S - logoH) / 2;
 
-  const eyes = ojo(margin, margin) + ojo(margin, margin + size - 7) + ojo(margin + size - 7, margin);
-
-  // El recuadro blanco no puede ser muy ancho aunque el área total sea baja:
-  // una franja angosta que cruza gran parte del QR daña más módulos de los
-  // que tolera la corrección de errores que un bloque compacto de igual
-  // área. Se fija el ancho del recuadro y se deriva el resto del wordmark
-  // ya recortado (que es ancho y bajo).
-  const padXRatio = 0.14, padYRatio = 0.3;
-  const bw = w * 0.4;
-  const logoW = bw / (1 + padXRatio * 2);
-  const logoH = logoW * (logo.h / logo.w);
-  const bh = logoH * (1 + padYRatio * 2);
-  const lx = (w - logoW) / 2, ly = (w - logoH) / 2;
-  const bx = (w - bw) / 2, by = (w - bh) / 2;
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${w}" shape-rendering="crispEdges">` +
-    `<rect width="${w}" height="${w}" fill="#fff"/>` +
-    `<g fill="#000">${modules}</g>` +
-    eyes +
-    `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="#fff"/>` +
-    `<image x="${lx}" y="${ly}" width="${logoW}" height="${logoH}" href="${logo.dataUrl}"/>` +
-    `</svg>`;
-
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  const overlay = `<rect x="${bx}" y="${by}" width="${S}" height="${S}" fill="#000"/>` +
+    `<rect x="${bx + border}" y="${by + border}" width="${inner}" height="${inner}" fill="#fff"/>` +
+    `<image x="${lx}" y="${ly}" width="${logoW}" height="${logoH}" href="${logo.dataUrl}"/>`;
+  const composed = svgStr.replace("</svg>", overlay + "</svg>");
+  return `data:image/svg+xml,${encodeURIComponent(composed)}`;
 }
 
 export default function QRCompartir({ path, descripcion, filename = "qr.svg" }) {
