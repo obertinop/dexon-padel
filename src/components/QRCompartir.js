@@ -73,7 +73,7 @@ async function generarQrConLogo(url) {
   const lx = (w - logoW) / 2, ly = (w - logoH) / 2;
   const bx = (w - bw) / 2, by = (w - bh) / 2;
 
-  const overlay = `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="#fff"/><image x="${lx}" y="${ly}" width="${logoW}" height="${logoH}" href="${logo.dataUrl}"/>`;
+  const overlay = `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="#fff"/><image x="${lx}" y="${ly}" width="${logoW}" height="${logoH}" href="${logo.dataUrl}"/>`;
   const composed = svgStr.replace("</svg>", overlay + "</svg>");
   return `data:image/svg+xml,${encodeURIComponent(composed)}`;
 }
