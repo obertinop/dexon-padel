@@ -256,6 +256,33 @@ ALTER TABLE stock ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;
 
 -- search_path fijo en funciones SECURITY DEFINER (evita hijacking vía search_path mutable)
 ALTER FUNCTION public.update_saldo_favor(bigint, numeric) SET search_path = public;
+
+
+-- ============================================================
+-- LISTA DE PRECIOS PÚBLICA (QR) — vista stock_publico (2026-09-23)
+-- (Ya aplicado en prod vía migraciones stock_publico_view y
+-- stock_publico_view_fix_grants)
+-- Vista de solo lectura para la página pública /precios: expone
+-- únicamente nombre/categoría/marca/tipo/presentación/precio_venta de
+-- productos activos con precio cargado — nunca precio_costo ni
+-- cantidad en stock.
+--
+-- OJO: al crear una vista nueva, Postgres/Supabase le otorga a `anon`
+-- y `authenticated` los privilegios por defecto del schema (que en
+-- este proyecto incluyen INSERT/UPDATE/DELETE, no solo SELECT). Como
+-- la vista es "auto-updatable" (viene de una sola tabla sin joins ni
+-- agregaciones), esos privilegios de escritura se propagan a la
+-- tabla stock real si no se revocan explícitamente. Por eso el
+-- REVOKE ALL + GRANT SELECT de abajo es obligatorio, no opcional.
+-- ============================================================
+CREATE OR REPLACE VIEW stock_publico AS
+SELECT id, nombre, categoria, marca, tipo, presentacion, precio_venta
+FROM stock
+WHERE activo = true AND precio_venta > 0;
+
+REVOKE ALL ON stock_publico FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON stock_publico TO anon, authenticated;
+-- ============================================================
 ALTER FUNCTION public.limpiar_otps_vencidos() SET search_path = public;
 -- ============================================================
 
