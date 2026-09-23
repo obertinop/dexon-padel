@@ -9,7 +9,7 @@ const SIZE = 480;
 function generarQrConLogo(url) {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement("canvas");
-    QRCode.toCanvas(canvas, url, { width: SIZE, margin: 2, errorCorrectionLevel: "H", color: { dark: "#060D1A", light: "#FFFFFF" } })
+    QRCode.toCanvas(canvas, url, { width: SIZE, margin: 2, errorCorrectionLevel: "H", color: { dark: "#000000", light: "#FFFFFF" } })
       .then(() => {
         const ctx = canvas.getContext("2d");
         const logo = new Image();
