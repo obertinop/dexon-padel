@@ -14,19 +14,24 @@ last_updated: 2026-09-23
 ## Who I am
 
 - **Name:** Dexon Padel
-- **Handle:** [PENDIENTE — @usuario de Instagram]
-- **What I do, in one sentence:** Plataforma de reservas para un club de pádel — turnos, abonos, referidos, todo autogestionable desde el portal del cliente.
+- **Handle:** @dexonpadel
+- **What I do, in one sentence:** La primera cancha de pádel de Tavapy (Alto Paraná) — reservas, abonos y referidos autogestionables desde el portal del cliente.
 - **Who I am talking to:** Jugadores de pádel que reservan canchas en la zona — mezcla de recreativos y gente de ranking/categoría (hasta cat. 6, sin nivel pro todavía).
 - **What I sell:** Turnos de cancha y cupos en un mercado con alta demanda / poca disponibilidad.
 
 ## What I sound like
 
-- **Three of my own reels or captions that sound most like me:** [PENDIENTE — pegá 3 posts/reels reales tuyos, tal cual, sin pulir]
+- **Three of my own reels or captions that sound most like me:**
+
+  1. (lanzamiento) "🎾 LES PRESENTAMOS DEXON PADEL 🏆 / Después de meses de trabajo, ¡ABRE LA PRIMERA CANCHA DE PÁDEL DE TAVAPY! / La primera en la ciudad. / La que Tavapy esperaba. / 📅 Reservas habilitadas / 💰 80,000 Gs/hora / ✅ Cancha profesional / ✅ Iluminación completa / ✅ Comunidad + Eventos próximamente / ¿Te animas?"
+  2. (invitación simple) "Primera cancha de pádel en Tavapy / Veni a conocer 🎾"
+  3. [PENDIENTE — un tercer ejemplo, idealmente de un post "de rutina" (turnos libres, referidos), no de lanzamiento]
+
 - **On camera I am:** [PENDIENTE]
-- **Words I actually use:** [PENDIENTE]
+- **Words I actually use:** mayúsculas para anuncios importantes; emoji como viñeta al inicio de cada línea (🎾🏆📅💰✅), no solo decorativos; cierre con pregunta corta tipo "¿Te animas?"
 - **Words I would never say out loud:** [PENDIENTE]
-- **Do I swear:** [PENDIENTE]
-- **Emoji in captions:** [PENDIENTE]
+- **Do I swear:** No
+- **Emoji in captions:** Frecuente, pero funcional (marcan cada línea/dato), no relleno
 - **Face on camera:** [PENDIENTE]
 - **Voiceover or to-camera:** [PENDIENTE]
 - **Pace:** [PENDIENTE]
@@ -52,8 +57,11 @@ Tres a cinco cosas en las que creés que parte de tu audiencia no cree. Acá sal
 
 Números, resultados o historias reales que puedas poner con tu nombre. Las skills nunca van a inventar uno — si esta sección queda vacía, todos los borradores van a volver con `{{tu número}}` sin completar.
 
-- [PENDIENTE — ej: cantidad de socios, canchas, turnos jugados, años operando]
--
+- Primera cancha de pádel de Tavapy (Alto Paraná)
+- 80.000 Gs/hora
+- Cancha profesional, iluminación completa
+- Comunidad + eventos próximamente (aún no lanzado)
+- [PENDIENTE — más números: cantidad de socios/abonados, turnos jugados, meses operando]
 
 ## The ask
 
