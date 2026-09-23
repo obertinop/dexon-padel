@@ -43,15 +43,15 @@ last_updated: 2026-09-23
 
 Tres a cinco cosas en las que creés que parte de tu audiencia no cree. Acá salen los mejores reels — no las inventes vos ni yo, son tuyas:
 
-1. [PENDIENTE — ej: ¿algo sobre cómo se juega el boom del pádel en la región / la saturación de canchas como oportunidad?]
-2.
-3.
+1. La gente tiene prejuicios con el pádel — cree que es caro, exclusivo o que hay que "saber jugar" para animarse. Por eso hay cancha disponible y no se llena: el problema no es la oferta, es la percepción.
+2. [PENDIENTE]
+3. [PENDIENTE]
 
 ## Off limits
 
 - **Topics I do not post about:** [PENDIENTE]
 - **Clients, numbers or names I cannot say publicly:** [PENDIENTE]
-- **Claims I am not allowed to make:** [PENDIENTE]
+- **Claims I am not allowed to make:** Nunca insinuar que el pádel "no es para todo el mundo" o que hace falta cierto nivel/perfil para jugar — el mensaje siempre es que cualquiera tiene la posibilidad de jugar.
 
 ## Proof I can use
 

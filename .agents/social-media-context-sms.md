@@ -2,10 +2,8 @@
 
 last_updated: 2026-09-23
 
-> Borrador inicial generado a partir del código del repo (README, `MiCuenta.js`).
-> Las secciones marcadas **[PENDIENTE]** no se pueden inferir del código — necesitan
-> que las completes vos. Corré la skill `social-media-context-sms` cuando quieras
-> revisarlas o pedime que te haga las preguntas una por una.
+> Completado a partir de la conversación con la skill `social-media-context-sms`.
+> Quedan pocos `[PENDIENTE]` — no bloquean el uso de las skills, solo las afinan más.
 
 ---
 
@@ -13,43 +11,39 @@ last_updated: 2026-09-23
 
 - **Type**: Brand (client account)
 - **Name**: Dexon Padel
-- **Handle(s)**: [PENDIENTE] — usuario/handle en cada plataforma (LinkedIn, Twitter/X, Threads, Bluesky)
-- **Role**: Plataforma de reservas y gestión para un club de pádel — portal de clientes con turnos, abonos, referidos y pagos
-- **Industry/niche**: Deporte (pádel) + software de reservas para clubes
-- **Positioning**: [PENDIENTE] — dato encontrado en el código: el tagline del producto es *"Tu cancha, tu cuenta."*. ¿Es esa la línea que querés usar también en redes, o hay otra positioning?
+- **Handle(s)**: @dexonpadel (Instagram)
+- **Role**: Primera cancha de pádel de Tavapy (Alto Paraná) — portal de reservas con turnos, abonos, referidos y pagos autogestionables
+- **Industry/niche**: Deporte (pádel) en Tavapy / Alto Paraná, Paraguay
+- **Positioning**: La primera cancha de pádel de Tavapy — "La que Tavapy esperaba."
 
 ---
 
 ## Target Audience
 
-- **Primary audience**: [PENDIENTE] — ¿le hablás a los jugadores/socios del club, o también a dueños de otros clubes que podrían usar el software?
-- **Pain points**: [PENDIENTE — inferido tentativamente del producto: conseguir turno a último momento, gestión manual de abonos, falta de recordatorios. Confirmar o corregir.]
-- **Goals**: [PENDIENTE]
-- **Sophistication level**: [PENDIENTE]
-- **Where they hang out**: [PENDIENTE]
+- **Primary audience**: Jugadores que reservan canchas — mezcla de recreativos y gente de ranking/categoría (hasta cat. 6, sin nivel pro todavía)
+- **Pain points**: Doble cara — (1) a nivel regional, la demanda de pádel creció y las canchas están saturadas, cuesta conseguir turno; (2) a nivel Dexon específicamente, la gente tiene prejuicios sobre el pádel (caro, exclusivo, "hay que saber jugar") y por eso, aun con cancha disponible, no se llena — el problema es de percepción, no de oferta
+- **Goals**: Jugar más seguido, animarse a probar el pádel sin sentir que "no es para ellos"
+- **Sophistication level**: Mixto — desde principiantes curiosos hasta jugadores de ranking (cat. 6 máx.)
+- **Where they hang out**: Instagram + grupo de WhatsApp del club
 
 ---
 
 ## Voice & Tone
 
-**[PENDIENTE — la sección más importante, no se puede inferir del código]**
-
-- Voice adjectives (3–5 palabras):
-- Formalidad (casual / semi-formal / profesional):
-- Humor (nada / seco / ocasional / frecuente):
-- Frases que SÍ usarías (verbatim):
-- Frases que odiás / evitás:
+- **Voice adjectives**: Confiable / informativo, entusiasta pero sobrio
+- **Formality**: Semi-formal (ni muy casual ni acartonado)
+- **Humor**: Sutil, ocasional
+- **Phrases to use**: Mayúsculas para anuncios importantes; emoji como viñeta al inicio de cada línea (🎾🏆📅💰✅), funcionales no decorativos; cierre con pregunta corta tipo "¿Te animas?"
+- **Phrases to avoid**: Cualquier insinuación de que el pádel "no es para todo el mundo" o que hace falta cierto nivel — nunca tono elitista/excluyente
 
 ---
 
 ## Content Pillars
 
-Inferidos tentativamente de las funciones del producto (turnos, reagendar, abono, referidos, favoritos). Confirmar ángulo propio de cada uno:
-
-1. **Turnos y disponibilidad** — [ángulo propio pendiente]
-2. **Abonos / membresías** — [ángulo propio pendiente]
-3. **Programa de referidos** — [ángulo propio pendiente]
-4. [PENDIENTE — ¿hay más pilares? ej. vida del club, torneos, comunidad de jugadores]
+1. **Turnos y disponibilidad** — cómo conseguir cancha, horarios libres, recordatorios
+2. **Programa de referidos** — invitá amigos, sumate a la comunidad
+3. **El pádel es para todos** — derribar el prejuicio de que el pádel es caro/exclusivo/solo para quien "ya sabe jugar"; conectar con el boom regional del deporte
+4. [PENDIENTE — ¿algo sobre la cancha en sí, eventos, o vida del club una vez arranque la comunidad?]
 
 ---
 
@@ -57,32 +51,50 @@ Inferidos tentativamente de las funciones del producto (turnos, reagendar, abono
 
 | Platform | Goal | Current Frequency | Target Frequency | BlackTwist |
 |---|---|---|---|---|
-| [PENDIENTE] | | | | No |
+| Instagram (@dexonpadel) | Awareness + reservas | [PENDIENTE] | [PENDIENTE] | No |
+| WhatsApp (grupo del club) | Recordatorios / comunidad — sin skill dedicada, redactar para copiar y pegar | [PENDIENTE] | [PENDIENTE] | No |
+
+Promoción paga eventual vía Meta Business Manager o directo desde la cuenta de Instagram.
 
 ---
 
 ## Content Formats
 
-- **Preferred formats**: [PENDIENTE]
-- **Per-platform preferences**: [PENDIENTE]
+- **Preferred formats**: Posts de anuncio (mayúsculas + emoji-viñeta) para novedades; invitaciones cortas y simples para contenido regular
+- **Per-platform preferences**: Instagram como canal principal; WhatsApp para avisos directos a la comunidad ya formada
 - **Formats to avoid**: [PENDIENTE]
 
 ---
 
 ## Example Posts
 
-**[PENDIENTE — necesito 3–5 posts reales tuyos, tal cual los escribiste (sin pulir), para que las skills puedan calibrar el tono.]**
+### Example 1 — Instagram (lanzamiento)
+🎾 LES PRESENTAMOS DEXON PADEL 🏆
 
-### Example 1 — [Platform]
-[texto verbatim]
+Después de meses de trabajo, ¡ABRE LA PRIMERA CANCHA DE PÁDEL DE TAVAPY!
 
-### Example 2 — [Platform]
-[texto verbatim]
+La primera en la ciudad.
+La que Tavapy esperaba.
+
+📅 Reservas habilitadas
+💰 80,000 Gs/hora
+✅ Cancha profesional
+✅ Iluminación completa
+✅ Comunidad + Eventos próximamente
+
+¿Te animas?
+#DexonPadel #PádelTavapy #PádelLovers
+#CanchasDePádel #JuegosDePádel #PádelEnParaguay
+#PádelComunidad #TavapyPádel #altoparaná
+
+### Example 2 — Instagram (invitación simple)
+Primera cancha de pádel en Tavapy
+Veni a conocer 🎾
 
 ---
 
 ## Anti-Patterns
 
 - **Topics to avoid**: [PENDIENTE]
-- **Tones to avoid**: [PENDIENTE — ej. ¿evitar tono "hype" de startup, o está bien?]
+- **Tones to avoid**: Elitista / excluyente — nada que sugiera que el pádel es solo para cierto nivel o perfil de persona
 - **Content types to avoid**: [PENDIENTE]
