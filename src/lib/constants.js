@@ -10,6 +10,9 @@ export const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 export const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 export const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
+export const STOCK_CATEGORIAS = ["pelotas","paletas","bebidas","accesorios","general"];
+export const STOCK_TIPOS_BEBIDA = ["Agua","Agua saborizada","Gaseosa","Isotónica","Jugo","Energizante","Cerveza","Vino","Licor","Otra bebida"];
+
 // Respuestas rápidas para el chat de WhatsApp (admin).
 export const WA_QUICK_REPLIES = [
   "¡Hola! 👋 Gracias por escribir a DEXON PADEL.",

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 // ── lib ──
-import { C, DIAS, DIAS_FULL, MESES, card, metric, inp, lbl, LOGO, LOGO_STYLE_DARK } from "./lib/constants.js";
+import { C, DIAS, DIAS_FULL, MESES, card, metric, inp, lbl, LOGO, LOGO_STYLE_DARK, STOCK_TIPOS_BEBIDA } from "./lib/constants.js";
 import { auth, api, db, apiHeaders } from "./lib/api.js";
 import { useIsMobile, useFeriados } from "./lib/hooks.js";
 import { gs, hoy, fmtFechaLegible, fmtD, initials, avatarBg, avatarFg, genRefCode } from "./lib/utils.js";
@@ -432,7 +432,7 @@ export default function App() {
   const guardarInstructor = async()=>{if(!form.nombre?.trim())return;setSaving(true);try{await db.post("instructores",{nombre:form.nombre.trim(),telefono:form.telefono||"",tarifa_clase:Number(form.tarifa_clase||0)},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const guardarMovCaja = async()=>{if(!form.descripcion||!form.monto)return;setSaving(true);try{await db.post("caja",{descripcion:form.descripcion,tipo:form.tipo||"egreso",categoria:form.categoria||"gasto",monto:Number(form.monto),fecha:form.fecha||hoy()},tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const eliminarMovCaja = async id=>{setSaving(true);try{await db.del("caja",id,tk);await load();setDlg(null);}catch(e){notify(e.message,"error");}setSaving(false);};
-  const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
+  const guardarStock = async()=>{if(!form.nombre?.trim()||form.cantidad===undefined)return;setSaving(true);try{const p={nombre:form.nombre,categoria:form.categoria||"general",marca:form.marca?.trim()||null,tipo:form.tipo?.trim()||null,presentacion:form.presentacion?.trim()||null,con_alcohol:form.categoria==="bebidas"?!!form.con_alcohol:false,activo:form.activo!==false,cantidad:Number(form.cantidad),minimo:Number(form.minimo||0),precio_venta:Number(form.precio_venta||0),precio_costo:Number(form.precio_costo||0)};if(form.id)await db.patch("stock",form.id,p,tk);else await db.post("stock",p,tk);await load();closeM();}catch(e){notify(e.message,"error");}setSaving(false);};
   const moverStock = async()=>{
     if(!form.stock_id||!form.cantidad_mov)return;
     setSaving(true);
@@ -973,7 +973,7 @@ export default function App() {
         const cobrados=items.filter(i=>i.cobrado);
         const totalPend=totalPendProductos;
         const hayVariosTurnos=turnosHermanos.length>1;
-        const stockDisp=stock.filter(s=>s.cantidad>0);
+        const stockDisp=stock.filter(s=>s.cantidad>0&&s.activo!==false);
         return <><Div/>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <span style={{fontWeight:600,fontSize:13,color:C.t1}}>{hayVariosTurnos?`Productos de hoy (${turnosHermanos.length} turnos)`:"Productos en este turno"}</span>
@@ -1115,8 +1115,17 @@ export default function App() {
     <Modal show={modal==="stockItem"} onClose={closeM} title={form.id?"Editar producto":"Nuevo producto"}>
       <Inp label="Nombre" type="text" value={form.nombre||""} onChange={sf("nombre")} autoFocus/>
       <Sel label="Categoría" value={form.categoria||"general"} onChange={sf("categoria")}><option value="pelotas">Pelotas</option><option value="paletas">Paletas</option><option value="bebidas">Bebidas</option><option value="accesorios">Accesorios</option><option value="general">General</option></Sel>
+      <R2 isMobile={isMobile}>
+        <Inp label="Marca" type="text" value={form.marca||""} onChange={sf("marca")} placeholder="Ej: Coca-Cola, Wilson…"/>
+        {form.categoria==="bebidas"
+          ? <Sel label="Tipo" value={form.tipo||""} onChange={sf("tipo")}><option value="">Sin especificar</option>{STOCK_TIPOS_BEBIDA.map(t=><option key={t} value={t}>{t}</option>)}</Sel>
+          : <Inp label="Tipo (opcional)" type="text" value={form.tipo||""} onChange={sf("tipo")} placeholder="Ej: Grip, Bolso…"/>}
+      </R2>
+      <Inp label="Presentación (opcional)" type="text" value={form.presentacion||""} onChange={sf("presentacion")} placeholder="Ej: 500ml, Lata 354ml, Pack x6"/>
+      {form.categoria==="bebidas"&&<label style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,cursor:"pointer"}}><input type="checkbox" checked={!!form.con_alcohol} onChange={e=>setForm(f=>({...f,con_alcohol:e.target.checked}))}/><span style={{fontSize:13,color:C.t2}}>Contiene alcohol</span></label>}
       <R2 isMobile={isMobile}><Inp label="Cantidad actual" type="number" value={form.cantidad??""} onChange={sf("cantidad")}/><Inp label="Stock mínimo" type="number" value={form.minimo??""} onChange={sf("minimo")}/></R2>
       <R2 isMobile={isMobile}><Inp label="Precio venta (Gs)" type="number" value={form.precio_venta??""} onChange={sf("precio_venta")}/><Inp label="Precio costo (Gs)" type="number" value={form.precio_costo??""} onChange={sf("precio_costo")}/></R2>
+      {form.id&&<label style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer"}}><input type="checkbox" checked={form.activo!==false} onChange={e=>setForm(f=>({...f,activo:e.target.checked}))}/><span style={{fontSize:13,color:C.t2}}>Producto activo (aparece en Ventas y en el listado)</span></label>}
       <Div/><div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn onClick={closeM}>Cancelar</Btn><Btn v="primary" onClick={guardarStock} disabled={saving}>{saving?"Guardando...":"Guardar"}</Btn></div>
     </Modal>
 
@@ -1164,7 +1173,7 @@ export default function App() {
           <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Producto</label>
           <select style={inp} value={form.item_stock_id||""} onChange={e=>setForm(f=>({...f,item_stock_id:e.target.value,item_cantidad:1}))}>
             <option value="">Seleccionar...</option>
-            {stock.filter(s=>s.cantidad>0).map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad})</option>)}
+            {stock.filter(s=>s.cantidad>0&&s.activo!==false).map(s=><option key={s.id} value={s.id}>{s.nombre} (stock: {s.cantidad})</option>)}
           </select>
         </div>
         <div style={{width:65}}>

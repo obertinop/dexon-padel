@@ -237,6 +237,23 @@ REVOKE EXECUTE ON FUNCTION public.update_saldo_favor(bigint, numeric) FROM PUBLI
 REVOKE EXECUTE ON FUNCTION public.update_saldo_favor(bigint, numeric) FROM anon;
 GRANT  EXECUTE ON FUNCTION public.update_saldo_favor(bigint, numeric) TO service_role, authenticated;
 
+
+-- ============================================================
+-- CLASIFICACIÓN DE STOCK — marca / tipo / presentación (2026-09-23)
+-- (Ya aplicado en prod vía migraciones stock_clasificacion y
+-- stock_clasificacion_datos_existentes)
+-- Agrega los campos necesarios para discriminar el stock real
+-- (marca, tipo de bebida, presentación, si contiene alcohol) y poder
+-- desactivar productos sin borrar su historial de ventas/movimientos.
+-- Paso previo a la futura lista de precios pública (QR).
+-- ============================================================
+ALTER TABLE stock ADD COLUMN IF NOT EXISTS marca text;
+ALTER TABLE stock ADD COLUMN IF NOT EXISTS tipo text;
+ALTER TABLE stock ADD COLUMN IF NOT EXISTS presentacion text;
+ALTER TABLE stock ADD COLUMN IF NOT EXISTS con_alcohol boolean NOT NULL DEFAULT false;
+ALTER TABLE stock ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;
+-- ============================================================
+
 -- search_path fijo en funciones SECURITY DEFINER (evita hijacking vía search_path mutable)
 ALTER FUNCTION public.update_saldo_favor(bigint, numeric) SET search_path = public;
 ALTER FUNCTION public.limpiar_otps_vencidos() SET search_path = public;
