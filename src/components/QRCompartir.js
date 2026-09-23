@@ -4,7 +4,7 @@ import { C } from "../lib/constants.js";
 import { Btn } from "./UI.js";
 
 const LOGO_SRC = "/dexon-mark.svg";
-const LOGO_RASTER_SIZE = 240; // resolución del logo embebido, independiente del tamaño de impresión del SVG
+const LOGO_RASTER_SIZE = 320; // resolución del logo embebido, independiente del tamaño de impresión del SVG
 
 // El isotipo viene como un cuadrado negro con "dexon" recortado en negativo.
 // Para dejar solo las letras en negro sólido (sin el cuadrado) se rellena un
@@ -37,8 +37,8 @@ async function generarQrConLogo(url) {
   ]);
 
   const w = Number(svgStr.match(/viewBox="0 0 ([\d.]+) [\d.]+"/)[1]);
-  const logoSize = w * 0.2;
-  const boxSize = logoSize + w * 0.0417;
+  const logoSize = w * 0.28;
+  const boxSize = logoSize * 1.15;
   const bx = (w - boxSize) / 2, by = bx;
   const lx = (w - logoSize) / 2, ly = lx;
 
