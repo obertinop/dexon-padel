@@ -35,7 +35,7 @@ HASHTAG_LIMIT = 5        # Instagram's cap per post or reel since 18 Dec 2025,
                          # rather than many generic ones, can improve both your
                          # content's performance and people's experience".
 
-HASHTAG_RE = re.compile(r"(?:^|\s)(#[A-Za-z0-9_]+)")
+HASHTAG_RE = re.compile(r"(?:^|\s)(#\w+)", re.UNICODE)
 MENTION_RE = re.compile(r"(?:^|\s)(@[A-Za-z0-9_.]+)")
 LINK_RE = re.compile(r"https?://\S+|\bwww\.\S+|\b[a-z0-9-]+\.(?:com|co|io|net|org|ai|app)/\S*",
                      re.IGNORECASE)
@@ -51,6 +51,14 @@ ASKS = [
     (re.compile(r"(?i)\blink in (?:my )?bio\b"), "link in bio"),
     (re.compile(r"(?i)\b(?:swipe|tap) (?:through|left|right|for|to)\b"), "swipe or tap"),
     (re.compile(r"(?i)\btell me\b|\bwhat would you\b|\bwhich one\b"), "answer a question"),
+    # Spanish equivalents (Dexon Padel posts in Spanish)
+    (re.compile(r"(?i)\bcoment[aá] (?:la palabra |\")?[A-Z0-9]{2,}\b"), "comentá una palabra clave"),
+    (re.compile(r"(?i)\bescrib[ií]nos\b|\bmand[aá]nos (?:un )?mensaje\b"), "escribinos / mandanos mensaje"),
+    (re.compile(r"(?i)\bguard[aá] (?:esto|este post)\b"), "guardá esto"),
+    (re.compile(r"(?i)\bcompart[ií] (?:esto|este post)\b"), "compartí esto"),
+    (re.compile(r"(?i)\bsegu[ií]nos\b"), "seguinos"),
+    (re.compile(r"(?i)\blink en (?:mi )?bio\b"), "link en bio"),
+    (re.compile(r"(?i)\breserv[aá] (?:tu turno|ya|acá)\b"), "reservá tu turno"),
 ]
 
 FILLER_TAGS = {"#viral", "#fyp", "#explore", "#explorepage", "#foryou", "#foryoupage",
