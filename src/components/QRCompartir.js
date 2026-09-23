@@ -19,8 +19,21 @@ function generarQrConLogo(url) {
           const bx = (SIZE - boxSize) / 2, by = (SIZE - boxSize) / 2;
           ctx.fillStyle = "#fff";
           ctx.fillRect(bx, by, boxSize, boxSize);
+
+          // El isotipo viene como un cuadrado negro con "dexon" recortado en
+          // negativo. Para dejar solo las letras en negro sólido (sin el
+          // cuadrado), se rellena un canvas aparte de negro y se "borra" con
+          // el isotipo como máscara — queda únicamente el trazo de las letras.
+          const tmp = document.createElement("canvas");
+          tmp.width = logoSize; tmp.height = logoSize;
+          const tctx = tmp.getContext("2d");
+          tctx.fillStyle = "#000";
+          tctx.fillRect(0, 0, logoSize, logoSize);
+          tctx.globalCompositeOperation = "destination-out";
+          tctx.drawImage(logo, 0, 0, logoSize, logoSize);
+
           const lx = (SIZE - logoSize) / 2, ly = (SIZE - logoSize) / 2;
-          ctx.drawImage(logo, lx, ly, logoSize, logoSize);
+          ctx.drawImage(tmp, lx, ly);
           resolve(canvas.toDataURL("image/png"));
         };
         logo.onload = dibujarLogo;
