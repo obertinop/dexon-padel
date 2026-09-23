@@ -3,15 +3,44 @@ import QRCode from "qrcode";
 import { C } from "../lib/constants.js";
 import { Btn } from "./UI.js";
 
+const LOGO_SRC = "/logo512.png";
+const SIZE = 480;
+
+function generarQrConLogo(url) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement("canvas");
+    QRCode.toCanvas(canvas, url, { width: SIZE, margin: 2, errorCorrectionLevel: "H", color: { dark: "#060D1A", light: "#FFFFFF" } })
+      .then(() => {
+        const ctx = canvas.getContext("2d");
+        const logo = new Image();
+        const dibujarLogo = () => {
+          const logoSize = SIZE * 0.2;
+          const boxSize = logoSize + 20;
+          const bx = (SIZE - boxSize) / 2, by = (SIZE - boxSize) / 2;
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(bx, by, boxSize, boxSize);
+          const lx = (SIZE - logoSize) / 2, ly = (SIZE - logoSize) / 2;
+          ctx.drawImage(logo, lx, ly, logoSize, logoSize);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        logo.onload = dibujarLogo;
+        logo.onerror = () => resolve(canvas.toDataURL("image/png")); // sin logo si no carga
+        logo.src = LOGO_SRC;
+      })
+      .catch(reject);
+  });
+}
+
 export default function QRCompartir({ path, descripcion, filename = "qr.png" }) {
   const url = `${window.location.origin}${path}`;
   const [dataUrl, setDataUrl] = useState(null);
   const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
+    let cancelado = false;
     setDataUrl(null);
-    QRCode.toDataURL(url, { width: 480, margin: 2, color: { dark: "#060D1A", light: "#FFFFFF" } })
-      .then(setDataUrl).catch(() => setDataUrl(null));
+    generarQrConLogo(url).then(d => { if (!cancelado) setDataUrl(d); }).catch(() => { if (!cancelado) setDataUrl(null); });
+    return () => { cancelado = true; };
   }, [url]);
 
   const copiar = () => {
