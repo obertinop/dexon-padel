@@ -66,7 +66,7 @@ async function generarQrConLogo(url) {
   // área. Se fija el ancho del recuadro y se deriva el resto del wordmark
   // ya recortado (que es ancho y bajo), quedando más compacto que antes.
   const padXRatio = 0.14, padYRatio = 0.3;
-  const bw = w * 0.32;
+  const bw = w * 0.4;
   const logoW = bw / (1 + padXRatio * 2);
   const logoH = logoW * (logo.h / logo.w);
   const bh = logoH * (1 + padYRatio * 2);
