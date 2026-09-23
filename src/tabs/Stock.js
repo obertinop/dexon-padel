@@ -19,6 +19,7 @@ export default function Stock() {
   const { stock, isMobile, openM } = useAdmin();
   const [q, setQ] = useState("");
   const [filtroCat, setFiltroCat] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState("");
   const [soloSinClasificar, setSoloSinClasificar] = useState(false);
   const [soloBajo, setSoloBajo] = useState(false);
   const [verInactivos, setVerInactivos] = useState(false);
@@ -29,9 +30,14 @@ export default function Stock() {
   const sinClasificar = activos.filter(s => !s.marca && !s.tipo);
   const inactivos = stock.filter(s => s.activo === false);
 
+  const elegirCat = c => { setFiltroCat(filtroCat === c ? "" : c); setFiltroTipo(""); };
+
+  const tipos = [...new Set(activos.filter(s => !filtroCat || s.categoria === filtroCat).map(s => s.tipo).filter(Boolean))].sort();
+
   const qNorm = q.trim().toLowerCase();
   const visibles = (verInactivos ? inactivos : activos)
     .filter(s => !filtroCat || s.categoria === filtroCat)
+    .filter(s => !filtroTipo || s.tipo === filtroTipo)
     .filter(s => !soloSinClasificar || (!s.marca && !s.tipo))
     .filter(s => !soloBajo || (s.minimo > 0 && s.cantidad <= s.minimo))
     .filter(s => !qNorm || `${s.nombre} ${s.marca || ""}`.toLowerCase().includes(qNorm));
@@ -51,14 +57,19 @@ export default function Stock() {
 
     <input type="text" value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por nombre o marca..." style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, background: C.blue, color: C.t1, fontFamily: "var(--font-sans)", outline: "none", marginBottom: 10 }} />
 
-    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-      <Chip active={!filtroCat} onClick={() => setFiltroCat("")}>Todas</Chip>
-      {cats.map(c => <Chip key={c} active={filtroCat === c} onClick={() => setFiltroCat(filtroCat === c ? "" : c)}>{CAT_LABEL[c] || c}</Chip>)}
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: tipos.length > 0 ? 8 : 16 }}>
+      <Chip active={!filtroCat} onClick={() => elegirCat("")}>Todas</Chip>
+      {cats.map(c => <Chip key={c} active={filtroCat === c} onClick={() => elegirCat(c)}>{CAT_LABEL[c] || c}</Chip>)}
       <div style={{ width: 1, background: C.border, margin: "2px 2px" }} />
       {sinClasificar.length > 0 && <Chip active={soloSinClasificar} onClick={() => setSoloSinClasificar(v => !v)}>Sin clasificar ({sinClasificar.length})</Chip>}
       {bajo.length > 0 && <Chip active={soloBajo} onClick={() => setSoloBajo(v => !v)}>Stock bajo ({bajo.length})</Chip>}
       {inactivos.length > 0 && <Chip active={verInactivos} onClick={() => setVerInactivos(v => !v)}>Inactivos ({inactivos.length})</Chip>}
     </div>
+
+    {tipos.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+      <Chip active={!filtroTipo} onClick={() => setFiltroTipo("")}>Todos los tipos</Chip>
+      {tipos.map(t => <Chip key={t} active={filtroTipo === t} onClick={() => setFiltroTipo(filtroTipo === t ? "" : t)}>{t}</Chip>)}
+    </div>}
 
     {visibles.length === 0 && <div style={{ textAlign: "center", padding: "40px 0", color: C.t3, fontSize: 13 }}>Ningún producto coincide con el filtro.</div>}
 
