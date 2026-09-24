@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { C, DIAS, DIAS_FULL, MESES, card, metric, inp, lbl, LOGO, LOGO_STYLE_DARK, STOCK_TIPOS_BEBIDA } from "./lib/constants.js";
 import { auth, api, db, apiHeaders } from "./lib/api.js";
 import { useIsMobile, useFeriados } from "./lib/hooks.js";
-import { gs, hoy, fmtFechaLegible, fmtD, initials, avatarBg, avatarFg, genRefCode } from "./lib/utils.js";
+import { gs, hoy, fmtFechaLegible, fmtD, initials, avatarBg, avatarFg, genRefCode, normalizeNombre } from "./lib/utils.js";
 
 // ── components ──
 import Login from "./components/Login.js";
@@ -58,7 +58,7 @@ export default function App() {
     const u=localStorage.getItem("dx_user");
     return tk?{token:tk,user:u?JSON.parse(u):null}:null;
   });
-  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],abono_turnos:[],codigos_ref:[],turno_items:[],ventas:[],venta_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
+  const [data,setData] = useState({turnos:[],clientes:[],abonos:[],planes:[],instructores:[],caja:[],stock:[],abono_turnos:[],codigos_ref:[],turno_items:[],turno_participantes:[],ventas:[],venta_items:[],cfg:{id:1,nombre_club:"DEXON PADEL",hora_inicio:10,hora_fin:24,tarifa_base:80000,tarifa_pico:100000,hora_pico_inicio:19,hora_pico_fin:22}});
   const [loading,setLoading] = useState(false);
   const [saving,setSaving] = useState(false);
   const [semOff,setSemOff] = useState(0);
@@ -108,7 +108,7 @@ export default function App() {
     if(!tk) return;
     setIsRefreshing(true);
     try {
-      const [tu,cl,ab,pl,ins,ca,st,cf,at,cr,ti,db2,ve,vi] = await Promise.all([
+      const [tu,cl,ab,pl,ins,ca,st,cf,at,cr,ti,db2,ve,vi,tp] = await Promise.all([
         db.get("turnos","order=fecha.asc,hora.asc",tk),
         db.get("clientes","order=nombre.asc",tk),
         db.get("abonos","order=fecha_vencimiento.asc",tk),
@@ -123,8 +123,9 @@ export default function App() {
         db.get("dias_bloqueados","order=fecha.asc",tk),
         db.get("ventas","order=fecha.desc,id.desc",tk).catch(()=>[]),
         db.get("venta_items","order=id.asc",tk).catch(()=>[]),
+        db.get("turno_participantes","order=created_at.asc",tk).catch(()=>[]),
       ]);
-      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],ventas:ve||[],venta_items:vi||[],cfg:cf?.[0]||prev.cfg}));
+      setData(prev=>({turnos:tu||[],clientes:cl||[],abonos:ab||[],planes:pl||[],instructores:ins||[],caja:ca||[],stock:st||[],abono_turnos:at||[],codigos_ref:cr||[],turno_items:ti||[],ventas:ve||[],venta_items:vi||[],turno_participantes:tp||[],cfg:cf?.[0]||prev.cfg}));
       setDiasBloqueados(db2||[]);
     } catch(e){console.error(e);}
     setIsRefreshing(false);
@@ -209,7 +210,7 @@ export default function App() {
 
   if(!session) return <Login onLogin={(token,user)=>setSession({token,user})}/>;
 
-  const {turnos,clientes,abonos,planes,instructores,caja,stock,abono_turnos,codigos_ref,turno_items,ventas,venta_items,cfg} = data;
+  const {turnos,clientes,abonos,planes,instructores,caja,stock,abono_turnos,codigos_ref,turno_items,turno_participantes,ventas,venta_items,cfg} = data;
   const getHorasForDay = (dayOfWeek)=>{
     if(!cfg.horarios_por_dia) return Array.from({length:cfg.hora_fin-cfg.hora_inicio},(_,i)=>cfg.hora_inicio+i);
     try {
@@ -222,6 +223,19 @@ export default function App() {
   const cById = id=>clientes.find(c=>c.id===id);
   const pById = id=>planes.find(p=>p.id===id);
   const iById = id=>instructores.find(i=>i.id===id);
+  // Busca un cliente existente por nombre exacto (sin importar tildes/mayúsculas/
+  // espacios) — evita crear duplicados cuando se carga un "cliente ocasional" que
+  // ya jugó antes, para que sus horarios se sumen todos al mismo cliente.
+  const buscarClientePorNombre = nombre=>{
+    const n=normalizeNombre(nombre);
+    if(!n) return null;
+    return clientes.find(c=>normalizeNombre(c.nombre)===n)||null;
+  };
+  // Deuda acumulada de un cliente: suma de lo que falta cobrar (precio - pagado)
+  // de todos sus turnos no cancelados, sin importar la reserva puntual.
+  const deudaCliente = clienteId=>turnos
+    .filter(t=>t.cliente_id===clienteId&&t.estado!=="cancelado")
+    .reduce((a,t)=>a+Math.max(0,(t.precio||0)-(t.sena||0)),0);
   const sf = k=>e=>setForm(f=>({...f,[k]:e.target.value}));
   const openM = (name,f={})=>{setForm(f);setModal(name);};
   const closeM = ()=>{setModal(null);setForm({});};
@@ -255,11 +269,25 @@ export default function App() {
   // ── ACCIONES ──
   const guardarTurno = async()=>{
     const horas=[...new Set((form.horas||(form.hora!==undefined?[Number(form.hora)]:[])).map(Number))].sort((a,b)=>a-b);
-    if(!form.cliente_id||!form.fecha||!horas.length)return;
+    const nombreLibre=(form.cliente_nombre||"").trim();
+    if((!form.cliente_id&&!nombreLibre)||!form.fecha||!horas.length)return;
     const ocupado=horas.find(h=>turnos.find(t=>t.fecha===form.fecha&&t.hora===h&&t.estado!=="cancelado"));
     if(ocupado!==undefined){notify(`Ese horario ya está ocupado (${ocupado}:00)`,"error");return;}
     setSaving(true);
     try {
+      // Resuelve el cliente: si no se eligió uno existente de la lista, se busca por
+      // nombre (reutiliza el cliente ocasional si ya jugó antes, para que sus horarios
+      // se sumen todos a la misma ficha) o se crea uno nuevo al vuelo si no existe.
+      let clienteId=form.cliente_id?Number(form.cliente_id):null;
+      let clienteObj=clienteId?cById(clienteId):null;
+      if(!clienteId){
+        const existente=buscarClientePorNombre(nombreLibre);
+        if(existente){clienteId=existente.id;clienteObj=existente;}
+        else{
+          const[nuevo]=await db.post("clientes",{nombre:nombreLibre,telefono:"",nivel:"intermedio",notas:""},tk);
+          clienteId=nuevo.id;clienteObj=nuevo;
+        }
+      }
       // Si son varias horas, se crea un turno por hora (necesario para disponibilidad/precio
       // por hora) pero todas comparten grupo_reserva_id para tratarse como una sola reserva.
       const grupoReservaId=horas.length>1?crypto.randomUUID():null;
@@ -267,16 +295,15 @@ export default function App() {
       const turnosBody=horas.map((h,i)=>{
         const precio=form.tipo==="clase"?Number(form.precio_clase||0):precioTurno(h);
         const senaAplicada=i===0?sena:0; // la seña se registra una sola vez, en el primer turno del grupo
-        return {fecha:form.fecha,hora:h,tipo:form.tipo||"ocasional",estado:"reservado",cliente_id:Number(form.cliente_id),instructor_id:form.instructor_id?Number(form.instructor_id):null,precio,sena:senaAplicada,saldo:precio-senaAplicada,notas:form.notas||"",grupo_reserva_id:grupoReservaId};
+        return {fecha:form.fecha,hora:h,tipo:form.tipo||"ocasional",estado:"reservado",cliente_id:clienteId,instructor_id:form.instructor_id?Number(form.instructor_id):null,precio,sena:senaAplicada,saldo:precio-senaAplicada,notas:form.notas||"",grupo_reserva_id:grupoReservaId};
       });
       const turnosCreados=await db.post("turnos",turnosBody,tk);
-      if(sena>0)await db.post("caja",{descripcion:`Seña - ${cById(Number(form.cliente_id))?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:turnosCreados[0].id},tk);
+      if(sena>0)await db.post("caja",{descripcion:`Seña - ${clienteObj?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:turnosCreados[0].id},tk);
       await load();closeM();
-      const c=cById(Number(form.cliente_id));
-      if(c?.telefono&&cfg.wa_auto_admin_activo!==false){
+      if(clienteObj?.telefono&&cfg.wa_auto_admin_activo!==false){
         const horarios=horas.map(h=>`${h}:00`).join(", ")+"hs";
         const precioTotal=turnosBody.reduce((a,t)=>a+t.precio,0);
-        fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:form.fecha,horarios,monto:gs(precioTotal),forma_pago:"Pago online"})}).catch(()=>{});
+        fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify({tipo:"confirmacion_manual",nombre:clienteObj.nombre,telefono:clienteObj.telefono,fecha:form.fecha,horarios,monto:gs(precioTotal),forma_pago:"Pago online"})}).catch(()=>{});
       }
     } catch(e){notify(e.message,"error");}
     setSaving(false);
@@ -308,6 +335,36 @@ export default function App() {
         fetch("/api/whatsapp/enviar",{method:"POST",headers:apiHeaders(),body:JSON.stringify(esEfectivo?{tipo:"confirmacion_presencial",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(primero.fecha),horarios}:{tipo:"confirmacion_manual",nombre:c.nombre,telefono:c.telefono,fecha:fmtFechaLegible(primero.fecha),horarios,monto:gs(montoTotal),forma_pago:primero.metodo_pago==="transferencia"?"Transferencia bancaria":"Pago online"})}).catch(()=>{});
       }
       setDlg(null);await load();
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
+  // Pago parcial sobre el saldo pendiente de una reserva (una o varias horas
+  // agrupadas) — a diferencia de "Cobrar y confirmar", no exige pagar todo junto.
+  // Se distribuye el monto turno por turno (mismo orden que la seña) hasta
+  // agotarlo; si con este pago se cubre todo el saldo del grupo, queda
+  // confirmada igual que al cobrar todo de una vez.
+  const registrarPagoParcial = async(grupo,monto)=>{
+    if(!grupo?.length||!(monto>0)) return;
+    const saldoGrupo=grupo.reduce((a,t)=>a+Math.max(0,t.precio-(t.sena||0)),0);
+    if(saldoGrupo<=0){notify("Este turno ya está totalmente pagado","error");return;}
+    if(monto>saldoGrupo){notify("El pago no puede ser mayor al saldo pendiente","error");return;}
+    setSaving(true);
+    try{
+      const nombreCliente=cById(grupo[0].cliente_id)?.nombre||"?";
+      let restante=monto;
+      for(const t of grupo){
+        if(restante<=0) break;
+        const saldoT=Math.max(0,t.precio-(t.sena||0));
+        if(saldoT<=0) continue;
+        const aplicado=Math.min(restante,saldoT);
+        const nuevaSena=(t.sena||0)+aplicado;
+        const nuevoSaldo=t.precio-nuevaSena;
+        const completo=nuevoSaldo<=0;
+        await db.patch("turnos",t.id,{sena:nuevaSena,saldo:nuevoSaldo,...(completo?{estado:"confirmado",cobrado:true}:{})},tk);
+        await db.post("caja",{descripcion:`Pago parcial - ${nombreCliente}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:aplicado,fecha:hoy(),turno_id:t.id},tk);
+        restante-=aplicado;
+      }
+      setDlg(null);await load();notify("Pago registrado","ok");
     }catch(e){notify(e.message,"error");}
     setSaving(false);
   };
@@ -546,6 +603,26 @@ export default function App() {
     setSaving(false);
   };
 
+  // ── Personas / pedidos dentro de un turno compartido ──
+  // Cuando varias personas juegan en el mismo horario (ej. un grupo de amigos),
+  // permite anotar qué pidió cada una para saber a quién cobrarle o entregarle
+  // qué — se cuelga del primer turno del grupo (mismo criterio que la seña).
+  const agregarParticipante = async(turnoId,nombreP,nota)=>{
+    if(!turnoId||!nombreP?.trim()) return;
+    setSaving(true);
+    try{
+      await db.post("turno_participantes",{turno_id:turnoId,nombre:nombreP.trim(),nota:nota?.trim()||""},tk);
+      await load();
+    }catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
+  const eliminarParticipante = async id=>{
+    setSaving(true);
+    try{ await db.del("turno_participantes",id,tk); await load(); }
+    catch(e){notify(e.message,"error");}
+    setSaving(false);
+  };
+
   // ── Ventas de mostrador (POS) — venta directa de stock sin turno asociado ──
   const guardarVenta = async()=>{
     const carrito=form.carrito||[];
@@ -718,7 +795,7 @@ export default function App() {
 
   const adminCtxValue = {
     // data
-    turnos, clientes, abonos, planes, instructores, caja, stock, abono_turnos, codigos_ref, turno_items, ventas, venta_items, cfg,
+    turnos, clientes, abonos, planes, instructores, caja, stock, abono_turnos, codigos_ref, turno_items, turno_participantes, ventas, venta_items, cfg,
     diasBloqueados, feriados,
     // state
     isMobile, saving, setSaving, semOff, setSemOff,
@@ -738,8 +815,10 @@ export default function App() {
     cById, pById, iById,
     getSemana, turnosAbonados, getHorasForDay, precioTurno,
     getFeriado, enviarWsp,
+    buscarClientePorNombre, deudaCliente,
     // actions
     guardarTurno, confirmarGrupo, cancelarGrupo, noShowGrupo, grupoDeTurno,
+    registrarPagoParcial,
     confirmarBulk, cancelarBulk,
     guardarCliente, eliminarCliente,
     guardarAbono, cancelarAbono, editarAbono, materilarizarTurnosAbono,
@@ -749,6 +828,7 @@ export default function App() {
     guardarConfig,
     guardarCodigoRef, eliminarCodigoRef,
     agregarItemTurno, cobrarItemsTurno, cobrarTodoGrupo, eliminarItemTurno,
+    agregarParticipante, eliminarParticipante,
     guardarVenta, anularVenta,
     db,
   };
@@ -851,7 +931,27 @@ export default function App() {
 
     {/* MODALES */}
     <Modal show={modal==="turno"} onClose={closeM} title="Nueva reserva">
-      <Sel label="Cliente" value={form.cliente_id||""} onChange={sf("cliente_id")}><option value="">Seleccioná un cliente</option>{clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}</Sel>
+      {(()=>{
+        const nombreInput=form.cliente_nombre??(form.cliente_id?cById(Number(form.cliente_id))?.nombre||"":"");
+        const qNorm=normalizeNombre(nombreInput);
+        const sugerencias=qNorm&&!form.cliente_id?clientes.filter(c=>normalizeNombre(c.nombre).includes(qNorm)).slice(0,6):[];
+        const clienteSel=form.cliente_id?cById(Number(form.cliente_id)):null;
+        const deuda=clienteSel?deudaCliente(clienteSel.id):0;
+        return <FG label="Cliente">
+          <input type="text" autoComplete="off" placeholder="Nombre del cliente (existente o nuevo)" value={nombreInput}
+            onChange={e=>setForm(f=>({...f,cliente_nombre:e.target.value,cliente_id:""}))} style={inp}/>
+          {sugerencias.length>0&&<div style={{marginTop:6,border:`1px solid ${C.border}`,borderRadius:8,overflow:"hidden"}}>
+            {sugerencias.map(c=><div key={c.id} onClick={()=>setForm(f=>({...f,cliente_id:String(c.id),cliente_nombre:c.nombre}))}
+              style={{padding:"8px 12px",fontSize:13,color:C.t1,cursor:"pointer",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",gap:8}}>
+              <span>{c.nombre}</span>{c.telefono&&<span style={{color:C.t3,fontSize:11}}>{c.telefono}</span>}
+            </div>)}
+          </div>}
+          {!form.cliente_id&&qNorm&&sugerencias.length===0&&<div style={{fontSize:11,color:C.t3,marginTop:6}}>No existe todavía — se creará un cliente nuevo con este nombre.</div>}
+          {clienteSel&&deuda>0&&<div style={{fontSize:11,color:C.yellow,marginTop:6,background:C.yellowBg,border:`1px solid ${C.yellowBd}`,borderRadius:8,padding:"7px 10px"}}>
+            {clienteSel.nombre} tiene {gs(deuda)} pendiente de cobro en otros turnos.
+          </div>}
+        </FG>;
+      })()}
       <Inp label="Fecha" type="date" value={form.fecha||""} onChange={sf("fecha")}/>
       {(()=>{
         const horasSel=form.horas||(form.hora!==undefined?[Number(form.hora)]:[]);
@@ -923,11 +1023,23 @@ export default function App() {
       {totalACobrarAhora>0&&<div style={{...card,background:"rgba(224,91,40,0.06)",border:`1px solid ${C.coralD}`,marginBottom:14}}>
         <div style={{fontSize:12,color:C.coral,fontWeight:600,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Total a cobrar</div>
         <div style={{display:"grid",gap:6,marginBottom:12}}>
+          {senaTotal>0&&canchaPendiente>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.t3}}><span>Ya pagado</span><span>{gs(senaTotal)}</span></div>}
           {canchaPendiente>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:C.t2}}>Cancha{esGrupo?` (${turnosGrupo.length} horas)`:""}</span><span style={{color:C.t1,fontWeight:500}}>{gs(canchaPendiente)}</span></div>}
           {totalPendProductos>0&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:C.t2}}>Productos</span><span style={{color:C.t1,fontWeight:500}}>{gs(totalPendProductos)}</span></div>}
           <div style={{display:"flex",justifyContent:"space-between",fontSize:15,fontWeight:700,paddingTop:8,marginTop:2,borderTop:`1px solid ${C.border}`}}><span style={{color:C.t1}}>Total</span><span style={{color:C.coral}}>{gs(totalACobrarAhora)}</span></div>
         </div>
         <Btn v="success" style={{width:"100%"}} disabled={saving} onClick={()=>{closeM();setDlg({type:"cobrarTodo",grupo:canchaPendiente>0?turnosGrupo:[],idsItems:totalPendProductos>0?idsHermanos:[],monto:totalACobrarAhora,nombre:form.cliente.nombre});}}>💰 Cobrar todo {gs(totalACobrarAhora)}</Btn>
+        {canchaPendiente>0&&<div style={{display:"flex",gap:8,marginTop:8}}>
+          <input type="number" min={1} max={canchaPendiente} placeholder={`Pago parcial (máx. ${gs(canchaPendiente)})`} value={form.monto_parcial||""} onChange={e=>setForm(f=>({...f,monto_parcial:e.target.value}))} style={{...inp,flex:1}}/>
+          <Btn sm disabled={saving||!(Number(form.monto_parcial)>0)} onClick={async()=>{
+            const monto=Number(form.monto_parcial||0);
+            if(!(monto>0)) return;
+            const cubreTodo=monto>=canchaPendiente;
+            await registrarPagoParcial(turnosGrupo,monto);
+            setForm(f=>({...f,monto_parcial:""}));
+            if(cubreTodo) closeM();
+          }}>Registrar pago parcial</Btn>
+        </div>}
       </div>}
       {esGrupo&&form.estado!=="cancelado"&&<div style={{fontSize:11,color:C.t3,marginBottom:14,lineHeight:1.5,marginTop:-8}}>Esta reserva ocupa {turnosGrupo.length} horarios seguidos ({horasStr}) — confirmar, cancelar o marcar no-show acá aplica a los {turnosGrupo.length} juntos.</div>}
       {form.estado!=="cancelado"&&!esGrupo&&<div style={{...card,background:C.greenBg,border:`1px solid ${C.greenBd}`,marginBottom:14}}>
@@ -1023,6 +1135,37 @@ export default function App() {
           </div>}
         </>;
       })()}
+
+      {/* ── Personas del grupo (si varias juegan el mismo horario) ── */}
+      {turnosGrupo[0]?.id&&(()=>{
+        const turnoAncla=turnosGrupo[0].id;
+        const participantes=turno_participantes.filter(p=>p.turno_id===turnoAncla);
+        return <><Div/>
+          <div style={{fontWeight:600,fontSize:13,color:C.t1,marginBottom:4}}>Personas del grupo</div>
+          <div style={{fontSize:11,color:C.t3,marginBottom:10,lineHeight:1.5}}>Si varias personas juegan este horario, anotá qué pidió cada una para saber a quién cobrarle o entregarle.</div>
+          {participantes.length>0&&<div style={{background:C.bg,borderRadius:8,border:`1px solid ${C.border}`,marginBottom:10,overflow:"hidden"}}>
+            {participantes.map(p=><div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+              <span style={{fontWeight:600,color:C.t1,minWidth:80}}>{p.nombre}</span>
+              <span style={{flex:1,color:C.t2}}>{p.nota||"—"}</span>
+              <button onClick={()=>eliminarParticipante(p.id)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>
+            </div>)}
+          </div>}
+          <div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:100}}>
+              <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Nombre</label>
+              <input type="text" style={inp} placeholder="Ej: Juan" value={form.participante_nombre||""} onChange={e=>setForm(f=>({...f,participante_nombre:e.target.value}))}/>
+            </div>
+            <div style={{flex:2,minWidth:140}}>
+              <label style={{fontSize:11,color:C.t2,display:"block",marginBottom:4}}>Qué pidió / nota</label>
+              <input type="text" style={inp} placeholder="Ej: 2 gaseosas" value={form.participante_nota||""} onChange={e=>setForm(f=>({...f,participante_nota:e.target.value}))}/>
+            </div>
+            <Btn v="success" sm disabled={saving||!form.participante_nombre?.trim()} onClick={async()=>{
+              await agregarParticipante(turnoAncla,form.participante_nombre,form.participante_nota);
+              setForm(f=>({...f,participante_nombre:"",participante_nota:""}));
+            }}>+ Agregar</Btn>
+          </div>
+        </>;
+      })()}
         </>;
       })()}
     </Modal>
@@ -1052,12 +1195,13 @@ export default function App() {
       {form.id&&<>
         <Div/>
         <div style={{fontSize:13,fontWeight:600,color:C.t1,marginBottom:12}}>Historial</div>
-        {(()=>{const mt=turnos.filter(t=>t.cliente_id===form.id);const ma=abonos.filter(a=>a.cliente_id===form.id);const mc=mt.filter(t=>t.estado==="confirmado");const tg=mc.reduce((a,t)=>a+(t.precio||0),0);return<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>
+        {(()=>{const mt=turnos.filter(t=>t.cliente_id===form.id);const ma=abonos.filter(a=>a.cliente_id===form.id);const mc=mt.filter(t=>t.estado==="confirmado");const tg=mc.reduce((a,t)=>a+(t.precio||0),0);const deuda=deudaCliente(form.id);return<div style={{display:"grid",gridTemplateColumns:deuda>0?"1fr 1fr 1fr 1fr 1fr":"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>
           <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:C.t2}}>Turnos</div><div style={{fontSize:16,fontWeight:700,color:C.t1,marginTop:4}}>{mt.length}</div></div>
           <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:C.t2}}>Confirm.</div><div style={{fontSize:16,fontWeight:700,color:C.green,marginTop:4}}>{mc.length}</div></div>
           <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:C.t2}}>Abonos</div><div style={{fontSize:16,fontWeight:700,color:C.coral,marginTop:4}}>{ma.length}</div></div>
           <div style={{...metric,textAlign:"center"}}><div style={{fontSize:11,color:C.t2}}>Total</div><div style={{fontSize:13,fontWeight:700,color:C.info,marginTop:4}}>{gs(tg)}</div></div>
-        </div>;})()} 
+          {deuda>0&&<div style={{...metric,textAlign:"center",background:C.redBg,border:`1px solid ${C.redBd}`}}><div style={{fontSize:11,color:C.red}}>Debe</div><div style={{fontSize:13,fontWeight:700,color:C.red,marginTop:4}}>{gs(deuda)}</div></div>}
+        </div>;})()}
         {(()=>{const mt=turnos.filter(t=>t.cliente_id===form.id).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));if(mt.length===0)return<div style={{fontSize:12,color:C.t3,textAlign:"center",padding:"12px"}}>Sin turnos</div>;return<div style={{maxHeight:180,overflowY:"auto",border:`1px solid ${C.border}`,borderRadius:8}}>{mt.slice(0,8).map(t=><div key={t.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 10px",borderBottom:`1px solid ${C.border}`,fontSize:11}}><div><div style={{color:C.t1,fontWeight:500}}>{t.fecha} {t.hora}:00</div><div style={{color:C.t2,marginTop:2}}>{gs(t.precio)}</div></div><div style={{textAlign:"right"}}>{estadoBadge(t.estado)}</div></div>)}</div>;})()} 
       </>}
       <Div/><div style={{display:"flex",justifyContent:"space-between"}}>

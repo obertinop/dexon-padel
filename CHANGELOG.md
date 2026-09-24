@@ -16,6 +16,26 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-09-24] Cliente ocasional al reservar (dedupe por nombre), pago parcial y notas por persona del grupo
+**Archivos:** `src/App.js`, `src/tabs/Clientes.js`, `src/lib/utils.js`, `supabase-migrations.sql`
+
+**Qué:**
+- **Cliente ocasional inline en "Nueva reserva":** el selector de cliente pasa de ser un `<select>` (obligaba a tener el cliente pre-cargado en la tab Clientes) a un campo de texto con autocompletado. Al escribir un nombre:
+  - Si coincide (sin importar tildes/mayúsculas/espacios, `normalizeNombre` en `utils.js`) con un cliente ya existente, se sugiere y al elegirlo se reutiliza esa ficha — no se crea un duplicado y todos sus horarios (pasados y nuevos) quedan sumados al mismo cliente.
+  - Si no existe, al guardar la reserva se crea automáticamente un cliente nuevo con ese nombre (`guardarTurno` en `App.js`).
+  - Si el cliente elegido tiene otros turnos impagos, se muestra un aviso con el total pendiente ("Fulano tiene Gs X pendiente de cobro en otros turnos").
+- **Pago parcial por turno:** en el modal de un turno reservado (`verTurno`), además de "Cobrar y confirmar" (todo de una vez) ahora se puede registrar un pago parcial contra el saldo pendiente (`registrarPagoParcial`). Cada pago parcial genera su propio ingreso en `caja`; cuando la suma de pagos cubre el precio total, el turno queda confirmado automáticamente, igual que al cobrar todo junto.
+- **Deuda acumulada del cliente:** se agrega `deudaCliente(id)` (suma de `precio - pagado` de todos los turnos no cancelados de ese cliente) y se usa para: (a) el aviso al reservar mencionado arriba, (b) el badge "Debe Gs X" en la tab Clientes (antes leía un campo `c.deuda` que **no existía** en la base y nunca se mostraba), y (c) una tarjeta "Debe" en el historial de la ficha del cliente.
+- **Notas por persona dentro de un turno compartido:** nueva sección "Personas del grupo" en el modal de un turno — permite anotar nombre + qué pidió cada persona cuando varias comparten el mismo horario (ej. "Juan: 2 gaseosas"), para saber a quién cobrarle o entregarle. Se guarda en la tabla nueva `turno_participantes`, colgada del primer turno del grupo (mismo criterio que la seña cuando la reserva ocupa varias horas).
+
+**Por qué:** para cargar un cliente que juega ocasionalmente había que abrir la tab Clientes, crearlo, y recién después ir a Agenda a reservarle un horario — con el riesgo de escribir el nombre distinto la próxima vez y terminar con dos fichas para la misma persona. Además, cobrar una reserva era todo o nada (salvo la seña inicial), y no había forma de dejar constancia de qué pidió cada integrante de un grupo que comparte cancha.
+
+**DB:** correr el bloque nuevo al final de `supabase-migrations.sql` (tabla `turno_participantes` + RLS, mismo patrón que `turno_items`/`ventas`: sin acceso `anon`, `authenticated`/`service_role` con acceso total). El código pide `turno_participantes` con `.catch(()=>[])`, así que el panel no se rompe si todavía no corriste la migración — esa sección del modal simplemente queda vacía hasta entonces.
+
+**Notas:** la creación automática de cliente ocasional solo pide nombre (sin teléfono) — si hace falta el teléfono se completa después editándolo desde la tab Clientes. El dedupe por nombre es exacto (ignora tildes/mayúsculas/espacios) para evitar fusionar por error a dos personas distintas con nombres apenas parecidos.
+
+---
+
 ### [2026-09-22] Servicio de Ventas (POS) en el admin
 **Archivos:** `src/tabs/Ventas.js` (nuevo), `src/App.js`, `supabase-migrations.sql`
 

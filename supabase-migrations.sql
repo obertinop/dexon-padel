@@ -307,4 +307,37 @@ ALTER TABLE config ADD COLUMN IF NOT EXISTS wa_auto_admin_activo boolean default
 -- ============================================================
 ALTER TABLE turnos ADD COLUMN IF NOT EXISTS grupo_reserva_id text;
 CREATE INDEX IF NOT EXISTS turnos_grupo_reserva_idx ON turnos(grupo_reserva_id) WHERE grupo_reserva_id IS NOT NULL;
+
+
+-- ============================================================
+-- CLIENTE OCASIONAL: dedupe por nombre + pago parcial + notas por
+-- persona del grupo (2026-09-24)
+-- ============================================================
+-- Pago parcial: no requiere columna nueva. `sena` pasa a representar el
+-- total pagado hasta el momento sobre ese turno (seña inicial + pagos
+-- parciales posteriores que se le vayan sumando desde el admin) y
+-- `saldo` sigue siendo `precio - sena`. Cuando el saldo llega a 0 el
+-- turno se marca confirmado, igual que al cobrar todo de una vez.
+
+-- Notas por persona dentro de una reserva compartida: cuando varias
+-- personas juegan en el mismo horario (ej. un grupo de amigos), permite
+-- anotar qué pidió cada una para saber a quién cobrarle/entregarle qué.
+-- Se cuelga del primer turno del grupo (mismo criterio que la seña).
+CREATE TABLE IF NOT EXISTS turno_participantes (
+  id          bigint generated always as identity primary key,
+  turno_id    bigint not null references turnos(id) on delete cascade,
+  nombre      text not null,
+  nota        text,
+  created_at  timestamptz not null default now()
+);
+CREATE INDEX IF NOT EXISTS turno_participantes_turno_idx ON turno_participantes(turno_id);
+
+ALTER TABLE turno_participantes ENABLE ROW LEVEL SECURITY;
+
+-- Admin-only, mismo patrón que turno_items/ventas: sin acceso anon.
+DROP POLICY IF EXISTS turno_participantes_service_all ON turno_participantes;
+CREATE POLICY turno_participantes_service_all ON turno_participantes FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS turno_participantes_auth_all ON turno_participantes;
+CREATE POLICY turno_participantes_auth_all ON turno_participantes FOR ALL TO authenticated USING (true) WITH CHECK (true);
+-- ============================================================
 -- ============================================================

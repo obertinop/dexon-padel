@@ -7,7 +7,7 @@ import { useAdmin } from "../context/AdminContext.js";
 export default function Clientes() {
   const {
     clientes, turnos, abonos, planes, cfg,
-    isMobile, openM, cById, pById,
+    isMobile, openM, cById, pById, deudaCliente,
   } = useAdmin();
 
   const [q, setQ] = useState("");
@@ -30,7 +30,7 @@ export default function Clientes() {
     </div>
     <div style={{ display: "grid", gap: 8 }}>
       {lista.length === 0 && q && <div style={{ textAlign: "center", padding: "32px", color: C.t3, fontSize: 13 }}>Sin resultados para "{q}"</div>}
-      {lista.map(c => { const ab = abonos.find(a => a.cliente_id === c.id && a.estado === "activo"); const resC = turnos.filter(t => t.cliente_id === c.id).length; return <div key={c.id} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, border: `1px solid ${C.border}`, padding: isMobile ? "10px 12px" : "12px 16px", display: "flex", alignItems: "center", gap: isMobile ? 10 : 14, cursor: "pointer" }} onClick={() => openM("cliente", { ...c })}>
+      {lista.map(c => { const ab = abonos.find(a => a.cliente_id === c.id && a.estado === "activo"); const resC = turnos.filter(t => t.cliente_id === c.id).length; const deuda = deudaCliente(c.id); return <div key={c.id} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, border: `1px solid ${C.border}`, padding: isMobile ? "10px 12px" : "12px 16px", display: "flex", alignItems: "center", gap: isMobile ? 10 : 14, cursor: "pointer" }} onClick={() => openM("cliente", { ...c })}>
         <Avatar nombre={c.nombre} size={isMobile ? 36 : 40} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: isMobile ? 13 : 14, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{qLow ? highlight(c.nombre, q.trim()) : c.nombre}</div>
@@ -38,7 +38,7 @@ export default function Clientes() {
           <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
             {ab ? <Badge type="purple">{pById(ab.plan_id)?.nombre || "Abonado"}</Badge> : <Badge type="gray">Ocasional</Badge>}
             {c.saldo_favor > 0 && <span style={{ fontSize: 10, color: C.green, background: C.greenBg, padding: "1px 6px", borderRadius: 5, border: `1px solid ${C.greenBd}` }}>+{gs(c.saldo_favor)}</span>}
-            {c.deuda > 0 && <Badge type="danger">Debe {gs(c.deuda)}</Badge>}
+            {deuda > 0 && <Badge type="danger">Debe {gs(deuda)}</Badge>}
             {c.referrer_code && !isMobile && <span style={{ fontSize: 11, color: C.yellow, background: C.yellowBg, padding: "2px 7px", borderRadius: 5, letterSpacing: .5, border: `1px solid ${C.yellowBd}` }}>{c.referrer_code}</span>}
           </div>
         </div>
