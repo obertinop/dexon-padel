@@ -16,6 +16,17 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-09-24] Fix: pago parcial se aplica a la deuda total del cliente, no al turno puntual
+**Archivos:** `src/App.js`
+
+**Qué:** `registrarPagoParcial` cambia de firma — antes tomaba `(grupo, monto)` y repartía el pago solo entre los turnos de la reserva que se estaba viendo; ahora toma `(clienteId, monto)` y lo reparte entre **todos** los turnos sin cobrar de ese cliente (todas sus reservas, no solo la que tenías abierta), del más viejo al más nuevo. La sección "Pago parcial" del modal de turno ahora se muestra según `deudaCliente(cliente_id)` (deuda total), no según el saldo del turno puntual.
+
+**Por qué:** con el diseño anterior, si un pago dejaba una parte del grupo en "confirmado" (saldo 0) y otra parte todavía debiendo, al reabrir el modal desde un horario que ya había quedado confirmado la sección de pago desaparecía por completo (estaba atada al estado de ESE turno, no a la deuda real de la ficha) — daba la sensación de que "no dejaba registrar más pagos" cuando en realidad el cliente seguía debiendo por otro horario de la misma visita.
+
+**Notas:** "Cobrar y confirmar todo" (el botón de cobro completo) sigue acotado al turno que se está viendo + sus productos del día, sin cambios — solo el pago *parcial* pasa a ser sobre la deuda total.
+
+---
+
 ### [2026-09-24] Cliente ocasional al reservar (dedupe por nombre), pago parcial y notas por persona del grupo
 **Archivos:** `src/App.js`, `src/tabs/Clientes.js`, `src/lib/utils.js`, `supabase-migrations.sql`
 

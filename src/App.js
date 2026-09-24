@@ -350,21 +350,25 @@ export default function App() {
     }catch(e){notify(e.message,"error");}
     setSaving(false);
   };
-  // Pago parcial sobre el saldo pendiente de una reserva (una o varias horas
-  // agrupadas) — a diferencia de "Cobrar y confirmar", no exige pagar todo junto.
-  // Se distribuye el monto turno por turno (mismo orden que la seña) hasta
-  // agotarlo; si con este pago se cubre todo el saldo del grupo, queda
-  // confirmada igual que al cobrar todo de una vez.
-  const registrarPagoParcial = async(grupo,monto)=>{
-    if(!grupo?.length||!(monto>0)) return;
-    const saldoGrupo=grupo.reduce((a,t)=>a+Math.max(0,t.precio-(t.sena||0)),0);
-    if(saldoGrupo<=0){notify("Este turno ya está totalmente pagado","error");return;}
-    if(monto>saldoGrupo){notify("El pago no puede ser mayor al saldo pendiente","error");return;}
+  // Pago parcial contra la deuda TOTAL de un cliente — no solo el turno que se
+  // está mirando, sino todo lo que tenga cargado y sin cobrar (varias reservas,
+  // distintos días). Se distribuye el monto del turno más viejo al más nuevo
+  // hasta agotarlo; cada turno que quede saldado se confirma solo, igual que al
+  // cobrar todo de una vez. Si el monto alcanza para pagar todo, la deuda del
+  // cliente queda en cero.
+  const registrarPagoParcial = async(clienteId,monto)=>{
+    if(!clienteId||!(monto>0)) return;
+    const pendientes=turnos
+      .filter(t=>t.cliente_id===clienteId&&t.estado!=="cancelado"&&(t.precio-(t.sena||0))>0)
+      .sort((a,b)=>a.fecha!==b.fecha?a.fecha.localeCompare(b.fecha):a.hora-b.hora);
+    const deudaTotal=pendientes.reduce((a,t)=>a+Math.max(0,t.precio-(t.sena||0)),0);
+    if(deudaTotal<=0){notify("Este cliente no tiene deuda pendiente","error");return;}
+    if(monto>deudaTotal){notify("El pago no puede ser mayor a la deuda total del cliente","error");return;}
     setSaving(true);
     try{
-      const nombreCliente=cById(grupo[0].cliente_id)?.nombre||"?";
+      const nombreCliente=cById(clienteId)?.nombre||"?";
       let restante=monto;
-      for(const t of grupo){
+      for(const t of pendientes){
         if(restante<=0) break;
         const saldoT=Math.max(0,t.precio-(t.sena||0));
         if(saldoT<=0) continue;
@@ -1041,18 +1045,27 @@ export default function App() {
           <div style={{display:"flex",justifyContent:"space-between",fontSize:15,fontWeight:700,paddingTop:8,marginTop:2,borderTop:`1px solid ${C.border}`}}><span style={{color:C.t1}}>Total</span><span style={{color:C.coral}}>{gs(totalACobrarAhora)}</span></div>
         </div>
         <Btn v="success" style={{width:"100%"}} disabled={saving} onClick={()=>{closeM();setDlg({type:"cobrarTodo",grupo:canchaPendiente>0?turnosGrupo:[],idsItems:totalPendProductos>0?idsHermanos:[],monto:totalACobrarAhora,nombre:form.cliente.nombre});}}>💰 Cobrar todo {gs(totalACobrarAhora)}</Btn>
-        {canchaPendiente>0&&<div style={{display:"flex",gap:8,marginTop:8}}>
-          <input type="number" min={1} max={canchaPendiente} placeholder={`Pago parcial (máx. ${gs(canchaPendiente)})`} value={form.monto_parcial||""} onChange={e=>setForm(f=>({...f,monto_parcial:e.target.value}))} style={{...inp,flex:1}}/>
-          <Btn sm disabled={saving||!(Number(form.monto_parcial)>0)} onClick={async()=>{
-            const monto=Number(form.monto_parcial||0);
-            if(!(monto>0)) return;
-            const cubreTodo=monto>=canchaPendiente;
-            await registrarPagoParcial(turnosGrupo,monto);
-            setForm(f=>({...f,monto_parcial:""}));
-            if(cubreTodo) closeM();
-          }}>Registrar pago parcial</Btn>
-        </div>}
       </div>}
+      {(()=>{
+        // El pago parcial se aplica a TODA la deuda del cliente (todas sus reservas sin
+        // cobrar, no solo la que se está viendo acá) — hasta agotar el monto, del turno
+        // más viejo al más nuevo. Si alcanza para pagar todo, la deuda queda en cero.
+        const deudaTotalCliente=deudaCliente(form.cliente_id);
+        if(deudaTotalCliente<=0) return null;
+        return <div style={{...card,marginBottom:14}}>
+          <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Pago parcial</div>
+          <div style={{fontSize:11,color:C.t3,marginBottom:10,lineHeight:1.5}}>Se aplica a toda la deuda de {form.cliente.nombre} ({gs(deudaTotalCliente)} en total, sumando todas sus reservas sin cobrar) — no solo esta.</div>
+          <div style={{display:"flex",gap:8}}>
+            <input type="number" min={1} max={deudaTotalCliente} placeholder={`Máx. ${gs(deudaTotalCliente)}`} value={form.monto_parcial||""} onChange={e=>setForm(f=>({...f,monto_parcial:e.target.value}))} style={{...inp,flex:1}}/>
+            <Btn sm disabled={saving||!(Number(form.monto_parcial)>0)} onClick={async()=>{
+              const monto=Number(form.monto_parcial||0);
+              if(!(monto>0)) return;
+              await registrarPagoParcial(form.cliente_id,monto);
+              setForm(f=>({...f,monto_parcial:""}));
+            }}>Registrar pago</Btn>
+          </div>
+        </div>;
+      })()}
       {esGrupo&&form.estado!=="cancelado"&&<div style={{fontSize:11,color:C.t3,marginBottom:14,lineHeight:1.5,marginTop:-8}}>Esta reserva ocupa {turnosGrupo.length} horarios seguidos ({horasStr}) — confirmar, cancelar o marcar no-show acá aplica a los {turnosGrupo.length} juntos.</div>}
       {form.estado!=="cancelado"&&!esGrupo&&<div style={{...card,background:C.greenBg,border:`1px solid ${C.greenBd}`,marginBottom:14}}>
         <div style={{fontSize:12,color:C.green,fontWeight:600,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Reprogramar turno</div>
