@@ -16,12 +16,14 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
-### [2026-09-24] Deuda del cliente y pago parcial incluyen productos pendientes
-**Archivos:** `src/App.js`
+### [2026-09-24] Deuda del cliente y pago parcial incluyen productos — y también se pueden pagar a medias
+**Archivos:** `src/App.js`, `supabase-migrations.sql`
 
-**Qué:** `deudaCliente` y `registrarPagoParcial` ahora suman también los productos vendidos en turno (`turno_items`) todavía sin cobrar, no solo el saldo de cancha. La cancha se sigue pagando en partes (tiene su propio saldo); los productos no admiten pago a medias, así que `registrarPagoParcial` los marca cobrados completos —del más barato al más caro— mientras el resto del monto alcance. Si sobra un resto que no llega a cubrir ningún producto entero, se acredita como `saldo_favor` del cliente (vía la función atómica `update_saldo_favor`) en vez de perderse.
+**Qué:** `deudaCliente` y `registrarPagoParcial` ahora suman también los productos vendidos en turno (`turno_items`) todavía sin cobrar, no solo el saldo de cancha. Se agrega la columna `turno_items.pagado` (mismo rol que `sena` en turnos): cada producto ahora admite pago a medias igual que la cancha — `registrarPagoParcial` reparte el monto entre cancha y productos pendientes (del más viejo al más nuevo), descontando por producto específico, y solo lo marca `cobrado` cuando `pagado` alcanza `precio_unitario*cantidad`. El listado de productos del turno muestra "Pagó X de Y · falta Z" en los que quedaron con pago parcial, y no se puede eliminar un producto que ya tiene algo pagado (para no perder el rastro del cobro). `cobrarItemsTurno` (el botón "Cobrar" de productos) también se corrigió para cobrar solo el saldo restante de cada ítem, no el precio completo de nuevo si ya tenía un pago parcial.
 
-**Por qué:** la deuda de un cliente (y lo que un pago parcial debía saldar) se estaba calculando solo con la cancha — un cliente con gaseosas o pelotas pendientes de cobro aparecía con menos deuda de la real, y un pago parcial no las descontaba aunque el monto alcanzara.
+**Por qué:** la deuda de un cliente (y lo que un pago parcial debía saldar) se estaba calculando solo con la cancha — un cliente con gaseosas o pelotas pendientes de cobro aparecía con menos deuda de la real. Una primera versión de este fix cobraba productos solo completos y mandaba cualquier resto a `saldo_favor`, pero eso perdía el rastro de cuánto se pagó de CADA producto puntual (si el cliente seguía debiendo por ese producto específico, no quedaba registrado en ningún lado) — se reemplazó por el mismo mecanismo de saldo divisible que ya usan los turnos.
+
+**DB:** correr el bloque nuevo al final de `supabase-migrations.sql` (`ALTER TABLE turno_items ADD COLUMN pagado`).
 
 ---
 

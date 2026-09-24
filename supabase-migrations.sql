@@ -313,11 +313,17 @@ CREATE INDEX IF NOT EXISTS turnos_grupo_reserva_idx ON turnos(grupo_reserva_id) 
 -- CLIENTE OCASIONAL: dedupe por nombre + pago parcial + notas por
 -- persona del grupo (2026-09-24)
 -- ============================================================
--- Pago parcial: no requiere columna nueva. `sena` pasa a representar el
--- total pagado hasta el momento sobre ese turno (seña inicial + pagos
--- parciales posteriores que se le vayan sumando desde el admin) y
--- `saldo` sigue siendo `precio - sena`. Cuando el saldo llega a 0 el
--- turno se marca confirmado, igual que al cobrar todo de una vez.
+-- Pago parcial (cancha): no requiere columna nueva. `sena` pasa a
+-- representar el total pagado hasta el momento sobre ese turno (seña
+-- inicial + pagos parciales posteriores que se le vayan sumando desde
+-- el admin) y `saldo` sigue siendo `precio - sena`. Cuando el saldo
+-- llega a 0 el turno se marca confirmado, igual que al cobrar todo junto.
+
+-- Pago parcial (productos): turno_items no tenía forma de registrar un
+-- cobro a medias — cobrado era todo o nada. `pagado` guarda cuánto se
+-- lleva pagado de ese ítem (mismo rol que `sena` en turnos); se marca
+-- `cobrado = true` recién cuando pagado alcanza precio_unitario*cantidad.
+ALTER TABLE turno_items ADD COLUMN IF NOT EXISTS pagado numeric NOT NULL DEFAULT 0;
 
 -- Notas por persona dentro de una reserva compartida: cuando varias
 -- personas juegan en el mismo horario (ej. un grupo de amigos), permite

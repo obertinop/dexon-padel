@@ -238,7 +238,7 @@ export default function App() {
     const turnosCliente=turnos.filter(t=>t.cliente_id===clienteId&&t.estado!=="cancelado");
     const deudaCancha=turnosCliente.reduce((a,t)=>a+Math.max(0,(t.precio||0)-(t.sena||0)),0);
     const idsTurnosCliente=turnosCliente.map(t=>t.id);
-    const deudaProductos=turno_items.filter(i=>idsTurnosCliente.includes(i.turno_id)&&!i.cobrado).reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+    const deudaProductos=turno_items.filter(i=>idsTurnosCliente.includes(i.turno_id)&&!i.cobrado).reduce((a,i)=>a+Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0)),0);
     return deudaCancha+deudaProductos;
   };
   const sf = k=>e=>setForm(f=>({...f,[k]:e.target.value}));
@@ -356,11 +356,10 @@ export default function App() {
     setSaving(false);
   };
   // Pago parcial contra la deuda TOTAL de un cliente — cancha + productos de
-  // todos sus turnos sin cobrar, no solo el turno que se está mirando. La cancha
-  // se paga en partes (tiene saldo propio); los productos no admiten pago a
-  // medias, así que se cobran completos del más barato al más caro mientras el
-  // resto del monto alcance. Si sobra un resto que no llega a cubrir ningún
-  // producto entero, se acredita como saldo a favor del cliente (no se pierde).
+  // todos sus turnos sin cobrar, no solo el turno que se está mirando. Ambos se
+  // pueden pagar a medias: la cancha tiene su propio saldo (sena/saldo) y cada
+  // producto ahora también (pagado) — se reparte el monto entre lo más viejo
+  // primero hasta agotarlo, y lo que se termine de pagar queda confirmado/cobrado.
   // Si el monto alcanza para pagar todo, la deuda del cliente queda en cero.
   const registrarPagoParcial = async(clienteId,monto)=>{
     if(!clienteId||!(monto>0)) return;
@@ -370,10 +369,10 @@ export default function App() {
       .sort((a,b)=>a.fecha!==b.fecha?a.fecha.localeCompare(b.fecha):a.hora-b.hora);
     const idsTurnosCliente=turnosCliente.map(t=>t.id);
     const pendientesItems=turno_items
-      .filter(i=>idsTurnosCliente.includes(i.turno_id)&&!i.cobrado)
-      .sort((a,b)=>(a.precio_unitario*a.cantidad)-(b.precio_unitario*b.cantidad));
+      .filter(i=>idsTurnosCliente.includes(i.turno_id)&&!i.cobrado&&(i.precio_unitario*i.cantidad-(i.pagado||0))>0)
+      .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
     const deudaCancha=pendientesTurnos.reduce((a,t)=>a+Math.max(0,t.precio-(t.sena||0)),0);
-    const deudaProductos=pendientesItems.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+    const deudaProductos=pendientesItems.reduce((a,i)=>a+Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0)),0);
     const deudaTotal=deudaCancha+deudaProductos;
     if(deudaTotal<=0){notify("Este cliente no tiene deuda pendiente","error");return;}
     if(monto>deudaTotal){notify("El pago no puede ser mayor a la deuda total del cliente","error");return;}
@@ -393,19 +392,16 @@ export default function App() {
         await db.post("caja",{descripcion:`Pago parcial - ${nombreCliente}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:aplicado,fecha:hoy(),turno_id:t.id},tk);
         restante-=aplicado;
       }
-      const itemsACobrar=[];
       for(const i of pendientesItems){
-        const costo=i.precio_unitario*i.cantidad;
-        if(costo<=restante){itemsACobrar.push(i);restante-=costo;}
-      }
-      if(itemsACobrar.length){
-        const totalItems=itemsACobrar.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
-        await db.post("caja",{descripcion:`Pago parcial (productos) - ${nombreCliente}`,tipo:"ingreso",categoria:"venta",monto:totalItems,fecha:hoy()},tk);
-        await api(`turno_items?id=in.(${itemsACobrar.map(i=>i.id).join(",")})`,{method:"PATCH",body:JSON.stringify({cobrado:true}),prefer:"return=minimal"},tk);
-      }
-      if(restante>0){
-        await db.post("caja",{descripcion:`Pago parcial (saldo a favor) - ${nombreCliente}`,tipo:"ingreso",categoria:"reserva",monto:restante,fecha:hoy()},tk);
-        await api("rpc/update_saldo_favor",{method:"POST",body:JSON.stringify({p_cliente_id:clienteId,p_delta:restante})},tk);
+        if(restante<=0) break;
+        const pendienteI=Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0));
+        if(pendienteI<=0) continue;
+        const aplicado=Math.min(restante,pendienteI);
+        const nuevoPagado=(i.pagado||0)+aplicado;
+        const completo=nuevoPagado>=i.precio_unitario*i.cantidad;
+        await db.patch("turno_items",i.id,{pagado:nuevoPagado,...(completo?{cobrado:true}:{})},tk);
+        await db.post("caja",{descripcion:`Pago parcial (${i.nombre}) - ${nombreCliente}`,tipo:"ingreso",categoria:"venta",monto:aplicado,fecha:hoy()},tk);
+        restante-=aplicado;
       }
       setDlg(null);await load();notify("Pago registrado","ok");
     }catch(e){notify(e.message,"error");}
@@ -614,13 +610,15 @@ export default function App() {
     try {
       const turno=turnos.find(t=>t.id===ids[0]);
       const cliente=clientes.find(c=>c.id===turno?.cliente_id);
-      const total=items.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+      // Si un ítem ya tenía un pago parcial (pagado > 0), acá solo se cobra lo que
+      // falta — no el precio completo de nuevo.
+      const total=items.reduce((a,i)=>a+Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0)),0);
       const fecha=turno?.fecha||hoy();
       const etiquetaTurnos=ids.length>1?ids.map(id=>`#${id}`).join(", "):`#${ids[0]}`;
       // Misma fuente de verdad que la tab Ventas: crea la venta + sus items,
       // y un único ingreso en caja para todo el lote (no uno por producto ni por turno).
       const[v]=await db.post("ventas",{fecha,cliente_id:cliente?.id||null,subtotal:total,descuento_pct:0,descuento_monto:0,total,metodo_pago:"efectivo",notas:`Productos cobrados en turno${ids.length>1?"s":""} ${etiquetaTurnos}`},tk);
-      await db.post("venta_items",items.map(i=>({venta_id:v.id,stock_id:i.stock_id||null,nombre:i.nombre,cantidad:i.cantidad,precio_unitario:i.precio_unitario,subtotal:i.precio_unitario*i.cantidad})),tk);
+      await db.post("venta_items",items.map(i=>({venta_id:v.id,stock_id:i.stock_id||null,nombre:i.nombre,cantidad:i.cantidad,precio_unitario:i.precio_unitario,subtotal:Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0))})),tk);
       const[mov]=await db.post("caja",{descripcion:`Venta mostrador${cliente?` — ${cliente.nombre}`:""} (turno${ids.length>1?"s":""} ${etiquetaTurnos}, ${items.length} ítem${items.length!==1?"s":""})`,tipo:"ingreso",categoria:"venta",monto:total,fecha,turno_id:ids.length===1?ids[0]:null},tk);
       await db.patch("ventas",v.id,{caja_mov_id:mov.id},tk);
       await api(`turno_items?id=in.(${items.map(i=>i.id).join(",")})`,{method:"PATCH",body:JSON.stringify({cobrado:true}),prefer:"return=minimal"},tk);
@@ -1040,7 +1038,7 @@ export default function App() {
         const idsHermanos=turnosHermanos.map(t=>t.id);
         const itemsCliente=turno_items.filter(i=>idsHermanos.includes(i.turno_id));
         const pendientesCliente=itemsCliente.filter(i=>!i.cobrado);
-        const totalPendProductos=pendientesCliente.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+        const totalPendProductos=pendientesCliente.reduce((a,i)=>a+Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0)),0);
         // Cancha pendiente de cobro: solo si el turno todavía no fue confirmado/cobrado
         // (si ya pagó adelantado — Pagopar, o vos ya lo confirmaste — esto da 0).
         const canchaPendiente=form.estado==="reservado"?Math.max(0,precioTotal-senaTotal):0;
@@ -1149,14 +1147,22 @@ export default function App() {
           </div>
           {hayVariosTurnos&&<div style={{fontSize:11,color:C.t3,marginBottom:10,lineHeight:1.5}}>Este cliente tiene {turnosHermanos.length} turnos hoy ({turnosHermanos.map(t=>`${t.hora}:00`).join(", ")}) — los productos de todos se cobran juntos con un solo click.</div>}
           {items.length>0&&<div style={{background:C.bg,borderRadius:8,border:`1px solid ${C.border}`,marginBottom:10,overflow:"hidden"}}>
-            {items.map(i=><div key={i.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
-              {hayVariosTurnos&&<span style={{fontSize:10,color:C.t3,minWidth:36}}>{turnosHermanos.find(t=>t.id===i.turno_id)?.hora}:00</span>}
-              <span style={{flex:1,color:C.t1,fontWeight:500}}>{i.nombre}</span>
-              <span style={{color:C.t3}}>x{i.cantidad}</span>
-              <span style={{color:i.cobrado?C.green:C.yellow,fontWeight:600,minWidth:70,textAlign:"right"}}>{gs(i.precio_unitario*i.cantidad)}</span>
-              <span style={{fontSize:10,padding:"1px 6px",borderRadius:6,background:i.cobrado?C.greenBg:C.yellowBg,color:i.cobrado?C.green:C.yellow,border:`1px solid ${i.cobrado?C.greenBd:C.yellowBd}`,whiteSpace:"nowrap"}}>{i.cobrado?"Cobrado":"Pendiente"}</span>
-              {!i.cobrado&&<button onClick={()=>eliminarItemTurno(i.id,i.stock_id,i.cantidad)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>}
-            </div>)}
+            {items.map(i=>{
+              const costoItem=i.precio_unitario*i.cantidad;
+              const pendienteItem=Math.max(0,costoItem-(i.pagado||0));
+              const parcial=!i.cobrado&&(i.pagado||0)>0;
+              return <div key={i.id} style={{display:"flex",flexDirection:"column",gap:2,padding:"8px 12px",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {hayVariosTurnos&&<span style={{fontSize:10,color:C.t3,minWidth:36}}>{turnosHermanos.find(t=>t.id===i.turno_id)?.hora}:00</span>}
+                  <span style={{flex:1,color:C.t1,fontWeight:500}}>{i.nombre}</span>
+                  <span style={{color:C.t3}}>x{i.cantidad}</span>
+                  <span style={{color:i.cobrado?C.green:C.yellow,fontWeight:600,minWidth:70,textAlign:"right"}}>{gs(i.cobrado?costoItem:pendienteItem)}</span>
+                  <span style={{fontSize:10,padding:"1px 6px",borderRadius:6,background:i.cobrado?C.greenBg:C.yellowBg,color:i.cobrado?C.green:C.yellow,border:`1px solid ${i.cobrado?C.greenBd:C.yellowBd}`,whiteSpace:"nowrap"}}>{i.cobrado?"Cobrado":parcial?"Parcial":"Pendiente"}</span>
+                  {!i.cobrado&&!parcial&&<button onClick={()=>eliminarItemTurno(i.id,i.stock_id,i.cantidad)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:17,padding:"0 2px",lineHeight:1}}>×</button>}
+                </div>
+                {parcial&&<div style={{fontSize:10,color:C.t3,paddingLeft:hayVariosTurnos?44:0}}>Pagó {gs(i.pagado)} de {gs(costoItem)} · falta {gs(pendienteItem)}</div>}
+              </div>;
+            })}
             {(pendientes.length>0||cobrados.length>0)&&<div style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",fontSize:12,color:C.t2}}>
               {pendientes.length>0&&<span>Pendiente: <strong style={{color:C.yellow}}>{gs(totalPend)}</strong></span>}
               {cobrados.length>0&&<span>Cobrado: <strong style={{color:C.green}}>{gs(cobrados.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0))}</strong></span>}
