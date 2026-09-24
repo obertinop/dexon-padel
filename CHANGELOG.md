@@ -16,6 +16,17 @@ Registro de toda la lógica implementada en el proyecto. Cada entrada describe *
 
 ---
 
+### [2026-09-24] Revierte: productos de turno dejan de registrarse en Ventas
+**Archivos:** `src/App.js`
+
+**Qué:** `cobrarItemsTurno` (botón "💰 Cobrar" de productos dentro de un turno) vuelve a registrar solo un ingreso en Caja (categoría `consumo`) — deja de crear una fila en `ventas`/`venta_items`. `registrarPagoParcial` (pago parcial de productos) usa la misma categoría `consumo` para que ambos caminos queden consistentes.
+
+**Por qué:** el cambio del 22/set que unificó "productos cobrados en turno" con el historial de Ventas ("una sola fuente de verdad") terminaba mezclando en la tab Ventas — que el club usa exclusivamente para ventas de mostrador sin turno asociado, pagadas al momento — el consumo de bebidas/productos de las reservas de cancha. Además, como esa unificación solo pasaba por el botón "Cobrar" y no por "Pago parcial" (que solo tocaba Caja), un mismo lote de productos podía terminar mitad en Ventas y mitad no, según qué botón se usara — inconsistente. Se vuelve al diseño original documentado en la entrada del 22/set que creó la tab Ventas: "punto de venta simple para vender productos de stock sin necesidad de un turno asociado... a diferencia del flujo existente de 'items vendidos en turno'".
+
+**Notas:** el stock y la Caja siguen reflejando el consumo de cancha igual que antes (nada de eso cambia); lo único que cambia es que ya no aparece en la tab Ventas ni en sus métricas (Hoy/Mes/Ticket promedio). Se corrigió a mano en producción la única venta de prueba que había quedado creada por este camino (venta_id 6), sin tocar el movimiento de Caja correspondiente.
+
+---
+
 ### [2026-09-24] Deuda del cliente y pago parcial incluyen productos — y también se pueden pagar a medias
 **Archivos:** `src/App.js`, `supabase-migrations.sql`
 

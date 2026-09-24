@@ -400,7 +400,7 @@ export default function App() {
         const nuevoPagado=(i.pagado||0)+aplicado;
         const completo=nuevoPagado>=i.precio_unitario*i.cantidad;
         await db.patch("turno_items",i.id,{pagado:nuevoPagado,...(completo?{cobrado:true}:{})},tk);
-        await db.post("caja",{descripcion:`Pago parcial (${i.nombre}) - ${nombreCliente}`,tipo:"ingreso",categoria:"venta",monto:aplicado,fecha:hoy()},tk);
+        await db.post("caja",{descripcion:`Pago parcial (${i.nombre}) - ${nombreCliente}`,tipo:"ingreso",categoria:"consumo",monto:aplicado,fecha:hoy()},tk);
         restante-=aplicado;
       }
       setDlg(null);await load();notify("Pago registrado","ok");
@@ -602,6 +602,8 @@ export default function App() {
   };
   // turnoIds: un id suelto o un array — cuando el cliente tiene varios turnos el mismo
   // día (ej. reservó 2 horas seguidas), se cobran los productos de todos juntos.
+  // Consumo de cancha: va directo a Caja, nunca a la tab Ventas — esa es solo para
+  // ventas de mostrador sin turno asociado (ver CHANGELOG 2026-09-24).
   const cobrarItemsTurno = async(turnoIds)=>{
     const ids=Array.isArray(turnoIds)?turnoIds:[turnoIds];
     const items=turno_items.filter(i=>ids.includes(i.turno_id)&&!i.cobrado);
@@ -615,12 +617,7 @@ export default function App() {
       const total=items.reduce((a,i)=>a+Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0)),0);
       const fecha=turno?.fecha||hoy();
       const etiquetaTurnos=ids.length>1?ids.map(id=>`#${id}`).join(", "):`#${ids[0]}`;
-      // Misma fuente de verdad que la tab Ventas: crea la venta + sus items,
-      // y un único ingreso en caja para todo el lote (no uno por producto ni por turno).
-      const[v]=await db.post("ventas",{fecha,cliente_id:cliente?.id||null,subtotal:total,descuento_pct:0,descuento_monto:0,total,metodo_pago:"efectivo",notas:`Productos cobrados en turno${ids.length>1?"s":""} ${etiquetaTurnos}`},tk);
-      await db.post("venta_items",items.map(i=>({venta_id:v.id,stock_id:i.stock_id||null,nombre:i.nombre,cantidad:i.cantidad,precio_unitario:i.precio_unitario,subtotal:Math.max(0,i.precio_unitario*i.cantidad-(i.pagado||0))})),tk);
-      const[mov]=await db.post("caja",{descripcion:`Venta mostrador${cliente?` — ${cliente.nombre}`:""} (turno${ids.length>1?"s":""} ${etiquetaTurnos}, ${items.length} ítem${items.length!==1?"s":""})`,tipo:"ingreso",categoria:"venta",monto:total,fecha,turno_id:ids.length===1?ids[0]:null},tk);
-      await db.patch("ventas",v.id,{caja_mov_id:mov.id},tk);
+      await db.post("caja",{descripcion:`Consumo en turno${ids.length>1?"s":""}${cliente?` — ${cliente.nombre}`:""} (${etiquetaTurnos}, ${items.length} ítem${items.length!==1?"s":""})`,tipo:"ingreso",categoria:"consumo",monto:total,fecha,turno_id:ids.length===1?ids[0]:null},tk);
       await api(`turno_items?id=in.(${items.map(i=>i.id).join(",")})`,{method:"PATCH",body:JSON.stringify({cobrado:true}),prefer:"return=minimal"},tk);
       await load();
     } catch(e){notify(e.message,"error");}
