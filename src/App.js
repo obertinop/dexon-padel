@@ -290,12 +290,24 @@ export default function App() {
       }
       // Si son varias horas, se crea un turno por hora (necesario para disponibilidad/precio
       // por hora) pero todas comparten grupo_reserva_id para tratarse como una sola reserva.
-      const grupoReservaId=horas.length>1?crypto.randomUUID():null;
+      // Si el cliente ya tiene otras horas reservadas (sin cobrar todavía) ese mismo día
+      // — por ejemplo, agregó esta hora en una segunda pasada por el mismo nombre —, se
+      // suman a esa misma reserva en vez de quedar sueltas, para que "Cobrar y confirmar"
+      // y el total las incluyan a todas juntas.
+      const tipoReserva=form.tipo||"ocasional";
+      const existentesMismoDia=turnos.filter(t=>t.cliente_id===clienteId&&t.fecha===form.fecha&&t.tipo===tipoReserva&&t.estado==="reservado");
+      let grupoReservaId=existentesMismoDia[0]?.grupo_reserva_id||null;
+      if(existentesMismoDia.length&&!grupoReservaId){
+        grupoReservaId=crypto.randomUUID();
+        await Promise.all(existentesMismoDia.map(t=>db.patch("turnos",t.id,{grupo_reserva_id:grupoReservaId},tk)));
+      } else if(!grupoReservaId&&horas.length>1){
+        grupoReservaId=crypto.randomUUID();
+      }
       const sena=Number(form.sena||0);
       const turnosBody=horas.map((h,i)=>{
         const precio=form.tipo==="clase"?Number(form.precio_clase||0):precioTurno(h);
         const senaAplicada=i===0?sena:0; // la seña se registra una sola vez, en el primer turno del grupo
-        return {fecha:form.fecha,hora:h,tipo:form.tipo||"ocasional",estado:"reservado",cliente_id:clienteId,instructor_id:form.instructor_id?Number(form.instructor_id):null,precio,sena:senaAplicada,saldo:precio-senaAplicada,notas:form.notas||"",grupo_reserva_id:grupoReservaId};
+        return {fecha:form.fecha,hora:h,tipo:tipoReserva,estado:"reservado",cliente_id:clienteId,instructor_id:form.instructor_id?Number(form.instructor_id):null,precio,sena:senaAplicada,saldo:precio-senaAplicada,notas:form.notas||"",grupo_reserva_id:grupoReservaId};
       });
       const turnosCreados=await db.post("turnos",turnosBody,tk);
       if(sena>0)await db.post("caja",{descripcion:`Seña - ${clienteObj?.nombre||"?"}`,tipo:"ingreso",categoria:"reserva",monto:sena,fecha:form.fecha,turno_id:turnosCreados[0].id},tk);
