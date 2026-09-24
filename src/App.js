@@ -231,11 +231,16 @@ export default function App() {
     if(!n) return null;
     return clientes.find(c=>normalizeNombre(c.nombre)===n)||null;
   };
-  // Deuda acumulada de un cliente: suma de lo que falta cobrar (precio - pagado)
-  // de todos sus turnos no cancelados, sin importar la reserva puntual.
-  const deudaCliente = clienteId=>turnos
-    .filter(t=>t.cliente_id===clienteId&&t.estado!=="cancelado")
-    .reduce((a,t)=>a+Math.max(0,(t.precio||0)-(t.sena||0)),0);
+  // Deuda acumulada de un cliente: cancha (precio - pagado) de todos sus turnos no
+  // cancelados + productos (turno_items) todavía sin cobrar de esos mismos turnos —
+  // sin importar la reserva o el día puntual.
+  const deudaCliente = clienteId=>{
+    const turnosCliente=turnos.filter(t=>t.cliente_id===clienteId&&t.estado!=="cancelado");
+    const deudaCancha=turnosCliente.reduce((a,t)=>a+Math.max(0,(t.precio||0)-(t.sena||0)),0);
+    const idsTurnosCliente=turnosCliente.map(t=>t.id);
+    const deudaProductos=turno_items.filter(i=>idsTurnosCliente.includes(i.turno_id)&&!i.cobrado).reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+    return deudaCancha+deudaProductos;
+  };
   const sf = k=>e=>setForm(f=>({...f,[k]:e.target.value}));
   const openM = (name,f={})=>{setForm(f);setModal(name);};
   const closeM = ()=>{setModal(null);setForm({});};
@@ -350,25 +355,33 @@ export default function App() {
     }catch(e){notify(e.message,"error");}
     setSaving(false);
   };
-  // Pago parcial contra la deuda TOTAL de un cliente — no solo el turno que se
-  // está mirando, sino todo lo que tenga cargado y sin cobrar (varias reservas,
-  // distintos días). Se distribuye el monto del turno más viejo al más nuevo
-  // hasta agotarlo; cada turno que quede saldado se confirma solo, igual que al
-  // cobrar todo de una vez. Si el monto alcanza para pagar todo, la deuda del
-  // cliente queda en cero.
+  // Pago parcial contra la deuda TOTAL de un cliente — cancha + productos de
+  // todos sus turnos sin cobrar, no solo el turno que se está mirando. La cancha
+  // se paga en partes (tiene saldo propio); los productos no admiten pago a
+  // medias, así que se cobran completos del más barato al más caro mientras el
+  // resto del monto alcance. Si sobra un resto que no llega a cubrir ningún
+  // producto entero, se acredita como saldo a favor del cliente (no se pierde).
+  // Si el monto alcanza para pagar todo, la deuda del cliente queda en cero.
   const registrarPagoParcial = async(clienteId,monto)=>{
     if(!clienteId||!(monto>0)) return;
-    const pendientes=turnos
-      .filter(t=>t.cliente_id===clienteId&&t.estado!=="cancelado"&&(t.precio-(t.sena||0))>0)
+    const turnosCliente=turnos.filter(t=>t.cliente_id===clienteId&&t.estado!=="cancelado");
+    const pendientesTurnos=turnosCliente
+      .filter(t=>(t.precio-(t.sena||0))>0)
       .sort((a,b)=>a.fecha!==b.fecha?a.fecha.localeCompare(b.fecha):a.hora-b.hora);
-    const deudaTotal=pendientes.reduce((a,t)=>a+Math.max(0,t.precio-(t.sena||0)),0);
+    const idsTurnosCliente=turnosCliente.map(t=>t.id);
+    const pendientesItems=turno_items
+      .filter(i=>idsTurnosCliente.includes(i.turno_id)&&!i.cobrado)
+      .sort((a,b)=>(a.precio_unitario*a.cantidad)-(b.precio_unitario*b.cantidad));
+    const deudaCancha=pendientesTurnos.reduce((a,t)=>a+Math.max(0,t.precio-(t.sena||0)),0);
+    const deudaProductos=pendientesItems.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+    const deudaTotal=deudaCancha+deudaProductos;
     if(deudaTotal<=0){notify("Este cliente no tiene deuda pendiente","error");return;}
     if(monto>deudaTotal){notify("El pago no puede ser mayor a la deuda total del cliente","error");return;}
     setSaving(true);
     try{
       const nombreCliente=cById(clienteId)?.nombre||"?";
       let restante=monto;
-      for(const t of pendientes){
+      for(const t of pendientesTurnos){
         if(restante<=0) break;
         const saldoT=Math.max(0,t.precio-(t.sena||0));
         if(saldoT<=0) continue;
@@ -379,6 +392,20 @@ export default function App() {
         await db.patch("turnos",t.id,{sena:nuevaSena,saldo:nuevoSaldo,...(completo?{estado:"confirmado",cobrado:true}:{})},tk);
         await db.post("caja",{descripcion:`Pago parcial - ${nombreCliente}`,tipo:"ingreso",categoria:t.tipo==="clase"?"clase":"reserva",monto:aplicado,fecha:hoy(),turno_id:t.id},tk);
         restante-=aplicado;
+      }
+      const itemsACobrar=[];
+      for(const i of pendientesItems){
+        const costo=i.precio_unitario*i.cantidad;
+        if(costo<=restante){itemsACobrar.push(i);restante-=costo;}
+      }
+      if(itemsACobrar.length){
+        const totalItems=itemsACobrar.reduce((a,i)=>a+i.precio_unitario*i.cantidad,0);
+        await db.post("caja",{descripcion:`Pago parcial (productos) - ${nombreCliente}`,tipo:"ingreso",categoria:"venta",monto:totalItems,fecha:hoy()},tk);
+        await api(`turno_items?id=in.(${itemsACobrar.map(i=>i.id).join(",")})`,{method:"PATCH",body:JSON.stringify({cobrado:true}),prefer:"return=minimal"},tk);
+      }
+      if(restante>0){
+        await db.post("caja",{descripcion:`Pago parcial (saldo a favor) - ${nombreCliente}`,tipo:"ingreso",categoria:"reserva",monto:restante,fecha:hoy()},tk);
+        await api("rpc/update_saldo_favor",{method:"POST",body:JSON.stringify({p_cliente_id:clienteId,p_delta:restante})},tk);
       }
       setDlg(null);await load();notify("Pago registrado","ok");
     }catch(e){notify(e.message,"error");}
@@ -1054,7 +1081,7 @@ export default function App() {
         if(deudaTotalCliente<=0) return null;
         return <div style={{...card,marginBottom:14}}>
           <div style={{fontSize:12,color:C.t2,fontWeight:600,marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Pago parcial</div>
-          <div style={{fontSize:11,color:C.t3,marginBottom:10,lineHeight:1.5}}>Se aplica a toda la deuda de {form.cliente.nombre} ({gs(deudaTotalCliente)} en total, sumando todas sus reservas sin cobrar) — no solo esta.</div>
+          <div style={{fontSize:11,color:C.t3,marginBottom:10,lineHeight:1.5}}>Se aplica a toda la deuda de {form.cliente.nombre} ({gs(deudaTotalCliente)} en total, sumando cancha y productos de todas sus reservas sin cobrar) — no solo esta.</div>
           <div style={{display:"flex",gap:8}}>
             <input type="number" min={1} max={deudaTotalCliente} placeholder={`Máx. ${gs(deudaTotalCliente)}`} value={form.monto_parcial||""} onChange={e=>setForm(f=>({...f,monto_parcial:e.target.value}))} style={{...inp,flex:1}}/>
             <Btn sm disabled={saving||!(Number(form.monto_parcial)>0)} onClick={async()=>{
